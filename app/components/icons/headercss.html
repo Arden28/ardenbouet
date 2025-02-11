@@ -1,0 +1,202 @@
+<div class="flex items-center justify-between" bis_skin_checked="1">
+    <div class="relative flex items-center flex-1" bis_skin_checked="1">
+        <div class="flex flex-1 gap-x-20" bis_skin_checked="1">
+            <div class="h-10 w-10 rounded-full bg-white/90 p-0.5 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:ring-white/10" bis_skin_checked="1">
+                <a href="https://arthurmonney.me" class="block w-full h-full">
+                    <span class="sr-only">Arthur Monney</span>
+                    <img class="object-cover rounded-full h-9 w-9" src="https://arthurmonney.me/images/me.jpg" alt="Me">
+                </a>
+            </div>
+            <nav class="hidden pointer-events-auto md:block">
+                <ul id="nav" class="flex px-3 text-sm font-medium rounded-full shadow-lg shadow-zinc-800/5 ring-1 backdrop-blur text-zinc-800 ring-zinc-900/5 bg-white/90 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10">
+                    <li>
+                        <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/blog">
+Blog
+
+
+</a>
+                    </li>
+                    <li>
+                        <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/about">
+A propos
+
+
+</a>
+                    </li>
+                    <li>
+                        <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/projects">
+Projets
+
+
+</a>
+                    </li>
+                    <li>
+                        <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/talks">
+Talks
+
+
+</a>
+                    </li>
+                    <li>
+                        <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/uses">
+Accessoires
+
+
+</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <div x-data="{ open: false }" @keydown.window.escape="open = false" class="md:hidden" bis_skin_checked="1">
+            <button @click="open = true" class="flex items-center px-4 py-2 text-sm font-medium rounded-full shadow-lg group bg-white/90 text-zinc-800 shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20" type="button" aria-expanded="false" id="popover-button">
+                Menu
+                <svg viewBox="0 0 8 6" aria-hidden="true" class="w-2 h-auto ml-3 stroke-zinc-500 group-hover:stroke-zinc-400">
+                    <path d="M1.75 1.75 4 4.25l2.25-2.5" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+            <div x-show="open" bis_skin_checked="1" style="display: none;">
+                <div x-show="open" x-transition:enter="duration-200 ease-out" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="fixed z-50 transition origin-top-right transform inset-x-4 top-8" bis_skin_checked="1" style="display: none;">
+                    <div class="p-8 bg-white rounded-2xl ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-zinc-800" bis_skin_checked="1">
+                        <div class="flex flex-row-reverse items-center justify-between" bis_skin_checked="1">
+                            <button @click="open = false" aria-label="Close menu" class="p-1 -m-1" type="button">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" class="w-6 h-6 text-zinc-400">
+                                    <path d="m17.25 6.75-10.5 10.5M6.75 6.75l10.5 10.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </button>
+                            <h2 class="text-sm font-medium text-zinc-400">Navigation</h2>
+                        </div>
+                        <nav class="mt-6 divide-y divide-zinc-100 divide-zinc-100/5">
+                            <ul class="pb-6 text-base text-zinc-800 dark:text-zinc-300">
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition text-blue-400" href="https://arthurmonney.me">
+Accueil
+
+
+        <span class="absolute inset-x-1 -bottom-px h-px bg-gradient-to-r from-blue-500/0 via-blue-500/40 to-blue-500/0"></span>
+</a>
+                                </li>
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/blog">
+Blog
+
+
+</a>
+                                </li>
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/about">
+A propos
+
+
+</a>
+                                </li>
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/projects">
+Projets
+
+
+</a>
+                                </li>
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/talks">
+Talks
+
+
+</a>
+                                </li>
+                                <li class="-mx-3">
+                                    <a class="relative block px-3 py-2 transition hover:text-blue-500 dark:hover:text-white" href="https://arthurmonney.me/uses">
+Accessoires
+
+
+</a>
+                                </li>
+                            </ul>
+                            <div class="flex-wrap space-x-4 flex items-center pt-6" bis_skin_checked="1">
+<a href="https://twitter.com/monneyarthur" class="transition text-zinc-500 hover:text-black dark:hover:text-white">
+    <span class="sr-only">Twitter</span>
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg">
+<path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"></path>
+</svg>
+</a>
+<a href="https://www.linkedin.com/in/arthurmonney" class="transition text-zinc-500 hover:text-[#0a66c2]">
+    <span class="sr-only">LinkedIn</span>
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.00351 6.99992H4.97535C4.66873 7.01841 4.36159 6.97349 4.07311 6.86796C3.78463 6.76242 3.521 6.59855 3.29869 6.38657C3.07638 6.17458 2.90016 5.91904 2.78104 5.6359C2.66192 5.35276 2.60245 5.04811 2.60635 4.74095C2.61025 4.4338 2.67743 4.13075 2.8037 3.85072C2.92997 3.5707 3.11262 3.31972 3.34024 3.11344C3.56786 2.90717 3.83556 2.75004 4.12663 2.65187C4.4177 2.5537 4.72588 2.51658 5.03193 2.54286C5.3395 2.52058 5.64835 2.56218 5.93906 2.66504C6.22978 2.7679 6.49607 2.92979 6.72119 3.14054C6.94631 3.35129 7.12539 3.60634 7.24718 3.88964C7.36896 4.17295 7.43082 4.47839 7.42885 4.78676C7.42689 5.09513 7.36114 5.39975 7.23575 5.68148C7.11036 5.96322 6.92804 6.21596 6.70025 6.42382C6.47246 6.63168 6.20413 6.79017 5.91213 6.88931C5.62013 6.98845 5.31077 7.02611 5.00351 6.99992Z"></path>
+<path d="M7.01801 10H3.01801V22H7.01801V10Z"></path>
+<path d="M17.5175 10C16.8435 10.0018 16.1786 10.156 15.5725 10.451C14.9664 10.746 14.4348 11.1741 14.0175 11.7034V10H10.0175V22H14.0175V16.5C14.0175 15.9696 14.2282 15.4609 14.6033 15.0858C14.9784 14.7107 15.4871 14.5 16.0175 14.5C16.548 14.5 17.0567 14.7107 17.4317 15.0858C17.8068 15.4609 18.0175 15.9696 18.0175 16.5V22H22.0175V14.5C22.0175 13.9091 21.9011 13.3239 21.675 12.7779C21.4488 12.232 21.1174 11.7359 20.6995 11.318C20.2816 10.9002 19.7856 10.5687 19.2396 10.3425C18.6936 10.1164 18.1085 10 17.5175 10Z"></path>
+</svg>
+</a>
+<a href="https://github.com/mckenziearts" class="transition text-zinc-500 hover:text-zinc-900 dark:hover:text-[#fafafa]">
+    <span class="sr-only">GitHub</span>
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+<path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+</svg>
+</a>
+<a href="https://www.youtube.com/@lechretiendev" class="transition text-zinc-500 hover:text-[#FF0000]">
+    <span class="sr-only">YouTube</span>
+    <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<path d="M28.7416 9.5961C28.5897 9.03156 28.2922 8.51683 27.8788 8.10345C27.4654 7.69006 26.9507 7.39253 26.3861 7.24064C24.8431 6.6449 9.89774 6.35304 5.56227 7.2577C4.99768 7.40961 4.48291 7.70718 4.0695 8.12062C3.65609 8.53405 3.35855 9.04884 3.20667 9.61344C2.51027 12.6688 2.4574 19.2744 3.22374 22.3979C3.37565 22.9625 3.67321 23.4772 4.08662 23.8906C4.50002 24.304 5.01478 24.6015 5.57934 24.7534C8.6346 25.4566 23.1601 25.5556 26.4032 24.7534C26.9677 24.6015 27.4825 24.304 27.8959 23.8906C28.3093 23.4772 28.6068 22.9625 28.7587 22.3979C29.5012 19.0692 29.5541 12.8734 28.7416 9.5961Z"></path>
+<path d="M20.3779 15.9969L13.4139 12.0028V19.991L20.3779 15.9969Z"></path>
+</svg>
+</a>
+<a href="mailto:contact@arthurmonney.me" class="inline-block text-sm leading-5 font-medium py-2 px-3 ring-1 backdrop-blur rounded-full shadow-lg bg-white/90 shadow-zinc-800/5 ring-zinc-900/5 transition dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20">
+    <span class="sr-only">Adresse E-mail</span>
+    Par Mail
+</a>
+</div>
+                        </nav>
+                    </div>
+                </div>
+                <div class="fixed inset-0 z-30 bg-zinc-800/40 backdrop-blur-sm dark:bg-black/80" bis_skin_checked="1"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex items-center" bis_skin_checked="1">
+        <div class="flex-wrap space-x-4 items-center hidden lg:flex" bis_skin_checked="1">
+<a href="https://twitter.com/monneyarthur" class="transition text-zinc-500 hover:text-black dark:hover:text-white">
+    <span class="sr-only">Twitter</span>
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg">
+<path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"></path>
+</svg>
+</a>
+<a href="https://www.linkedin.com/in/arthurmonney" class="transition text-zinc-500 hover:text-[#0a66c2]">
+    <span class="sr-only">LinkedIn</span>
+    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.00351 6.99992H4.97535C4.66873 7.01841 4.36159 6.97349 4.07311 6.86796C3.78463 6.76242 3.521 6.59855 3.29869 6.38657C3.07638 6.17458 2.90016 5.91904 2.78104 5.6359C2.66192 5.35276 2.60245 5.04811 2.60635 4.74095C2.61025 4.4338 2.67743 4.13075 2.8037 3.85072C2.92997 3.5707 3.11262 3.31972 3.34024 3.11344C3.56786 2.90717 3.83556 2.75004 4.12663 2.65187C4.4177 2.5537 4.72588 2.51658 5.03193 2.54286C5.3395 2.52058 5.64835 2.56218 5.93906 2.66504C6.22978 2.7679 6.49607 2.92979 6.72119 3.14054C6.94631 3.35129 7.12539 3.60634 7.24718 3.88964C7.36896 4.17295 7.43082 4.47839 7.42885 4.78676C7.42689 5.09513 7.36114 5.39975 7.23575 5.68148C7.11036 5.96322 6.92804 6.21596 6.70025 6.42382C6.47246 6.63168 6.20413 6.79017 5.91213 6.88931C5.62013 6.98845 5.31077 7.02611 5.00351 6.99992Z"></path>
+<path d="M7.01801 10H3.01801V22H7.01801V10Z"></path>
+<path d="M17.5175 10C16.8435 10.0018 16.1786 10.156 15.5725 10.451C14.9664 10.746 14.4348 11.1741 14.0175 11.7034V10H10.0175V22H14.0175V16.5C14.0175 15.9696 14.2282 15.4609 14.6033 15.0858C14.9784 14.7107 15.4871 14.5 16.0175 14.5C16.548 14.5 17.0567 14.7107 17.4317 15.0858C17.8068 15.4609 18.0175 15.9696 18.0175 16.5V22H22.0175V14.5C22.0175 13.9091 21.9011 13.3239 21.675 12.7779C21.4488 12.232 21.1174 11.7359 20.6995 11.318C20.2816 10.9002 19.7856 10.5687 19.2396 10.3425C18.6936 10.1164 18.1085 10 17.5175 10Z"></path>
+</svg>
+</a>
+<a href="https://github.com/mckenziearts" class="transition text-zinc-500 hover:text-zinc-900 dark:hover:text-[#fafafa]">
+    <span class="sr-only">GitHub</span>
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+<path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+</svg>
+</a>
+<a href="https://www.youtube.com/@lechretiendev" class="transition text-zinc-500 hover:text-[#FF0000]">
+    <span class="sr-only">YouTube</span>
+    <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<path d="M28.7416 9.5961C28.5897 9.03156 28.2922 8.51683 27.8788 8.10345C27.4654 7.69006 26.9507 7.39253 26.3861 7.24064C24.8431 6.6449 9.89774 6.35304 5.56227 7.2577C4.99768 7.40961 4.48291 7.70718 4.0695 8.12062C3.65609 8.53405 3.35855 9.04884 3.20667 9.61344C2.51027 12.6688 2.4574 19.2744 3.22374 22.3979C3.37565 22.9625 3.67321 23.4772 4.08662 23.8906C4.50002 24.304 5.01478 24.6015 5.57934 24.7534C8.6346 25.4566 23.1601 25.5556 26.4032 24.7534C26.9677 24.6015 27.4825 24.304 27.8959 23.8906C28.3093 23.4772 28.6068 22.9625 28.7587 22.3979C29.5012 19.0692 29.5541 12.8734 28.7416 9.5961Z"></path>
+<path d="M20.3779 15.9969L13.4139 12.0028V19.991L20.3779 15.9969Z"></path>
+</svg>
+</a>
+<a href="mailto:contact@arthurmonney.me" class="inline-block text-sm leading-5 font-medium py-2 px-3 ring-1 backdrop-blur rounded-full shadow-lg bg-white/90 shadow-zinc-800/5 ring-zinc-900/5 transition dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20">
+    <span class="sr-only">Adresse E-mail</span>
+    Par Mail
+</a>
+</div>
+        <div class="ml-6 pointer-events-auto" bis_skin_checked="1">
+            <button onclick="toggle()" type="button" aria-label="Switch to light theme" class="p-2 transition rounded-full shadow-lg group bg-white/90 shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:ring-white/10 dark:hover:ring-white/20">
+                <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-6 w-6 fill-zinc-100 stroke-zinc-500 transition group-hover:fill-zinc-200 group-hover:stroke-zinc-700 dark:hidden [@media(prefers-color-scheme:dark)]:fill-yellow-50 [@media(prefers-color-scheme:dark)]:stroke-yellow-500 [@media(prefers-color-scheme:dark)]:group-hover:fill-yellow-50 [@media(prefers-color-scheme:dark)]:group-hover:stroke-yellow-600">
+                    <path d="M8 12.25A4.25 4.25 0 0 1 12.25 8v0a4.25 4.25 0 0 1 4.25 4.25v0a4.25 4.25 0 0 1-4.25 4.25v0A4.25 4.25 0 0 1 8 12.25v0Z"></path>
+                    <path d="M12.25 3v1.5M21.5 12.25H20M18.791 18.791l-1.06-1.06M18.791 5.709l-1.06 1.06M12.25 20v1.5M4.5 12.25H3M6.77 6.77 5.709 5.709M6.77 17.73l-1.061 1.061" fill="none"></path>
+                </svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="hidden h-6 w-6 fill-zinc-700 stroke-zinc-500 transition dark:block [@media(prefers-color-scheme:dark)]:group-hover:stroke-zinc-400 [@media_not_(prefers-color-scheme:dark)]:fill-blue-400/10 [@media_not_(prefers-color-scheme:dark)]:stroke-blue-500">
+                    <path d="M17.25 16.22a6.937 6.937 0 0 1-9.47-9.47 7.451 7.451 0 1 0 9.47 9.47ZM12.75 7C17 7 17 2.75 17 2.75S17 7 21.25 7C17 7 17 11.25 17 11.25S17 7 12.75 7Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
