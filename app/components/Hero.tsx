@@ -6,6 +6,7 @@ import LivewireIcon from "./icons/LivewireIcon";
 import CpanelIcon from "./icons/CpanelIcon";
 import { LinkedinIcon } from './icons/LinkedinIcon';
 import { Button } from '@/components/ui/button';
+import AnimatedTitle from "./AnimatedTitle";
 import StackIcon from "tech-stack-icons";
 
 
@@ -59,18 +60,18 @@ export const Hero = () => {
                     {/* Text content */}
                     <div className="relative flex flex-col items-center text-center lg:order-first lg:row-span-2 lg:text-left lg:items-start">
                         <div className="z-10">
-                            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl font-heading lg:text-5xl lg:leading-none">
-                                Hi i am{' '}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-500">
-                                    Arden BOUET
-                                </span>
-                                , A Fullstack Developer
+                            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl font-heading lg:text-4xl lg:leading-none">
+                                A <AnimatedTitle />, founder and innovator.
                             </h1>
                             <div className="mt-6 space-y-5 leading-[1.65rem] font-medium text-md text-zinc-900">
-                                <p>
-                                    I am a self-taught and entrepreneurial full-stack developer passionate about building scalable and efficient web applications. With a strong foundation in Laravel, Livewire, and JavaScript, I specialize in creating seamless business solutions, from ERP systems to SaaS applications. Currently, I’m expanding my expertise by integrating TypeScript and modern front-end frameworks into my development workflow.
-                                    <br />
-                                    As the founder of <a href="https://koverae.com" target='_blank'>Koverae</a>, an innovative ERP platform, I strive to redefine business automation through modular and intuitive software solutions. Beyond coding, I am business-oriented, constantly refining my skills in marketing, sales, and product strategy to bridge the gap between technology and business needs.
+                                <p className='mb-2'>
+                                    I am Arden Bouet, a passionate software developer and entrepreneur dedicated to building intelligent, scalable, and impactful digital solutions. As the founder of <a href="https://koverae.com/?utm=ardenbouet" className="text-blue">Koverae</a>, I specialize in developing integrated business software, streamlining operations, and enhancing productivity for companies of all sizes.
+                                </p>
+                                <p className='mb-2'>
+                                    With a strong foundation in Laravel development and a keen eye for innovation, I have built and contributed to solutions that bridge the gap between technology and business efficiency. My expertise spans across web development, SaaS platforms, and automation, ensuring businesses operate with seamless digital precision.
+                                </p>
+                                <p className='mb-2'>
+                                    I’m always open to new challenges, collaborations, and opportunities. If you're looking for someone to develop, optimize, or scale your digital vision, let’s connect and make it happen.
                                 </p>
                             </div>
                         </div>
@@ -79,8 +80,8 @@ export const Hero = () => {
 
                 {/* Tech Stack Section */}
                 <div className="max-w-4xl mt-10 text-center lg:text-left">
-                    <h2 className="text-2xl font-bold leading-8 text-transparent bg-clip-text bg-gradient-to-r from-black to-sky-500 drop-shadow-xl">
-                        I love working with
+                    <h2 className="text-2xl mb-2 font-bold leading-8 text-transparent bg-clip-text bg-gradient-to-r from-black to-sky-500 drop-shadow-xl">
+                        Technologies I love working with
                     </h2>
                     <div className="grid items-center justify-center grid-cols-4 mt-5 gap-x-8 gap-y-10 sm:grid-cols-6 sm:gap-x-10 lg:grid-cols-8">
                         <StackIcon name="laravel" className='w-12 transition-all duration-300 hover:-translate-y-2 hover:translate-x-1' />

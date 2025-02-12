@@ -1,3 +1,6 @@
+
+import Image from 'next/image';
+
 export const Contact = () => {
     return (
         <div id="contact" className="max-w-2xl min-h-full pt-2 mx-auto mt-10 mb-20 sm:mt-16 lg:mt-20 sm:max-w-4xl">
@@ -13,26 +16,30 @@ export const Contact = () => {
                     <div className="mx-3 chat chat-start">
                         <div className="chat-image avatar">
                             <div className="w-10 rounded-full">
-                                <img 
+                                <Image 
                                     alt="User avatar" 
-                                    src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" 
+                                    src="/images/avatar-12.jpg" 
+                                    width={300}
+                                    height={300}
                                 />
                             </div>
                         </div>
                         <div className="chat-header">
                             You
-                            <time className="ml-1 text-xs opacity-50">12:45</time>
+                            <time className="ml-1 text-xs opacity-50">10:45</time>
                         </div>
-                        <div className="text-black bg-gray-300 border chat-bubble drop-shadow-md">Hey You</div>
+                        <div className="text-black bg-gray-300 border chat-bubble drop-shadow-md">Hey Arden</div>
                     </div>
 
                     {/* Follow-up question */}
                     <div className="mx-3 chat chat-start">
                         <div className="chat-image avatar">
                             <div className="w-10 rounded-full">
-                                <img 
+                                <Image 
                                     alt="User avatar" 
-                                    src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" 
+                                    src="/images/avatar-12.jpg" 
+                                    width={300}
+                                    height={300}
                                 />
                             </div>
                         </div>
@@ -42,13 +49,13 @@ export const Contact = () => {
                         <div className="opacity-50 chat-footer">Delivered</div>
                     </div>
 
-                    {/* Response from Slim Bouras */}
+                    {/* Response from Arden BOUET */}
                     <div className="mx-3 chat chat-end">
                         <div className="chat-image avatar">
                             <div className="w-10 rounded-full">
-                                <img 
-                                    src="/images/avatar.jpg" 
-                                    alt="Slim Bouras avatar" 
+                                <Image 
+                                    src="/images/profile-1.jpg" 
+                                    alt="Arden BOUET avatar" 
                                     className="object-cover rounded-full" 
                                     width={40} 
                                     height={40} 
@@ -56,16 +63,16 @@ export const Contact = () => {
                             </div>
                         </div>
                         <div className="chat-header">
-                            Slim Bouras  
-                            <time className="ml-1 text-xs opacity-50">12:46</time>
+                            Arden BOUET  
+                            <time className="ml-1 text-xs opacity-50">10:56</time>
                         </div>
                         <div className="text-white border chat-bubble bg-primary drop-shadow-md">
                             <p>
                                 Hello, you can email me at  
-                                <a className="ml-1 font-extrabold text-white" href="mailto:your@email.com">your@email.com</a>
+                                <a className="ml-1 font-extrabold text-white" href="mailto:laudbouetoumoussa@koverae.com">laudbouetoumoussa@koverae.com</a>
                                 <br />
                                 or message me on  
-                                <a className="ml-1 font-extrabold text-white" href="https://www.linkedin.com/in/yourprofile" target="_blank" rel="noopener noreferrer">
+                                <a className="ml-1 font-extrabold text-white" href="https://www.linkedin.com/in/arden-bouet/" target="_blank" rel="noopener noreferrer">
                                     LinkedIn
                                 </a>
                             </p>
@@ -76,9 +83,9 @@ export const Contact = () => {
                     <div className="mx-3 mt-1 chat chat-end">
                         <div className="chat-image avatar">
                             <div className="w-10 rounded-full">
-                                <img 
-                                    src="/images/avatar.jpg" 
-                                    alt="Slim Bouras avatar" 
+                                <Image 
+                                    src="/images/profile-1.jpg" 
+                                    alt="Arden BOUET avatar" 
                                     className="object-cover rounded-full" 
                                     width={40} 
                                     height={40} 
@@ -88,7 +95,7 @@ export const Contact = () => {
                         <div className="text-white border chat-bubble bg-primary drop-shadow-md">
                             See you there 😀!
                         </div>
-                        <div className="opacity-50 chat-footer">Seen at 12:46</div>
+                        <div className="opacity-50 chat-footer">Seen at 10:56</div>
                     </div>
                 </div>
             </div>

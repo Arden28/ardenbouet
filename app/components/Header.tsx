@@ -16,7 +16,7 @@ export const Header = () => {
                 <div className="relative flex items-center ">
                     <div className="h-10 w-10 rounded-full bg-white/90 p-0.5 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:ring-white/10 mr-20">
                         <a href="" className="block w-full h-full">
-                            <span className="sr-only">Your Name</span>
+                            <span className="sr-only">Arden BOUET</span>
                             <Image 
                                 src={'/images/avatar-1.jpg'} 
                                 alt={'logo'}
@@ -50,6 +50,9 @@ export const Header = () => {
                                 <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#about">About</Link>
                             </li>
                             <li>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">My Journey</Link>
+                            </li>
+                            <li>
                                 <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">Projects</Link>
                             </li>
                             <li>
@@ -74,7 +77,7 @@ export const Header = () => {
                                 <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.467-1.11-1.467-.907-.62.069-.608.069-.608 1.003.071 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.091-.647.35-1.088.636-1.338-2.22-.254-4.555-1.113-4.555-4.95 0-1.093.39-1.988 1.029-2.688-.103-.254-.447-1.276.098-2.66 0 0 .84-.27 2.75 1.025a9.6 9.6 0 012.5-.336c.849.004 1.704.115 2.5.337 1.909-1.296 2.748-1.025 2.748-1.025.546 1.383.202 2.405.099 2.659.64.7 1.028 1.595 1.028 2.688 0 3.845-2.337 4.693-4.566 4.943.358.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.748 0 .268.18.58.688.482A10.022 10.022 0 0022 12.017C22 6.484 17.523 2 12 2z" clip-rule="evenodd"></path>
                             </svg>
                         </a>
-                        <a href="mailto:contact@google" className="inline-block px-4 py-2 text-sm font-medium leading-5 transition rounded-full shadow-lg ring-1 backdrop-blur bg-white/90 shadow-zinc-800/5 ring-zinc-900/5 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 hover:text-primary hover:font-bold">
+                        <a href="mailto:laudbouetoumoussa@koverae.com" className="inline-block px-4 py-2 text-sm font-medium leading-5 transition rounded-full shadow-lg ring-1 backdrop-blur bg-white/90 shadow-zinc-800/5 ring-zinc-900/5 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 hover:text-primary hover:font-bold">
                             Mail
                         </a>
                     </div>
@@ -89,6 +92,9 @@ export const Header = () => {
                             <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#about">A Propos</Link>
                         </li>
                         <li>
+                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#journey">My Journey</Link>
+                        </li>
+                        <li>
                             <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#projects">Projets</Link>
                         </li>
                         <li>
@@ -98,7 +104,7 @@ export const Header = () => {
                             <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="">CV</a>
                         </li>
                         <li className="flex space-x-4">
-                            <a href="mailto:contact@test.com" className="transition text-zinc-500 hover:text-black dark:hover:text-white">
+                            <a href="mailto:laudbouetoumoussa@koverae.com" className="transition text-zinc-500 hover:text-black dark:hover:text-white">
                             <svg viewBox="0 0 24 24" className='w-6 h-6' fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#616161"></path> </g></svg>
                             </a>
                             <a href="https://www.linkedin.com/in/arden-bouet/" className="transition text-zinc-500 hover:text-[#0a66c2]">
