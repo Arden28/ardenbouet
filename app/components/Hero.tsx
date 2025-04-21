@@ -61,17 +61,14 @@ export const Hero = () => {
                     <div className="relative flex flex-col items-center text-center lg:order-first lg:row-span-2 lg:text-left lg:items-start">
                         <div className="z-10">
                             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl font-heading lg:text-4xl lg:leading-none">
-                                A <AnimatedTitle />, founder and innovator.
+                                A <AnimatedTitle /> and open-source contributor.
                             </h1>
                             <div className="mt-6 space-y-5 leading-[1.65rem] font-medium text-md text-zinc-900">
                                 <p className='mb-2'>
-                                    I am Arden Bouet, a passionate software developer and entrepreneur dedicated to building intelligent, scalable, and impactful digital solutions. As the founder of <a href="https://koverae.com/?utm=ardenbouet" className="text-blue">Koverae</a>, I specialize in developing integrated business software, streamlining operations, and enhancing productivity for companies of all sizes.
+                                Hey, I’m <strong>Arden BOUET</strong> a <strong>fullstack developer</strong> with a soft spot for clean code, smooth user experiences, and building digital tools that actually make life easier. I work mostly with <strong>Laravel</strong> and enjoy creating web apps, <strong>SaaS platforms</strong>, and automating everyday tasks to help things run better.
                                 </p>
-                                <p className='mb-2'>
-                                    With a strong foundation in Laravel development and a keen eye for innovation, I have built and contributed to solutions that bridge the gap between technology and business efficiency. My expertise spans across web development, SaaS platforms, and automation, ensuring businesses operate with seamless digital precision.
-                                </p>
-                                <p className='mb-2'>
-                                    I’m always open to new challenges, collaborations, and opportunities. If you're looking for someone to develop, optimize, or scale your digital vision, let’s connect and make it happen.
+                                <p className="mb-2">
+                                Whether it’s streamlining workflows or bringing new ideas to life, I’m all about building smart, scalable solutions with a practical edge. Always open to fun challenges, fresh ideas, and meaningful collaborations.
                                 </p>
                             </div>
                         </div>
@@ -80,7 +77,7 @@ export const Hero = () => {
 
                 {/* Tech Stack Section */}
                 <div className="max-w-4xl mt-10 text-center lg:text-left">
-                    <h2 className="text-2xl mb-2 font-bold leading-8 text-transparent bg-clip-text bg-gradient-to-r from-black to-sky-500 drop-shadow-xl">
+                    <h2 className="mb-2 text-2xl font-bold leading-8 text-transparent bg-clip-text bg-gradient-to-r from-black to-sky-500 drop-shadow-xl">
                         Technologies I love working with
                     </h2>
                     <div className="grid items-center justify-center grid-cols-4 mt-5 gap-x-8 gap-y-10 sm:grid-cols-6 sm:gap-x-10 lg:grid-cols-8">

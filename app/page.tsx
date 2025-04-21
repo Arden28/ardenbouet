@@ -6,8 +6,8 @@ export default function Home() {
   return (
     <main>
       <Hero></Hero>
-      <Journey></Journey>
       <Projects></Projects>
+      <Journey></Journey>
       <Contact></Contact>
 
     </main>
