@@ -1,13 +1,18 @@
 'use client';
-import { useState } from 'react';
+import '../i18n'; // import the i18n configuration
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { GithubIcon } from './icons/GithubIcon';
 import { LinkedinIcon } from './icons/LinkedinIcon'; // Assuming you have or will create this component
 import { Button } from '@/components/ui/button';
+// import { AppContext } from '../AppContext';
+import { LanguageSwitcher } from "./LanguageSwitcher"
 
 export const Header = () => {
     const [menuOpen, setMenuOpen] = useState(false);
+    const { t } = useTranslation();
 
     return (
         <nav className="z-10 max-w-xl px-10 pb-3 mx-auto sm:max-w-4xl pt-7">
@@ -30,6 +35,9 @@ export const Header = () => {
 
                 {/* Burger Menu Icon for Mobile */}
                 <div className="sm:hidden">
+                    {/* Language Switcher */}
+                    <LanguageSwitcher></LanguageSwitcher>
+                    {/* Language Switcher */}
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
                         className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white focus:outline-none"
@@ -47,24 +55,28 @@ export const Header = () => {
                     <nav className="flex flex-1 gap-x-20">
                         <ul id="nav" className="flex px-10 text-sm font-medium rounded-full shadow-lg shadow-zinc-800/5 ring-1 backdrop-blur text-zinc-800 ring-zinc-900/5 bg-white/90 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10">
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#about">About</Link>
+                                {/* <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#about">{t('menu.about')}</Link> */}
                             </li>
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">My Journey</Link>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
                             </li>
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">My Projects</Link>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
                             </li>
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#contact">Contact</Link>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
                             </li>
                             <li>
-                                <a className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="/files/cv-v2.pdf">CV</a>
+                                <a className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="/files/cv-v2.pdf">{t('menu.cv')}</a>
                             </li>
                         </ul>
                     </nav>
 
                     <div className="flex items-center space-x-4">
+                        {/* Language Switcher */}
+                        <LanguageSwitcher></LanguageSwitcher>
+                        {/* Language Switcher */}
+                        
                         <a href="https://www.linkedin.com/in/arden-bouet/" className="transition text-zinc-500 hover:text-[#0a66c2]">
                         <svg fill="#000000" viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><title>Upwork icon</title><path d="M18.561 13.158c-1.102 0-2.135-.467-3.074-1.227l.228-1.076.008-.042c.207-1.143.849-3.06 2.839-3.06 1.492 0 2.703 1.212 2.703 2.703-.001 1.489-1.212 2.702-2.704 2.702zm0-8.14c-2.539 0-4.51 1.649-5.31 4.366-1.22-1.834-2.148-4.036-2.687-5.892H7.828v7.112c-.002 1.406-1.141 2.546-2.547 2.548-1.405-.002-2.543-1.143-2.545-2.548V3.492H0v7.112c0 2.914 2.37 5.303 5.281 5.303 2.913 0 5.283-2.389 5.283-5.303v-1.19c.529 1.107 1.182 2.229 1.974 3.221l-1.673 7.873h2.797l1.213-5.71c1.063.679 2.285 1.109 3.686 1.109 3 0 5.439-2.452 5.439-5.45 0-3-2.439-5.439-5.439-5.439z"></path></g></svg>
                         </a>
@@ -92,19 +104,19 @@ export const Header = () => {
                 <div className="mt-4 space-y-4 sm:hidden">
                     <ul className="flex flex-col items-center text-sm font-medium">
                         <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#about">A Propos</Link>
+                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#about">{t('menu.about')}</Link>
                         </li>
                         <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#journey">My Journey</Link>
+                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
                         </li>
                         <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#projects">My Projects</Link>
+                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
                         </li>
                         <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#contact">Contact</Link>
+                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
                         </li>
                         <li>
-                            <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="/files/cv-v2.pdf">CV</a>
+                            <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="/files/cv-v2.pdf">{t('menu.cv')}</a>
                         </li>
                         <li className="flex space-x-4">
                             <a href="mailto:laudbouetoumoussa@koverae.com" className="transition text-zinc-500 hover:text-black dark:hover:text-white">
