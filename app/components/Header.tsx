@@ -58,10 +58,10 @@ export const Header = () => {
                                 {/* <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#about">{t('menu.about')}</Link> */}
                             </li>
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
                             </li>
                             <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
+                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
                             </li>
                             <li>
                                 <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>

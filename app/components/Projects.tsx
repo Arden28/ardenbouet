@@ -1,3 +1,6 @@
+'use client';
+import '../i18n'; //
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { GithubIcon } from './icons/GithubIcon';
@@ -5,8 +8,69 @@ import { LinkedinIcon } from './icons/LinkedinIcon'; // Assuming you have or wil
 import { Button } from '@/components/ui/button';
 
 export const Projects = () => {
-    return (
 
+    const { t } = useTranslation();
+    const projects = [
+        {
+            id: 1,
+            title: "Seabar Store Locator – Interactive Map Integration",
+            description: "Built an interactive store locator with map integration for Seabar, making it easy for users to find nearby shop locations. Focused on a smooth, responsive UI and real-time geolocation to enhance the overall experience.",
+            logoUrl: "/images/ndako.png",
+            url: "https://seabar.com/pages/store-locator"
+        },
+        
+        {
+            id: 2,
+            title: "Ndako – Property Management System",
+            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
+            logoUrl: "/images/ndako.png",
+            url: "https://ndako.koverae.com"
+        },
+        {
+            id: 3,
+            title: "Koverae ERP",
+            description: "A next-gen ERP SaaS platform with 12+ integrated apps for business, finance, HR, logistics, and productivity. Includes K-Wallet & Kredits, an internal digital financial system, and Quick Find, an AI-powered business database enrichment tool.",
+            logoUrl: "/images/ndako.png",
+            url: "https://koverae.com"
+        },
+        {
+            id: 4,
+            title: "Koverae Billing - Subscription and billing, simplified for Laravel",
+            description: "koverae-billing is a lightweight Laravel package that simplifies subscription and billing management for applications. Whether you're building a SaaS platform, managing recurring payments, or offering metered services, this package provides an intuitive and flexible way to handle billing logic.",
+            logoUrl: "/images/ndako.png",
+            url: "https://developer.koverae.com/koverae-billing/?utm=ardenbouet"
+        },
+        {
+            id: 5,
+            title: "Ndako – Property Management System",
+            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
+            logoUrl: "/images/ndako.png",
+            url: "https://ndako.koverae.com"
+        },
+        {
+            id: 1,
+            title: "Ndako – Property Management System",
+            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
+            logoUrl: "/images/ndako.png",
+            url: "https://ndako.koverae.com"
+        },
+        {
+            id: 1,
+            title: "Ndako – Property Management System",
+            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
+            logoUrl: "/images/ndako.png",
+            url: "https://ndako.koverae.com"
+        },
+        {
+            id: 1,
+            title: "Ndako – Property Management System",
+            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
+            logoUrl: "/images/ndako.png",
+            url: "https://ndako.koverae.com"
+        },
+    ]
+    
+    return (
 
         <div id='projects' className='pt-2 mt-10 w-100 sm:mt-16 lg:mt-20'>
             <h2 className="mb-10 text-2xl font-bold leading-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-500 drop-shadow-xl">
