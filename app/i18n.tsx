@@ -33,7 +33,7 @@ i18n
             title: "PROFESSIONAL EXPERIENCES",
             cardTitlte: "Professional Experiences",
             projects: {
-              title: "Projects",
+              title: "Works",
               see: "See the project"
             },
             jobs: {

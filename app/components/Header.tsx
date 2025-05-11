@@ -67,7 +67,7 @@ export const Header = () => {
                                 <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
                             </li>
                             <li>
-                                <a className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="/files/cv-v2.pdf">{t('menu.cv')}</a>
+                                <a className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="/files/cv-v3.pdf">{t('menu.cv')}</a>
                             </li>
                         </ul>
                     </nav>
@@ -116,7 +116,7 @@ export const Header = () => {
                             <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
                         </li>
                         <li>
-                            <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="/files/cv-v2.pdf">{t('menu.cv')}</a>
+                            <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="/files/cv-v3.pdf">{t('menu.cv')}</a>
                         </li>
                         <li className="flex space-x-4">
                             <a href="mailto:laudbouetoumoussa@koverae.com" className="transition text-zinc-500 hover:text-black dark:hover:text-white">
