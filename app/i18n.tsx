@@ -32,6 +32,10 @@ i18n
           experiences: {
             title: "PROFESSIONAL EXPERIENCES",
             cardTitlte: "Professional Experiences",
+            projects: {
+              title: "Projects",
+              see: "See the project"
+            },
             jobs: {
             
               petroleumProductionIntern: {
@@ -116,6 +120,10 @@ i18n
           experiences: {
             title: "EXPÉRIENCES PROFESSIONNELLES",
             cardTitlte: "Expériences Professionnelle",
+            projects: {
+              title: "Projets",
+              see: "Voir le projet"
+            },
             jobs: {
             
               petroleumProductionIntern: {
