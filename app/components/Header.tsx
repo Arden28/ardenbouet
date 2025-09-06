@@ -1,145 +1,283 @@
 'use client';
-import '../i18n'; // import the i18n configuration
-import { useEffect, useState } from 'react';
+import '../i18n';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { GithubIcon } from './icons/GithubIcon';
-import { LinkedinIcon } from './icons/LinkedinIcon'; // Assuming you have or will create this component
-import { Button } from '@/components/ui/button';
-// import { AppContext } from '../AppContext';
-import { LanguageSwitcher } from "./LanguageSwitcher"
+import { LanguageSwitcher } from './LanguageSwitcher';
+
+type NavItem = { href: string; key: string; label?: string };
+
+function UpworkIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5" {...props}>
+      <path
+        fill="currentColor"
+        d="M7.7 6c1.6 0 2.9 1.3 3.1 3.3.2-.2.4-.5.6-.8.5-.7 1-1.5 1.4-2.4h2.1c-.5 1.4-1.2 2.7-2 3.8 1 .8 2.1 1.2 3.3 1.2 1.2 0 2.1-.7 2.1-1.8 0-1.1-.8-1.8-2-1.8-.7 0-1.4.2-1.9.5l-.5-1.8c.8-.3 1.7-.5 2.6-.5 2.5 0 4.2 1.6 4.2 3.9 0 2.4-1.8 4-4.3 4-1.6 0-3-.5-4.2-1.5-.6.7-1.2 1.3-1.7 1.6v3.9H7.9V12c0-1.2-.6-1.9-1.5-1.9S5 10.7 5 12.1V18H3V9.1h2v.9C5.5 7.9 6.4 6 7.7 6Z"
+      />
+    </svg>
+  );
+}
 
 export const Header = () => {
-    const [menuOpen, setMenuOpen] = useState(false);
-    const { t } = useTranslation();
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [active, setActive] = useState<string>('#about');
 
-    return (
-        <nav className="z-10 max-w-xl px-10 pb-3 mx-auto sm:max-w-4xl pt-7">
-            <div className="flex items-center justify-between">
-                {/* Logo Section */}
-                <div className="relative flex items-center ">
-                    <div className="h-10 w-10 rounded-full bg-white/90 p-0.5 shadow-lg shadow-zinc-800/5 ring-1 ring-zinc-900/5 backdrop-blur dark:bg-zinc-800/90 dark:ring-white/10 mr-20">
-                        <a href="" className="block w-full h-full">
-                            <span className="sr-only">Arden BOUET</span>
-                            <Image 
-                                src={'/images/avatar-1.jpg'} 
-                                alt={'logo'}
-                                className='object-cover rounded-full' 
-                                width={40}
-                                height={40}
-                            />
-                        </a>
-                    </div>
-                </div>
+  // measure header height so we can offset the scroll
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [headerH, setHeaderH] = useState<number>(72); // sensible default
 
-                {/* Burger Menu Icon for Mobile */}
-                <div className="sm:hidden">
-                    {/* Language Switcher */}
-                    <LanguageSwitcher></LanguageSwitcher>
-                    {/* Language Switcher */}
-                    <button
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white focus:outline-none"
-                    >
-                        {/* Burger icon */}
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            {/* Icon paths will go here */}
-                            <path d="M5 6.5H19V8H5V6.5Z" fill="#1F2328"></path> <path d="M5 16.5H19V18H5V16.5Z" fill="#1F2328"></path> <path d="M5 11.5H19V13H5V11.5Z" fill="#1F2328"></path>
-                        </svg>
-                    </button>
-                </div>
+  useEffect(() => {
+    const el = headerRef.current;
+    const measure = () => {
+      if (!el) return;
+      const nav = el.querySelector('nav') as HTMLElement | null;
+      setHeaderH((nav?.offsetHeight ?? 0) + 2); // +2 for the top progress bar
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    const ro = new ResizeObserver(measure);
+    if (el) ro.observe(el);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro.disconnect();
+    };
+  }, []);
 
-                {/* Desktop Nav Links */}
-                <div className="items-center justify-between flex-1 hidden sm:flex">
-                    <nav className="flex flex-1 gap-x-20">
-                        <ul id="nav" className="flex px-10 text-sm font-medium rounded-full shadow-lg shadow-zinc-800/5 ring-1 backdrop-blur text-zinc-800 ring-zinc-900/5 bg-white/90 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10">
-                            <li>
-                                {/* <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#about">{t('menu.about')}</Link> */}
-                            </li>
-                            <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
-                            </li>
-                            <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
-                            </li>
-                            <li>
-                                <Link className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
-                            </li>
-                            <li>
-                                <a className="relative block px-3 py-2 font-medium transition hover:text-primary hover:font-bold dark:hover:text-white" href="/files/cv-v3.pdf">{t('menu.cv')}</a>
-                            </li>
-                        </ul>
-                    </nav>
+  const nav: NavItem[] = useMemo(
+    () => [
+      { href: '#projects', key: 'menu.projects', label: t('menu.projects') },
+      { href: '#experience', key: 'menu.experience', label: t('menu.experience', { defaultValue: 'Experience' }) },
+      { href: '#journey', key: 'menu.journey', label: t('menu.journey') },
+      { href: '#contact', key: 'menu.contact', label: t('menu.contact') },
+    ],
+    [t]
+  );
 
-                    <div className="flex items-center space-x-4">
-                        {/* Language Switcher */}
-                        <LanguageSwitcher></LanguageSwitcher>
-                        {/* Language Switcher */}
-                        
-                        <a href="https://www.linkedin.com/in/arden-bouet/" className="transition text-zinc-500 hover:text-[#0a66c2]">
-                        <svg fill="#000000" viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><title>Upwork icon</title><path d="M18.561 13.158c-1.102 0-2.135-.467-3.074-1.227l.228-1.076.008-.042c.207-1.143.849-3.06 2.839-3.06 1.492 0 2.703 1.212 2.703 2.703-.001 1.489-1.212 2.702-2.704 2.702zm0-8.14c-2.539 0-4.51 1.649-5.31 4.366-1.22-1.834-2.148-4.036-2.687-5.892H7.828v7.112c-.002 1.406-1.141 2.546-2.547 2.548-1.405-.002-2.543-1.143-2.545-2.548V3.492H0v7.112c0 2.914 2.37 5.303 5.281 5.303 2.913 0 5.283-2.389 5.283-5.303v-1.19c.529 1.107 1.182 2.229 1.974 3.221l-1.673 7.873h2.797l1.213-5.71c1.063.679 2.285 1.109 3.686 1.109 3 0 5.439-2.452 5.439-5.45 0-3-2.439-5.439-5.439-5.439z"></path></g></svg>
-                        </a>
-                        <a href="https://www.linkedin.com/in/arden-bouet/" className="transition text-zinc-500 hover:text-[#0a66c2]">
-                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5.00351 6.99992H4.97535C4.66873 7.01841 4.36159 6.97349 4.07311 6.86796C3.78463 6.76242 3.521 6.59855 3.29869 6.38657C3.07638 6.17458 2.90016 5.91904 2.78104 5.6359C2.66192 5.35276 2.60245 5.04811 2.60635 4.74095C2.61025 4.4338 2.67743 4.13075 2.8037 3.85072C2.92997 3.5707 3.11262 3.31972 3.34024 3.11344C3.56786 2.90717 3.83556 2.75004 4.12663 2.65187C4.4177 2.5537 4.72588 2.51658 5.03193 2.54286C5.3395 2.52058 5.64835 2.56218 5.93906 2.66504C6.22978 2.7679 6.49607 2.92979 6.72119 3.14054C6.94631 3.35129 7.12539 3.60634 7.24718 3.88964C7.36896 4.17295 7.43082 4.47839 7.42885 4.78676C7.42689 5.09513 7.36114 5.39975 7.23575 5.68148C7.11036 5.96322 6.92804 6.21596 6.70025 6.42382C6.47246 6.63168 6.20413 6.79017 5.91213 6.88931C5.62013 6.98845 5.31077 7.02611 5.00351 6.99992Z"></path>
-                                <path d="M7.01801 10H3.01801V22H7.01801V10Z"></path>
-                                <path d="M17.5175 10C16.8435 10.0018 16.1786 10.156 15.5725 10.451C14.9664 10.746 14.4348 11.1741 14.0175 11.7034V10H10.0175V22H14.0175V16.5C14.0175 15.9696 14.2282 15.4609 14.6033 15.0858C14.9784 14.7107 15.4871 14.5 16.0175 14.5C16.548 14.5 17.0567 14.7107 17.4317 15.0858C17.8068 15.4609 18.0175 15.9696 18.0175 16.5V22H22.0175V14.5C22.0175 13.9091 21.9011 13.3239 21.675 12.7779C21.4488 12.232 21.1174 11.7359 20.6995 11.318C20.2816 10.9002 19.7856 10.5687 19.2396 10.3425C18.6936 10.1164 18.1085 10 17.5175 10Z"></path>
-                            </svg>
-                        </a>
-                        <a href="https://github.com/Arden28" className="transition text-zinc-500 hover:text-zinc-900 dark:hover:text-[#fafafa]">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.467-1.11-1.467-.907-.62.069-.608.069-.608 1.003.071 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.091-.647.35-1.088.636-1.338-2.22-.254-4.555-1.113-4.555-4.95 0-1.093.39-1.988 1.029-2.688-.103-.254-.447-1.276.098-2.66 0 0 .84-.27 2.75 1.025a9.6 9.6 0 012.5-.336c.849.004 1.704.115 2.5.337 1.909-1.296 2.748-1.025 2.748-1.025.546 1.383.202 2.405.099 2.659.64.7 1.028 1.595 1.028 2.688 0 3.845-2.337 4.693-4.566 4.943.358.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.748 0 .268.18.58.688.482A10.022 10.022 0 0022 12.017C22 6.484 17.523 2 12 2z" clip-rule="evenodd"></path>
-                            </svg>
-                        </a>
-                        <a href="mailto:laudbouetoumoussa@koverae.com" className="inline-block px-4 py-2 text-sm font-medium leading-5 transition rounded-full shadow-lg ring-1 backdrop-blur bg-white/90 shadow-zinc-800/5 ring-zinc-900/5 dark:bg-zinc-800/90 dark:text-zinc-200 dark:ring-white/10 dark:hover:ring-white/20 hover:text-primary hover:font-bold">
-                            Mail
-                        </a>
-                    </div>
-                </div>
-            </div>
+  // Sticky chrome + scroll progress
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 6);
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      setProgress(max > 0 ? (y / max) * 100 : 0);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-            {/* Mobile Menu */}
-            {menuOpen && (
-                <div className="mt-4 space-y-4 sm:hidden">
-                    <ul className="flex flex-col items-center text-sm font-medium">
-                        <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#about">{t('menu.about')}</Link>
-                        </li>
-                        <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#journey">{t('menu.journey')}</Link>
-                        </li>
-                        <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#projects">{t('menu.projects')}</Link>
-                        </li>
-                        <li>
-                            <Link className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="#contact">{t('menu.contact')}</Link>
-                        </li>
-                        <li>
-                            <a className="block px-3 py-2 transition hover:text-primary dark:hover:text-white" href="/files/cv-v3.pdf">{t('menu.cv')}</a>
-                        </li>
-                        <li className="flex space-x-4">
-                            <a href="mailto:laudbouetoumoussa@koverae.com" className="transition text-zinc-500 hover:text-black dark:hover:text-white">
-                            <svg viewBox="0 0 24 24" className='w-6 h-6' fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M3.75 5.25L3 6V18L3.75 18.75H20.25L21 18V6L20.25 5.25H3.75ZM4.5 7.6955V17.25H19.5V7.69525L11.9999 14.5136L4.5 7.6955ZM18.3099 6.75H5.68986L11.9999 12.4864L18.3099 6.75Z" fill="#616161"></path> </g></svg>
-                            </a>
-                            <a href="https://www.linkedin.com/in/arden-bouet/" className="transition text-zinc-500 hover:text-[#0a66c2]">
-                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5.00351 6.99992H4.97535C4.66873 7.01841 4.36159 6.97349 4.07311 6.86796C3.78463 6.76242 3.521 6.59855 3.29869 6.38657C3.07638 6.17458 2.90016 5.91904 2.78104 5.6359C2.66192 5.35276 2.60245 5.04811 2.60635 4.74095C2.61025 4.4338 2.67743 4.13075 2.8037 3.85072C2.92997 3.5707 3.11262 3.31972 3.34024 3.11344C3.56786 2.90717 3.83556 2.75004 4.12663 2.65187C4.4177 2.5537 4.72588 2.51658 5.03193 2.54286C5.3395 2.52058 5.64835 2.56218 5.93906 2.66504C6.22978 2.7679 6.49607 2.92979 6.72119 3.14054C6.94631 3.35129 7.12539 3.60634 7.24718 3.88964C7.36896 4.17295 7.43082 4.47839 7.42885 4.78676C7.42689 5.09513 7.36114 5.39975 7.23575 5.68148C7.11036 5.96322 6.92804 6.21596 6.70025 6.42382C6.47246 6.63168 6.20413 6.79017 5.91213 6.88931C5.62013 6.98845 5.31077 7.02611 5.00351 6.99992Z"></path>
-                                <path d="M7.01801 10H3.01801V22H7.01801V10Z"></path>
-                                <path d="M17.5175 10C16.8435 10.0018 16.1786 10.156 15.5725 10.451C14.9664 10.746 14.4348 11.1741 14.0175 11.7034V10H10.0175V22H14.0175V16.5C14.0175 15.9696 14.2282 15.4609 14.6033 15.0858C14.9784 14.7107 15.4871 14.5 16.0175 14.5C16.548 14.5 17.0567 14.7107 17.4317 15.0858C17.8068 15.4609 18.0175 15.9696 18.0175 16.5V22H22.0175V14.5C22.0175 13.9091 21.9011 13.3239 21.675 12.7779C21.4488 12.232 21.1174 11.7359 20.6995 11.318C20.2816 10.9002 19.7856 10.5687 19.2396 10.3425C18.6936 10.1164 18.1085 10 17.5175 10Z"></path>
-                            </svg>
-                            </a>
-                            <a href="https://github.com/Arden28" className="transition text-zinc-500 hover:text-zinc-900 dark:hover:text-[#fafafa]">
-                            <span className="sr-only">GitHub</span>
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.467-1.11-1.467-.907-.62.069-.608.069-.608 1.003.071 1.531 1.031 1.531 1.031.892 1.529 2.341 1.088 2.91.832.091-.647.35-1.088.636-1.338-2.22-.254-4.555-1.113-4.555-4.95 0-1.093.39-1.988 1.029-2.688-.103-.254-.447-1.276.098-2.66 0 0 .84-.27 2.75 1.025a9.6 9.6 0 012.5-.336c.849.004 1.704.115 2.5.337 1.909-1.296 2.748-1.025 2.748-1.025.546 1.383.202 2.405.099 2.659.64.7 1.028 1.595 1.028 2.688 0 3.845-2.337 4.693-4.566 4.943.358.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.748 0 .268.18.58.688.482A10.022 10.022 0 0022 12.017C22 6.484 17.523 2 12 2z" clip-rule="evenodd"></path>
-                            </svg>
-                            </a>
-                        </li>
+  // Section active link (IntersectionObserver)
+  useEffect(() => {
+    const ids = ['about', 'projects', 'experience', 'journey', 'contact'];
+    const els = ids
+      .map(id => document.getElementById(id))
+      .filter((el): el is HTMLElement => !!el);
 
-                    </ul>
-                </div>
-            )}
-        </nav>
+    if (els.length === 0) return;
+
+    const obs = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActive(`#${visible.target.id}`);
+      },
+      { rootMargin: '-40% 0px -55% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
     );
+
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  // Smooth scroll helper with header offset
+  const smoothScrollToHash = (hash: string) => {
+    const id = hash.replace(/^#/, '');
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const top =
+      el.getBoundingClientRect().top +
+      window.scrollY -
+      Math.max(0, headerH);
+
+    window.scrollTo({ top, behavior: 'smooth' });
+
+    // update URL hash without instant jump
+    history.pushState(null, '', `#${id}`);
+  };
+
+  // Handle initial hash on page load (do it after layout paint)
+  useEffect(() => {
+    if (location.hash && document.getElementById(location.hash.slice(1))) {
+      // small delay to ensure layout is stable
+      setTimeout(() => smoothScrollToHash(location.hash), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <header
+      ref={headerRef}
+      className={['sticky top-0 z-50', 'mx-auto w-full'].join(' ')}
+      role="banner"
+    >
+      {/* slim brand progress */}
+      <div aria-hidden className="h-[2px] w-full bg-transparent" style={{ position: 'relative' }}>
+        <div
+          className="h-[2px]"
+          style={{
+            width: `${progress}%`,
+            background: 'var(--brand, #2467AC)',
+            transition: 'width .15s linear',
+          }}
+        />
+      </div>
+
+      <nav
+        className={[
+          'mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4',
+          'transition-all',
+          scrolled
+            ? 'rounded-b-2xl border border-zinc-200/70 bg-white/80 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70'
+            : '',
+        ].join(' ')}
+        aria-label="Primary"
+      >
+        {/* Brand */}
+        <Link href="/" className="group flex items-center gap-3">
+          <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-zinc-900/5 shadow-zinc-800/5 shadow-sm dark:ring-white/10 overflow-hidden">
+            <Image
+              src="/images/avatar-1.jpg"
+              alt="Arden BOUET"
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
+              priority
+            />
+          </span>
+          <span className="hidden text-sm font-semibold text-zinc-900 group-hover:no-underline dark:text-zinc-100 sm:inline">
+            Arden BOUET
+          </span>
+        </Link>
+
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-4 sm:flex">
+          <ul
+            className="
+              flex items-center gap-1 rounded-full border border-zinc-200/70 bg-white/70 px-1 py-1 text-sm shadow-sm backdrop-blur
+              dark:border-zinc-700/50 dark:bg-zinc-900/60
+            "
+          >
+            {nav.map(item => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    smoothScrollToHash(item.href);
+                  }}
+                  className={['nav-chip', active === item.href ? 'is-active' : ''].join(' ')}
+                >
+                  <span className="nav-ink">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+            <li>
+              <a
+                href="/files/cv-v3.pdf"
+                className="nav-chip !border-[color:var(--brand,#2467AC)] !text-[color:var(--brand,#2467AC)] hover:!bg-[color:var(--brand,#2467AC)] hover:!text-white"
+              >
+                {t('menu.cv')}
+              </a>
+            </li>
+          </ul>
+
+          {/* Right block: socials + i18n */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Link href="https://github.com/arden28" aria-label="GitHub" className="icon-btn">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+                <path
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48l-.01-1.69c-2.78.61-3.37-1.2-3.37-1.2-.45-1.16-1.1-1.47-1.1-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.04 1.53 1.04.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.1.63-1.36-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .85-.27 2.8 1.02a9.7 9.7 0 0 1 5.1 0c1.95-1.29 2.8-1.02 2.8-1.02.54 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.69-4.57 4.94.36.31.68.92.68 1.86l-.01 2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+                />
+              </svg>
+            </Link>
+            <a
+              href="mailto:laudbouetoumoussa@koverae.com"
+              className="ml-1 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand,#2467AC)] dark:border-zinc-700/60 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              Mail
+            </a>
+          </div>
+        </div>
+
+        {/* Mobile: burger + i18n */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <LanguageSwitcher />
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-label="Toggle menu"
+            className="icon-btn"
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden>
+              <path fill="currentColor" d="M5 6.5H19V8H5zM5 11.5H19V13H5zM5 16.5H19V18H5z" />
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile sheet */}
+      <div
+        id="mobile-menu"
+        className={[
+          'mx-auto max-w-6xl px-4',
+          'sm:hidden',
+          'transition-[max-height,opacity] duration-300 ease-out',
+          menuOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
+          'overflow-hidden',
+        ].join(' ')}
+      >
+        <div className="mt-2 rounded-2xl border border-zinc-200/70 bg-white/80 p-3 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70">
+          <ul className="flex flex-col gap-1">
+            {nav.map(item => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    smoothScrollToHash(item.href);
+                    setMenuOpen(false);
+                  }}
+                  className={[
+                    'block rounded-lg px-3 py-2 text-sm',
+                    active === item.href
+                      ? 'text-[color:var(--brand,#2467AC)] bg-[color:var(--brand-soft,#2467AC1F)]'
+                      : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60',
+                  ].join(' ')}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            <li className="mt-1 flex flex-wrap items-center gap-2">
+              <a href="/files/cv-v3.pdf" className="chip-outline">CV</a>
+              <a href="mailto:laudbouetoumoussa@koverae.com" className="chip-outline">Mail</a>
+              <Link href="https://github.com/arden28" className="chip-outline">GitHub</Link>
+              <Link href="https://www.linkedin.com/in/ardenbouet/" className="chip-outline">LinkedIn</Link>
+              <Link href="https://www.upwork.com/freelancers/~01abcdef0123456789" className="chip-outline">Upwork</Link>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+  );
 };

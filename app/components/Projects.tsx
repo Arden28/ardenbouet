@@ -1,231 +1,245 @@
 'use client';
-import '../i18n'; //
+import '../i18n';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { GithubIcon } from './icons/GithubIcon';
-import { LinkedinIcon } from './icons/LinkedinIcon'; // Assuming you have or will create this component
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import CaseModal from './CaseModal';
+
+type Project = {
+  id: string; // stored as string in DB
+  title: string;
+  description: string;
+  logoUrl: string;
+  url: string;
+  tags: Array<'saas' | 'client' | 'open-source'>;
+  tech?: string[];
+  metric?: string;
+  caseFile?: {
+    problem: string;
+    approach: string[];
+    result: string;
+    images?: { src: string; alt: string }[];
+    tags?: string[];
+    tech?: string[];
+  };
+};
+
+type ContentBundle = {
+  projects: Project[];
+  experiences: unknown[];
+  journey: unknown[];
+  notes: unknown[];
+};
 
 export const Projects = () => {
+  const { t } = useTranslation();
 
-    const { t } = useTranslation();
-    const projects = [
-        {
-            id: 1,
-            title: "Auprea: Everyone has the right to pass on heritage",
-            description: "Developed a comprehensive wealth management platform for personal and family use, designed to track assets, debts, and net worth. Key features include categorized asset input, a real-time financial dashboard, secure document vault, PDF declaration generation, and an optional notary certification service available through subscription.",
-            logoUrl: "/images/auprea.ico",
-            url: "https://patrimoine-manager.vercel.app/"
-        },
-        {
-            id: 2,
-            title: "Seabar Store Locator – Interactive Map Integration",
-            description: "Built an interactive store locator with map integration for Seabar, making it easy for users to find nearby shop locations. Focused on a smooth, responsive UI and real-time geolocation to enhance the overall experience.",
-            logoUrl: "/images/seabar.png",
-            url: "https://seabar.com/pages/store-locator"
-        },
-        {
-            id: 3,
-            title: "Ndako Book: Seamless Hotel Reservation System",
-            description: "Developed a user-friendly hotel booking platform for Ndako Book, allowing customers to easily search, compare, and book hotels. Focused on delivering a seamless experience with real-time availability, booking confirmations, and responsive design for all devices.",
-            logoUrl: "/images/ndako-book.ico",
-            url: "https://ndako-book.vercel.app/"
-        },
-        
-        {
-            id: 4,
-            title: "Ndako – Property Management System",
-            description: "A hybrid hotel and property management system, designed to handle room bookings, tenant management, lease tracking, automated invoicing, and financial reporting for both hotels and rental properties.",
-            logoUrl: "/images/ndako.png",
-            url: "https://ndako.koverae.com"
-        },
-        {
-            id: 5,
-            title: "Koverae ERP",
-            description: "A next-gen ERP SaaS platform with 12+ integrated apps for business, finance, HR, logistics, and productivity. Includes K-Wallet & Kredits, an internal digital financial system, and Quick Find, an AI-powered business database enrichment tool.",
-            logoUrl: "/images/koverae.png",
-            url: "https://koverae.com"
-        },
-        {
-            id: 6,
-            title: "Koverae Billing - Subscription and billing, simplified for Laravel",
-            description: "koverae-billing is a lightweight Laravel package that simplifies subscription and billing management for applications. Whether you're building a SaaS platform, managing recurring payments, or offering metered services, this package provides an intuitive and flexible way to handle billing logic.",
-            logoUrl: "/images/wallet.png",
-            url: "https://developer.koverae.com/koverae-billing/?utm=ardenbouet"
-        },
-        {
-            id: 7,
-            title: "Dr. Mahamat Adoum: Professional Portfolio Website",
-            description: "Developed a personal multilingual portfolio for Dr. Mahamat Adoum, showcasing his professional achievements, research, and publications. The portfolio is designed to be easily navigable and accessible in multiple languages, offering a seamless experience across different cultures and regions.",
-            logoUrl: "/images/mahamat.png",
-            url: "https://mahamat-portfolio.vercel.app/"
-        },
-    ]
-    
-    const experiences = [
-        {
-            id: 1,
-            title: "Banking API Integration",
-            job: "Financial Software Engineer",
-            fromTo: "Sept. 2024 ~ Mar 2025 · 7 months",
-            description: "Developed a Laravel API for integrating banking transactions. <br/> Implemented Livewire-powered financial reporting tools.",
-            type: "Freelance"
-            
-        },
-        {
-            id: 2,
-            title: "Business Data Aggregation App",
-            job: "API Developer",
-            fromTo: "June. 2024 ~ Aug. 2024 · 3 months",
-            description: "Built a RESTful API using Laravel & Sanctum for business data aggregation. <br/> Engineered a Livewire-powered admin panel for managing API users. <br/ Developed Python scripts to automate data collection and enrichment.",
-            type: "Freelance"
-            
-        },
-        {
-            id: 3,
-            title: "SuiteScript (Hotel Management SaaS)",
-            job: "Fullstack Developer(Laravel & Livewire)",
-            fromTo: "Dec. 2023 ~ Mar. 2024 · 4 months",
-            description: "Engineered a Laravel-based hotel booking system with reservation tracking, billing, and guest management. <br/> Implemented a Livewire-powered calendar system for room availability tracking. <br/ Developed automated invoicing and expense management tools. <br/ Integrated third-party APIs for payment processing and email notifications.",
-            type: "Freelance"
-            
-        },
-        {
-            id: 4,
-            title: "Velostar Organisation",
-            job: "Web Developer",
-            fromTo: "Apr. 2023 ~ Oct. 2023 · 7 months",
-            description: "Built and maintained a Laravel-based web application for logistics management. <br/> Developed a Livewire-driven dashboard for tracking shipments in real time. <br/ Integrated Alpine.js components for seamless user interactions.",
-            type: "Remote"
-            
-        },
-        {
-            id: 5,
-            title: "Cowema - E-commerce Platform",
-            job: "Full-Stack Developer",
-            fromTo: "Jan. 2023 ~ Mar. 2023 · 3 months",
-            description: "Built a Laravel & Livewire e-commerce platform with a custom admin panel. <br/> Developed a multi-vendor marketplace with product filtering, cart, and checkout. <br/ Integrated Stripe & PayPal for secure online payments.",
-            type: "Intern"
-            
-        },
-    ]
+  // remote state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
-    return (
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/content', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as ContentBundle;
+        if (mounted) {
+          setProjects(json.projects || []);
+          setErr(null);
+        }
+      } catch (e: any) {
+        if (mounted) setErr(e?.message ?? 'Failed to load projects');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  
 
-        <div id='projects' className='pt-2 mt-10 w-100 sm:mt-16 lg:mt-20'>
-            <h2 className="mb-10 text-2xl font-bold leading-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-500 drop-shadow-xl">
-                {t('experiences.title')}
-            </h2>
-            <div className="flex flex-col min-h-full gap-3 p-4 pt-0 mx-auto mt-4 mb-6 w-100 sm:mt-4 lg:mt-4 sm:flex-row ">
+  type Filter = 'all' | 'saas' | 'client' | 'open-source';
+  const [filter, setFilter] = useState<Filter>('all');
 
-                <div className="w-full p-6 rounded-xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/40 drop-shadow-xl sm:w-1/2 lg:w-4/6">
-                        <h2 className="flex items-center text-sm font-semibold font-heading text-zinc-900 dark:text-zinc-100">
-                            <svg stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" fill="currentColor" className="flex-none w-6 h-6 fill-zinc-100/10 stroke-zinc-500">
-                                <path fill-rule="evenodd" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z" clip-rule="evenodd" />
-                                <path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z" />
-                            </svg>
-                            <span className="ml-3">{t('experiences.projects.title')} </span>
-                        </h2>
-                    
-                    <ol className="mt-6 space-y-4">
-                        
-                        {projects.map((project) => (
-                        <li className="flex gap-4">
-                            <div className="relative flex items-center justify-center flex-none w-10 h-10 rounded-full shadow-md shadow-zinc-800/5 ring-1 ring-zinc-900/5 dark:border dark:border-zinc-700/50 dark:bg-zinc-800 dark:ring-0" >
+  const filtered = useMemo(() => {
+    if (filter === 'all') return projects;
+    return projects.filter((p) => p.tags?.includes(filter));
+  }, [filter, projects]);
 
-                                <Image
-                                    src={project.logoUrl}
-                                    alt={'Profile picture '}
-                                    className="rounded-full"
-                                    width={300}
-                                    height={300}
-                                />
-                            </div>
+  // Modal state
+  const [open, setOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const activeProject = useMemo(
+    () => projects.find((p) => p.id === activeProjectId) || null,
+    [projects, activeProjectId],
+  );
 
-                            <div className="flex-1 space-y-0.5" >
-                                <div className="flex items-center g ap-x-2" >
-                                    <p className="text-sm font-medium text-primary">
-                                        {project.title}
-                                    </p>
-                                </div>
-                                <div className="sm:flex sm:items-center sm:justify-between" >
-                                    <div className="flex-1" >
-                                        <span className="sr-only">Poste</span>
-                                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                            {project.description}
-                                        </p>
-                                    </div>
-                                    <div className="mt-1 sm:mt-0" >
+  const openCase = (id: string) => {
+    setActiveProjectId(id);
+    setActiveImageIndex(0);
+    setOpen(true);
+  };
+  const closeCase = () => {
+    setOpen(false);
+    setTimeout(() => setActiveProjectId(null), 200);
+  };
 
-                                        <a href={project.url} target='__blank' className="flex items-center group gap-x-2">
-                                            <dd className="text-xs text-zinc-500 group-hover:underline group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-200">
-                                                {t('experiences.projects.see')}
-                                            </dd>
-                                            <svg
-                                            className="w-5 h-5 text-zinc-500 group-hover:text-zinc-400 dark:group-hover:text-zinc-300"
-                                            viewBox="0 0 24 24"
-                                            fill="currentColor"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                fill-rule="evenodd"
-                                                d="M16.72 7.72a.75.75 0 011.06 0l3.75 3.75a.75.75 0 010 1.06l-3.75 3.75a.75.75 0 11-1.06-1.06l2.47-2.47H3a.75.75 0 010-1.5h16.19l-2.47-2.47a.75.75 0 010-1.06z"
-                                                clip-rule="evenodd"
-                                            />
-                                        </svg>
+  return (
+    <section id="projects" className="relative mt-20 px-4">
+      <h2 className="mx-auto max-w-6xl text-left text-2xl font-extrabold leading-8">
+        <span className="bg-gradient-to-r from-black to-[color:var(--brand)] bg-clip-text text-transparent dark:from-white dark:to-[color:var(--brand)]">
+          Builds & Case Files
+        </span>
+      </h2>
 
-                                        </a>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                        ))}
-                        
-                    </ol>
-
-                </div>
-                
-                <div className="p-6 w-100 rounded-xl ring-1 ring-zinc-200/80 dark:ring-zinc-700/40 drop-shadow-xl sm:w-1/2 lg:w-2/6">
-                    <h2 className="flex items-center font-semibold font-heading text-zinc-900 dark:text-zinc-100">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" className="flex-none w-6 h-6">
-                            <path d="M2.75 9.75a3 3 0 0 1 3-3h12.5a3 3 0 0 1 3 3v8.5a3 3 0 0 1-3 3H5.75a3 3 0 0 1-3-3v-8.5Z" className="fill-zinc-100/10 stroke-zinc-500" />
-                            <path d="M3 14.25h6.249c.484 0 .952-.002 1.316.319l.777.682a.996.996 0 0 0 1.316 0l.777-.682c.364-.32.832-.319 1.316-.319H21M8.75 6.5V4.75a2 2 0 0 1 2-2h2.5a2 2 0 0 1 2 2V6.5" className="stroke-zinc-500" />
-                        </svg>
-                        <span className="ml-3">{t('experiences.cardTitlte')}</span>
-                    </h2>
-                    <ol className="mt-6 space-y-4">
-
-                        {experiences.map((experience) => (
-                        <li className="flex gap-2">
-                            <dl className="flex flex-col mb-4 gap-y-0.5 w-full">
-                                <div className='flex w-full'>
-                                    <div className='flex-1'>
-                                        <dl className="flex-none w-full font-medium text-zinc-800 dark:text-zinc-100">{experience.title}</dl>
-                                        <dd className="text-xs text-zinc-500 group-hover:underline group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-200">{experience.job}</dd>
-                                        <dd className="text-xs text-zinc-400 dark:text-zinc-500">
-                                            <time>{experience.fromTo}</time>
-                                        </dd>
-                                        <p className='text-sm' dangerouslySetInnerHTML={{ __html: experience.description }}>
-                                        </p>
-                                    </div>
-                                    <div className='flex items-center'>
-                                        <span className="inline-flex items-center rounded-full bg-green-500/10 px-1.5 py-0.5 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20">
-                                            {experience.type}
-                                        </span>
-                                    </div>
-                                </div>
-                            </dl>
-                        </li>
-                        ))}
-
-                    </ol>
-                    <a className="group mt-5 w-full inline-flex items-center justify-center rounded-md border drop-shadow-md py-2.5 px-3  outline-offset-2 transition font-medium bg-zinc-50 text-zinc-900 dark:text-zinc-300 hover:bg-primary hover:text-white" href="/files/cv-v2.pdf">
-                        Check my resume !                  
-                    </a>
-                </div>
+      <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-4">
+        {/* Filters */}
+        <aside className="self-start space-y-4 lg:sticky lg:top-24 lg:col-span-1">
+          <div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-700/40 dark:bg-zinc-900">
+            <h3 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {t('projects.filters', { defaultValue: 'Filter' })}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {(['all', 'saas', 'client', 'open-source'] as Filter[]).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  aria-pressed={filter === f}
+                  className={[
+                    'w-full rounded-lg border px-3 py-1.5 text-sm transition',
+                    filter === f
+                      ? 'border-[color:var(--brand)] bg-[color:var(--brand-soft)] text-zinc-800'
+                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800/60',
+                  ].join(' ')}
+                >
+                  {f === 'open-source' ? 'Open Source' : f[0].toUpperCase() + f.slice(1)}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-700/40 dark:bg-zinc-900">
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {t('projects.contact', { defaultValue: 'Need a build?' })}
+            </h3>
+            <Button asChild className="w-full bg-[color:var(--brand)] hover:opacity-95">
+              <Link href="#contact">{t('projects.cta', { defaultValue: "Let's talk" })}</Link>
+            </Button>
+          </div>
+        </aside>
+
+        {/* List */}
+        <div className="lg:col-span-3">
+          {loading && (
+            <ul className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="relative">
+                  <div className="case-card h-full p-4 animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+                      <div className="flex-1">
+                        <div className="h-4 w-2/3 rounded bg-zinc-200 dark:bg-zinc-800" />
+                        <div className="mt-2 h-3 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
+                      </div>
+                    </div>
+                    <div className="mt-4 h-6 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!loading && err && (
+            <div className="rounded-xl border border-dashed p-6 text-center text-sm text-red-600 dark:border-zinc-700/40 dark:text-red-400">
+              {t('projects.error', { defaultValue: 'Failed to load projects.' })} {err}
+            </div>
+          )}
+
+          {!loading && !err && (
+            <>
+              <ul className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                {filtered.map((p, i) => (
+                  <li key={p.id} className="relative">
+                    <article className="case-card h-full p-4 dark:bg-zinc-900" style={{ animationDelay: `${(i % 6) * 60}ms` }}>
+                      <div className="flex items-center gap-3">
+                        <Image src={p.logoUrl} alt={`${p.title} logo`} width={44} height={44} className="rounded-lg" />
+                        <div className="min-w-0">
+                          <h3 className="truncate font-semibold text-zinc-900 dark:text-zinc-100">{p.title}</h3>
+                          <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{p.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {p.tags?.map((tag) => (
+                          <span key={tag} className="chip chip-brand capitalize">
+                            {tag.replace('-', ' ')}
+                          </span>
+                        ))}
+                        {p.tech?.slice(0, 3).map((tk) => (
+                          <span key={tk} className="chip chip-brand">
+                            {tk}
+                          </span>
+                        ))}
+                        {p.metric && <span className="chip chip-brand">{p.metric}</span>}
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between">
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm link-brand"
+                          aria-label={`Open ${p.title}`}
+                        >
+                          {t('experiences.projects.see', { defaultValue: 'See project' })}
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => (p.caseFile ? openCase(p.id) : undefined)}
+                          disabled={!p.caseFile}
+                          className={`text-sm ${
+                            p.caseFile
+                              ? 'text-zinc-600 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-100'
+                              : 'text-zinc-400 dark:text-zinc-600 cursor-not-allowed'
+                          }`}
+                          aria-disabled={!p.caseFile}
+                        >
+                          {p.caseFile ? 'View case file' : 'Case file soon'}
+                        </button>
+                      </div>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+
+              {filtered.length === 0 && (
+                <div className="mt-8 rounded-xl border border-dashed p-6 text-center text-sm text-zinc-500 dark:border-zinc-700/40 dark:text-zinc-400">
+                  {t('projects.empty', { defaultValue: 'No projects in this filter… yet.' })}
+                </div>
+              )}
+            </>
+          )}
         </div>
-    )
+      </div>
+
+      {/* Modal */}
+      <CaseModal
+        open={open && !!activeProject?.caseFile}
+        onClose={closeCase}
+        title={activeProject?.title || ''}
+        caseFile={activeProject?.caseFile || { problem: '', approach: [], result: '' }}
+        activeImageIndex={activeImageIndex}
+        setActiveImageIndex={setActiveImageIndex}
+      />
+    </section>
+  );
 };

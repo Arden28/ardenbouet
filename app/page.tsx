@@ -3,14 +3,18 @@ import { Hero } from "./components/Hero"
 import { Projects } from "./components/Projects"
 import { Journey } from "./components/Journey"
 import { Contact } from "./components/Contact"
+import ExperienceReel from "./components/ExperienceReel"
+import Notes from "./components/Notes"
 export default function Home() {
 
   return (
     <main>
       <Hero></Hero>
       <Projects></Projects>
+      <ExperienceReel></ExperienceReel> 
       <Journey></Journey>
-      <Contact></Contact>
+      <Contact/>
+      <Notes></Notes>
 
     </main>
 

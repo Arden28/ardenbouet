@@ -1,187 +1,234 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { GithubIcon } from './icons/GithubIcon';
-import { LinkedinIcon } from './icons/LinkedinIcon'; // Assuming you have or will create this component
-import { Button } from '@/components/ui/button';
+'use client';
+import { useEffect, useMemo, useState } from 'react';
 
-export const Journey = () => {
-    return (
+/** ---- Types from DB ---- */
+type JourneyRow = {
+  id: string;
+  kind: 'education' | 'cert';
+  year: string;
+  title: string;
+  org?: string;
+  url?: string;     // can point to org or credential page
+  note?: string;    // blurb
+};
 
+type ContentBundle = {
+  projects: unknown[];
+  experiences: unknown[];
+  journey: JourneyRow[];
+  notes: unknown[];
+};
 
-        <div id='journey' className='max-w-4xl min-h-full pt-2 mx-auto mt-10 sm:mt-16 lg:mt-20 '>
-            <h2 className="mb-10 text-2xl font-bold leading-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-500 drop-shadow-xl">
-                Educational & Certifications Journey
-            </h2>
-            <div className="flex flex-col max-w-4xl min-h-full gap-3 p-4 pt-0 mx-auto mt-4 mb-6 sm:mt-4 lg:mt-4 sm:flex-row ">
-                
-                <ol className="relative border-gray-200 border-s dark:border-gray-700">                  
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2019 ~ 2022</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">High School Diploma - Mathematics & Sciences <a href='' target='__blank' className="bg-blue-100 text-blue-800 text-sm font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300 ms-3">School</a></h3>
-                        <p className="mb-4 text-base font-normal text-gray-500 dark:text-gray-400">
-                            Developed strong analytical and problem-solving skills through intensive coursework in mathematics, physics, and computer science, laying the foundation for a career in technology and software development.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2023</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Harvard CS50x: Introduction to Computer Science</h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            A rigorous introduction to computer science concepts, covering programming, data structures, algorithms, and computational thinking, with projects inspired by real-world applications.
-                        </p>
-                        <a href="https://cs50.harvard.edu/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2023</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">MIT Introduction to Computer Science and Programming in Python</h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Learned the fundamentals of Python programming, algorithmic thinking, and computational problem-solving, with a focus on real-world scenarios and scientific computing.
-                        </p>
-                        <a href="https://ocw.mit.edu/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2023</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Laravel & PHP Mastery</h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Developed expertise in Laravel framework best practices, database management, security, and scalable backend development for web applications.
-                        </p>
-                        <a href="https://laraveldaily.com/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2023</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Livewire & Alpine.js Advanced Development</h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Mastered modern frontend development techniques with Livewire and Alpine.js, enabling the creation of dynamic, real-time web applications without extensive JavaScript dependencies.
-                        </p>
-                        <a href="https://laraveldaily.com/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2023</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Git & GitHub Version Control Certification</h3>
-                        <time className="block mb-2 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued by: <a href="https://udemy.com" target='__blank'>Udemy</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Gained proficiency in version control workflows, including branching strategies, collaborative coding practices, and best practices for managing repositories on GitHub.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Hosting & Server Management (cPanel Certified)</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://university.cpanel.net/" target="_blank" rel="noopener noreferrer">cPanel University</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Gained hands-on expertise in managing web hosting environments, configuring domains, optimizing server performance, and ensuring website security.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024 ~ Present</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bachelor’s Degree – Software Engineering / Computer Science (Ongoing) <a href='https://www.kemu.ac.ke/' target='__blank' className="bg-blue-100 text-blue-800 text-sm font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-blue-900 dark:text-blue-300 ms-3">School</a></h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Gaining hands-on experience in software engineering principles, programming, and system design, while also exploring emerging technologies such as cloud computing, artificial intelligence, and cybersecurity.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">REST API Development with Laravel</h3>
-                        <time className="block mb-2 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued by: <a href="https://udemy.com" target='__blank'>Udemy</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Built and optimized RESTful APIs using Laravel, focusing on authentication, security, and performance optimization for scalable web applications.
-                        </p>
-                        <a href="https://academy.postman.com/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Y Combinator Startup School (SaaS & Business Development Focus)</h3>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                        Gained insights into startup growth strategies, business development, and the intricacies of building, scaling, and sustaining SaaS-based businesses in a competitive market.
-                        </p>
-                        <a href="https://www.startupschool.org/" target='__blank' className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:outline-none focus:ring-gray-100 focus:text-blue-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">Learn more <svg className="w-3 h-3 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
-                        </svg>
-                        </a>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Software Architecture & Modular Development</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://www.codecademy.com/" target="_blank" rel="noopener noreferrer">Codecacademy</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Developed skills in designing robust, scalable, and modular software systems, ensuring long-term maintainability and efficient system architecture.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Google IT Support Professional Certificate</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://www.coursera.org/professional-certificates/google-it-support" target="_blank" rel="noopener noreferrer">Google (via Coursera)</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Acquired in-depth knowledge of IT support fundamentals, including troubleshooting, networking, operating systems, and cybersecurity principles.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Cloud Computing & Deployment (AWS)</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://aws.amazon.com/training/" target="_blank" rel="noopener noreferrer">Amazon Web Services (AWS)</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Learned how to deploy, manage, and optimize cloud-based applications using AWS services, including EC2, S3, and Lambda for scalable cloud solutions.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Google Cybersecurity Professional Certificate (Google)</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://www.coursera.org/professional-certificates/google-cybersecurity" target="_blank" rel="noopener noreferrer">Google (via Coursera)</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Developed skills in penetration testing, network security, and ethical hacking techniques, enabling the ability to identify and mitigate cybersecurity threats in web applications.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">2024</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Docker & Kubernetes for Developers</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://www.udemy.com/" target="_blank" rel="noopener noreferrer">(Kubernetes Official via Udemy)</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                            Learned to automate, deploy, and manage scalable cloud-based applications using containerization (Docker) and orchestration (Kubernetes) with AWS infrastructure.
-                        </p>
-                    </li>
-                    <li className="mb-10 ms-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 rounded-full mt-1.5 -start-1.5 border border-white dark:border-gray-900 dark:bg-gray-700"></div>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Jan 2025</time>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Google UX Design Professional Certificate</h3>
-                        <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500">Issued By: <a href="https://www.coursera.org/professional-certificates/google-ux-design" target="_blank" rel="noopener noreferrer">(Google via Coursera)</a></time>
-                        <p className="text-base font-normal text-gray-500 dark:text-gray-400">
-                        Mastered human-centered design principles, wireframing, prototyping, and user research to create intuitive and engaging user experiences in digital products.
-                        </p>
-                    </li>
-                </ol>
+/** ---- UI Entry ---- */
+type Entry = {
+  title: string;
+  year: string;          // "2024 – Present", "Jan 2025", "2019 – 2022"
+  where?: string;        // Issuer/School
+  whereUrl?: string;     // Link to school/issuer
+  blurb: string;         // Keep concise
+  kind: 'edu' | 'cert';
+  credentialUrl?: string; // Optional “View credential”
+};
 
+/** ---- Utilities ---- */
+function parseYearStart(y: string): number {
+  const m = y?.match?.(/(20\d{2}|19\d{2})/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+function sortDesc<T extends Entry>(arr: T[]) {
+  return [...arr].sort((a, b) => parseYearStart(b.year) - parseYearStart(a.year));
+}
 
-            </div>
+/** ---- Icon ---- */
+function Icon({ kind }: { kind: 'edu' | 'cert' }) {
+  const cls = 'h-5 w-5 text-[color:var(--brand)]';
+  return kind === 'edu' ? (
+    <svg viewBox="0 0 24 24" aria-hidden className={cls}>
+      <path d="M3 8.5 12 4l9 4.5-9 4.5L3 8.5Z" fill="currentColor" />
+      <path d="M6 10v4.5c2 1.3 4 2 6 2s4-.7 6-2V10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden className={cls}>
+      <path d="M12 3a6 6 0 1 1 0 12 6 6 0 0 1 0-12Z" fill="currentColor" />
+      <path d="M9 13.5 7 21l5-3 5 3-2-7.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** ---- Card ---- */
+function Card({ e }: { e: Entry }) {
+  return (
+    <article className="relative rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-700/40 dark:bg-zinc-900">
+      <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-2xl bg-[color:var(--brand)]" aria-hidden />
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--brand-soft,rgba(36,103,172,.12))]">
+          <Icon kind={e.kind} />
         </div>
-        
-    )
-    
+        <div className="min-w-0">
+          <h4 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{e.title}</h4>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="rounded-full bg-[color:var(--brand-soft,rgba(36,103,172,.12))] px-2 py-0.5 font-medium text-zinc-800 dark:text-zinc-200">
+              {e.year}
+            </span>
+            {e.where && (
+              <>
+                {' '}•{' '}
+                {e.whereUrl ? (
+                  <a href={e.whereUrl} target="_blank" rel="noopener noreferrer" className="text-[color:var(--brand)] hover:underline">
+                    {e.where}
+                  </a>
+                ) : (
+                  <span>{e.where}</span>
+                )}
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+      {e.blurb && <p className="mt-3 line-clamp-3 text-sm text-zinc-700 dark:text-zinc-300">{e.blurb}</p>}
+
+      {e.credentialUrl && (
+        <div className="mt-3">
+          <a
+            href={e.credentialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-[color:var(--brand)] underline-offset-2 hover:underline"
+          >
+            View credential
+          </a>
+        </div>
+      )}
+    </article>
+  );
+}
+
+/** ---- Section ---- */
+export const Journey = () => {
+  const [education, setEducation] = useState<Entry[]>([]);
+  const [certsAll, setCertsAll] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+
+    (async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+
+        const res = await fetch('/api/content', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data: ContentBundle = await res.json();
+        const rows = Array.isArray(data.journey) ? data.journey : [];
+
+        const entries: Entry[] = rows.map((j) => ({
+          title: j.title,
+          year: j.year,
+          where: j.org || undefined,
+          whereUrl: j.url || undefined,          // link to org/issuer
+          blurb: j.note || '',
+          kind: j.kind === 'education' ? 'edu' : 'cert',
+          credentialUrl: j.kind === 'cert' ? (j.url || undefined) : undefined, // if cert, treat url as credential
+        }));
+
+        setEducation(sortDesc(entries.filter(e => e.kind === 'edu')));
+        setCertsAll(sortDesc(entries.filter(e => e.kind === 'cert')));
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') setErr(e?.message || 'Failed to load journey');
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => ctrl.abort();
+  }, []);
+
+  const INITIAL_CERTS = 6;
+  const [showAll, setShowAll] = useState(false);
+  const certs = useMemo(
+    () => (showAll ? certsAll : certsAll.slice(0, INITIAL_CERTS)),
+    [showAll, certsAll]
+  );
+
+  return (
+    <section id="journey" className="mx-auto mt-20 max-w-6xl px-4">
+      <h2 className="text-left text-2xl font-extrabold">
+        <span className="bg-gradient-to-r from-black to-[color:var(--brand)] bg-clip-text text-transparent dark:from-white dark:to-[color:var(--brand)]">
+          Educational & Certifications Journey
+        </span>
+      </h2>
+
+      {/* Loading / Error */}
+      {loading && (
+        <div className="mt-6 grid gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-xl border border-zinc-200/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-900/60" />
+          ))}
+        </div>
+      )}
+      {!!err && !loading && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50/70 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+          Could not load journey: {err}
+        </div>
+      )}
+
+      {!loading && !err && (
+        <>
+          {/* Education */}
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Education</h3>
+            {education.length ? (
+              <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                {education.map((e, i) => (
+                  <li key={`${e.title}-${i}`}><Card e={e} /></li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-3 rounded-lg border border-dashed p-4 text-sm text-zinc-500 dark:border-zinc-700/40 dark:text-zinc-400">
+                No education items yet.
+              </div>
+            )}
+          </div>
+
+          {/* Certifications */}
+          <div className="mt-8">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">Certifications</h3>
+            {certsAll.length ? (
+              <>
+                <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {certs.map((c, i) => (
+                    <li key={`${c.title}-${i}`}><Card e={c} /></li>
+                  ))}
+                </ul>
+
+                {certsAll.length > INITIAL_CERTS && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowAll(v => !v)}
+                      className="rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+                      aria-expanded={showAll}
+                    >
+                      {showAll ? 'Show fewer' : `Show all ${certsAll.length}`}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="mt-3 rounded-lg border border-dashed p-4 text-sm text-zinc-500 dark:border-zinc-700/40 dark:text-zinc-400">
+                No certifications yet.
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </section>
+  );
 };

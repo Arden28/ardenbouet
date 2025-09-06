@@ -1,0 +1,6 @@
+-- CreateTable
+CREATE TABLE "Content" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "data" JSONB NOT NULL,
+    "updatedAt" DATETIME NOT NULL
+);
