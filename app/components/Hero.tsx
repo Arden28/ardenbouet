@@ -142,7 +142,7 @@ export const Hero = () => {
               </Link>
               <Link
                 href="https://www.linkedin.com/in/arden-bouet/"
-                aria-label="LinkedIn"
+                aria-label="LinkedIn link"
                 className="focus-ring group inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300/70 bg-white/70 backdrop-blur transition hover:scale-105 dark:border-zinc-700 dark:bg-zinc-800"
               >
                 <LinkedinIcon className="h-5 w-5 opacity-80 group-hover:opacity-100" />
