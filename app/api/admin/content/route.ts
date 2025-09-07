@@ -5,6 +5,7 @@ import { DEFAULT_CONTENT } from '@/lib/defaultContent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 
