@@ -70,10 +70,10 @@ export const Footer = () => {
         {/* Middle: quick nav */}
         <nav aria-label="Footer" className="flex flex-wrap items-center gap-3 text-sm">
           {[
-            { href: '#projects', label: 'Builds' },
-            { href: '#experience', label: 'Experience' },
-            { href: '#journey', label: 'Journey' },
-            { href: '#contact', label: 'Contact' },
+            { href: '/#projects', label: 'Builds' },
+            { href: '/#experience', label: 'Experience' },
+            { href: '/#journey', label: 'Journey' },
+            { href: '/#contact', label: 'Contact' },
           ].map((item) => (
             <Link
               key={item.href}

@@ -49,10 +49,10 @@ export const Header = () => {
 
   const nav: NavItem[] = useMemo(
     () => [
-      { href: '#projects', key: 'menu.projects', label: t('menu.projects') },
-      { href: '#experience', key: 'menu.experience', label: t('menu.experience', { defaultValue: 'Experience' }) },
-      { href: '#journey', key: 'menu.journey', label: t('menu.journey') },
-      { href: '#contact', key: 'menu.contact', label: t('menu.contact') },
+      { href: '/#projects', key: 'menu.projects', label: t('menu.projects') },
+      { href: '/#experience', key: 'menu.experience', label: t('menu.experience', { defaultValue: 'Experience' }) },
+      { href: '/#journey', key: 'menu.journey', label: t('menu.journey') },
+      { href: '/#contact', key: 'menu.contact', label: t('menu.contact') },
     ],
     [t]
   );
