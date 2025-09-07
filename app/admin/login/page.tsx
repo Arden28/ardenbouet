@@ -1,12 +1,12 @@
 'use client';
 
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
 
-export default function AdminLoginPage() {
-  const router = useRouter();               // <-- from next/navigation
-  const search = useSearchParams();         // read ?next=
-  const next = search.get('next') || '/admin';
+function LoginForm() {
+  const router = useRouter();
+  const search = useSearchParams();               // must be inside Suspense
+  const next = search?.get('next') || '/admin';
 
   const [username, setUser] = useState('');
   const [password, setPass] = useState('');
@@ -18,13 +18,14 @@ export default function AdminLoginPage() {
     if (loading) return;
     setLoading(true);
     setErr(null);
+
     try {
-        const res = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ username, password }),
-        });
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username, password }),
+      });
 
       if (!res.ok) {
         setErr('Invalid credentials');
@@ -32,11 +33,9 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Success: send to next (or /admin)
       router.push(next);
-      // Optionally refresh to ensure middleware/cookies are read:
       router.refresh();
-    } catch (e) {
+    } catch {
       setErr('Network error. Please try again.');
       setLoading(false);
     }
@@ -107,5 +106,23 @@ export default function AdminLoginPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function AdminLoginPage() {
+  // Wrap the component that calls useSearchParams in Suspense
+  return (
+    <Suspense
+      fallback={
+        <section className="mx-auto flex min-h-[70vh] max-w-md items-center px-4">
+          <div className="w-full rounded-2xl border border-zinc-200/70 bg-white/90 p-6 shadow-lg backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/80">
+            <div className="h-6 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="mt-6 h-8 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          </div>
+        </section>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
