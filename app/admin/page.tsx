@@ -68,14 +68,23 @@ const STORAGE_KEY = 'arden_cms_v1';
 
 /* ===================== Utils ===================== */
 const uid = () => Math.random().toString(36).slice(2, 10);
-const slugify = (s: string) =>
-  s
+
+function slugify(input: string) {
+  // 1) strip accents/diacritics (NFKD) -> remove combining marks
+  const base = (input ?? '')
+    .toString()
+    .normalize('NFKD')                // split accented chars into base + marks
+    .replace(/[\u0300-\u036f]/g, ''); // remove combining marks
+
+  // 2) ascii-only slug rules
+  return base
     .toLowerCase()
     .trim()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9\s-]/g, '') // keep letters, numbers, spaces, hyphens
+    .replace(/\s+/g, '-')         // collapse spaces to hyphens
+    .replace(/-+/g, '-')          // collapse multiple hyphens
     .slice(0, 80);
+}
 
 const splitLines = (v: string) =>
   v.split('\n').map(s => s.trim()).filter(Boolean);
