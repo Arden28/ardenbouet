@@ -10,6 +10,7 @@ function LoginForm() {
 
   const [username, setUser] = useState('');
   const [password, setPass] = useState('');
+  const [showPass, setShowPass] = useState(false);     // 👈 NEW
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -69,19 +70,33 @@ function LoginForm() {
               required
             />
           </div>
+
           <div>
             <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
               Password
             </label>
-            <input
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-zinc-800 shadow-sm backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)] dark:border-zinc-700/50 dark:bg-zinc-900/70 dark:text-zinc-200"
-              value={password}
-              onChange={(e) => setPass(e.target.value)}
-              required
-            />
+
+            {/* Input + show/hide button */}
+            <div className="mt-1 relative">
+              <input
+                name="password"
+                type={showPass ? 'text' : 'password'}  // 👈 NEW
+                autoComplete="current-password"
+                className="w-full rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 pr-10 text-sm text-zinc-800 shadow-sm backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)] dark:border-zinc-700/50 dark:bg-zinc-900/70 dark:text-zinc-200"
+                value={password}
+                onChange={(e) => setPass(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                aria-pressed={showPass}
+                aria-label={showPass ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 mr-2 my-auto inline-flex h-7 w-7 items-center justify-center rounded-md text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
           {err && (
