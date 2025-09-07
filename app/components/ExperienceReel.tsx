@@ -43,6 +43,10 @@ export default function ExperienceTimeline() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  // Set itemRef
+  const setItemRef = (index: number) =>
+    (el: HTMLDivElement | null) => { itemsRef.current[index] = el; };
+
   // fetch experiences from public content endpoint
   useEffect(() => {
     const ctrl = new AbortController();
@@ -131,7 +135,7 @@ export default function ExperienceTimeline() {
 
                   {/* card */}
                   <article
-                    ref={(el) => (itemsRef.current[i] = el)}
+                    ref={setItemRef(i)}
                     className="tl-card reveal"
                     style={{ animationDelay: `${(i % 6) * 60}ms` as any }}
                   >
