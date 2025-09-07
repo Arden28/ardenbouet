@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 
 type Post = {
-  id: number;
+  id: string;               // <-- was number
   slug: string;
   title: string;
   excerpt: string;
@@ -56,7 +56,7 @@ export default function QuickPeek({
 
           {post.cover && (
             <div className="mt-3 relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-zinc-200/60 dark:border-zinc-700/50">
-              <Image src={post.cover} alt={post.title} fill className="object-cover" />
+              <Image src={post.cover} alt={post.title} fill className="object-cover" sizes="(max-width:768px) 100vw, 640px" />
             </div>
           )}
 
