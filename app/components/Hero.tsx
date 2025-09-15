@@ -70,7 +70,7 @@ export const Hero = () => {
               style={{ transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) translateZ(${tilt.dz}px)` }}
             >
               <Image
-                src="/images/profile-1.jpg"
+                src="/images/profile-1.jpeg"
                 alt={t('hero.alt.profile') || 'Arden BOUET portrait'}
                 className="rounded-2xl object-cover"
                 width={600}
@@ -166,7 +166,7 @@ export const Hero = () => {
           {t('hero.stack', { defaultValue: 'Tech I enjoy' })}
         </h2>
 
-        {/* Line 1 — Stacks (icons) */}
+        {/* Line 1   Stacks (icons) */}
         <div
           className="pause-on-hover relative mx-auto overflow-hidden"
           aria-label={t('hero.stackAria') || 'Technology carousel'}
@@ -204,7 +204,7 @@ export const Hero = () => {
           </div>
         </div>
 
-        {/* Line 2 — Solutions (text chips, reverse scroll) */}
+        {/* Line 2   Solutions (text chips, reverse scroll) */}
         <div
           className="pause-on-hover relative mx-auto mt-3 overflow-hidden"
           aria-label="Solutions carousel"

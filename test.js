@@ -3,7 +3,7 @@
   const projects: Project[] = [
     {
       id: 1,
-      title: 'Auprea — Heritage for everyone',
+      title: 'Auprea   Heritage for everyone',
       description: 'Wealth manager with secure vault, PDF declarations, and an optional notary flow.',
       logoUrl: '/images/auprea.ico',
       url: 'https://patrimoine-manager.vercel.app/',
@@ -15,7 +15,7 @@
         approach: [
           'Domain model for assets/liabilities; secure doc vault w/ role-based access',
           'Server-generated PDF declarations; optional notarization workflow',
-          'Performance budget for dashboard—<150ms TTFB on cached pages',
+          'Performance budget for dashboard <150ms TTFB on cached pages',
         ],
         result: 'Single source of truth; faster onboarding; exportable declarations that are legally tidy.',
         images: [
@@ -28,8 +28,8 @@
     },
     {
       id: 3,
-      title: 'Ndako Book — Hotel Reservations',
-      description: 'Search, compare, book — real-time availability & instant confirmations.',
+      title: 'Ndako Book   Hotel Reservations',
+      description: 'Search, compare, book   real-time availability & instant confirmations.',
       logoUrl: '/images/ndako-book.ico',
       url: 'https://ndako-book.vercel.app/',
       tags: ['saas'],
@@ -54,7 +54,7 @@
     {
       id: 6,
       title: 'Koverae Billing (Laravel)',
-      description: 'Subscriptions, metered usage, and billing flows — simple and extensible.',
+      description: 'Subscriptions, metered usage, and billing flows   simple and extensible.',
       logoUrl: '/images/wallet.png',
       url: 'https://developer.koverae.com/koverae-billing/?utm=ardenbouet',
       tags: ['open-source', 'saas'],
@@ -72,10 +72,10 @@
         tech: ['Laravel', 'PHPUnit'],
       },
     },
-    { id: 2, title: 'Seabar — Store Locator', description: 'Find nearby shops with live geolocation and a frictionless map UI.', logoUrl: '/images/seabar.png', url: 'https://seabar.com/pages/store-locator', tags: ['client'], tech: ['Maps', 'Geolocation', 'Responsive UI'] },
-    { id: 4, title: 'Ndako — PMS', description: 'Hybrid property/hotel ops: reservations, tenants, leases, invoicing, reporting.', logoUrl: '/images/ndako.png', url: 'https://ndako.koverae.com', tags: ['saas', 'open-source'], tech: ['Laravel', 'Livewire', 'MySQL'], metric: 'Automates billing & ops' },
+    { id: 2, title: 'Seabar   Store Locator', description: 'Find nearby shops with live geolocation and a frictionless map UI.', logoUrl: '/images/seabar.png', url: 'https://seabar.com/pages/store-locator', tags: ['client'], tech: ['Maps', 'Geolocation', 'Responsive UI'] },
+    { id: 4, title: 'Ndako   PMS', description: 'Hybrid property/hotel ops: reservations, tenants, leases, invoicing, reporting.', logoUrl: '/images/ndako.png', url: 'https://ndako.koverae.com', tags: ['saas', 'open-source'], tech: ['Laravel', 'Livewire', 'MySQL'], metric: 'Automates billing & ops' },
     { id: 5, title: 'Koverae ERP', description: '12+ apps: Finance, HR, Logistics, Productivity. K-Wallet, Kredits, Quick Find.', logoUrl: '/images/koverae.png', url: 'https://koverae.com', tags: ['saas'], tech: ['Laravel', 'React', 'Cloud'] },
-    { id: 7, title: 'Dr. Mahamat Adoum — Portfolio', description: 'Multilingual portfolio for research & publications — clear, accessible, fast.', logoUrl: '/images/mahamat.png', url: 'https://mahamat-portfolio.vercel.app/', tags: ['client'], tech: ['Next.js', 'i18n'] },
+    { id: 7, title: 'Dr. Mahamat Adoum   Portfolio', description: 'Multilingual portfolio for research & publications   clear, accessible, fast.', logoUrl: '/images/mahamat.png', url: 'https://mahamat-portfolio.vercel.app/', tags: ['client'], tech: ['Next.js', 'i18n'] },
   ];
 
 const SCENES: Scene[] = [
@@ -140,7 +140,7 @@ const SCENES: Scene[] = [
   },
   {
     id: 5,
-    company: 'Cowema — E-commerce',
+    company: 'Cowema   E-commerce',
     role: 'Full-Stack Developer (Intern)',
     period: 'Jan 2023 – Mar 2023 · 3 months',
     location: 'Intern',

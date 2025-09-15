@@ -10,7 +10,7 @@ const SEED = {
   projects: [
     {
       id: uid(),
-      title: 'Auprea — Heritage for everyone',
+      title: 'Auprea   Heritage for everyone',
       description: 'Wealth manager with secure vault, PDF declarations, and an optional notary flow.',
       logoUrl: '/images/auprea.ico',
       url: 'https://patrimoine-manager.vercel.app/',
@@ -22,7 +22,7 @@ const SEED = {
         approach: [
           'Domain model for assets/liabilities; secure doc vault w/ role-based access',
           'Server-generated PDF declarations; optional notarization workflow',
-          'Performance budget for dashboard—<150ms TTFB on cached pages',
+          'Performance budget for dashboard <150ms TTFB on cached pages',
         ],
         result: 'Single source of truth; faster onboarding; exportable declarations that are legally tidy.',
         images: [
@@ -74,7 +74,7 @@ const SEED = {
       id: uid(),
       slug: 'shipping-saas-like-an-ops-team',
       title: 'Shipping SaaS like an ops team',
-      excerpt: 'Treat features like on-call: runbooks, budgets, dashboards first—then UI.',
+      excerpt: 'Treat features like on-call: runbooks, budgets, dashboards first then UI.',
       cover: '/blog/ops-saas.jpg',
       date: '2025-07-20',
       reading: '6 min',

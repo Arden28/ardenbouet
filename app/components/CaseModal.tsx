@@ -99,7 +99,7 @@ export default function CaseModal({
         onClick={onClose}
       />
 
-      {/* Panel wrapper — bottom sheet on mobile, centered on ≥sm */}
+      {/* Panel wrapper   bottom sheet on mobile, centered on ≥sm */}
       <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-3 sm:items-center sm:p-6">
         <div
           ref={panelRef}
