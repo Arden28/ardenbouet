@@ -62,7 +62,7 @@ export const Footer = () => {
               Arden BOUET
             </p>
             <p className="text-xs text-zinc-600 dark:text-zinc-400">
-              © {year} • Software & IoT Engineer
+              © {year} • Software Engineer
             </p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export const Footer = () => {
 
       {/* bottom micro-row */}
       <div className="mt-4 flex flex-col items-start justify-between gap-2 border-t border-zinc-200 pt-4 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400 sm:flex-row">
-        <p>Built with Next.js, Laravel APIs, and a dash of telemetry.</p>
+        <p>Built with Next.js</p>
         <p className="opacity-80">
           Nairobi • East Africa
         </p>
