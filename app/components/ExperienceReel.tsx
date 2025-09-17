@@ -208,12 +208,12 @@ export default function ExperienceTimeline() {
           <span className="r-accent" aria-hidden />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h4 className="text-lg">Want the full story?</h4>
+              <h4 className="text-lg">Want the consice version?</h4>
               <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-                Projects, stack, and impact compacted into 2 page. Updated regularly.
+                Projects, stack, and impact compacted into 1 page. Updated regularly.
               </p>
               <div className="mt-2 flex gap-2">
-                <span className="resume-chip">PDF • 2 page</span>
+                <span className="resume-chip">PDF • 1 page</span>
                 <span className="resume-chip">Latest • {new Date().getFullYear()}</span>
               </div>
             </div>
