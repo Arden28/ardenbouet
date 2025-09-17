@@ -191,7 +191,14 @@ export default function CaseModal({
                         aria-label={`Show image ${i + 1}`}
                       >
                         {isVideo ? (
-                          <video src={img.src} className="h-full w-full object-cover" />
+                          <video
+                            src={img.src}
+                            className="h-full w-full object-cover"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                          />
                         ) : (
                           <Image src={img.src} alt={img.alt} fill className="object-cover" />
                         )}
