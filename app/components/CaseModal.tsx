@@ -157,8 +157,12 @@ export default function CaseModal({
                 {caseFile.images[activeImageIndex].src.toLowerCase().endsWith('.mp4') ? (
                   <video
                     src={caseFile.images[activeImageIndex].src}
-                    controls
+                    // controls
                     className="h-full w-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                   />
                 ) : (
                   <Image
