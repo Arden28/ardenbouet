@@ -208,7 +208,7 @@ export default function ExperienceTimeline() {
           <span className="r-accent" aria-hidden />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h4 className="text-lg">Want the consice version?</h4>
+              <h4 className="text-lg">Want the consise version?</h4>
               <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
                 Projects, stack, and impact compacted into 1 page. Updated regularly.
               </p>
