@@ -170,7 +170,7 @@ export default function CaseModal({
                     alt={caseFile.images[activeImageIndex].alt}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px"
-                    className="object-cover"
+                    className="object-contain"
                     priority={false}
                   />
                 )}
