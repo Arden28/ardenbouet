@@ -99,7 +99,7 @@ export default function CaseModal({
         onClick={onClose}
       />
 
-      {/* Panel wrapper   bottom sheet on mobile, centered on ≥sm */}
+      {/* Panel wrapper — bottom sheet on mobile, centered on ≥sm */}
       <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-3 sm:items-center sm:p-6">
         <div
           ref={panelRef}
@@ -153,14 +153,23 @@ export default function CaseModal({
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
               >
-                <Image
-                  src={caseFile.images[activeImageIndex].src}
-                  alt={caseFile.images[activeImageIndex].alt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px"
-                  className="object-cover"
-                  priority={false}
-                />
+                {/* Detect if current item is video or image */}
+                {caseFile.images[activeImageIndex].src.toLowerCase().endsWith('.mp4') ? (
+                  <video
+                    src={caseFile.images[activeImageIndex].src}
+                    controls
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={caseFile.images[activeImageIndex].src}
+                    alt={caseFile.images[activeImageIndex].alt}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px"
+                    className="object-cover"
+                    priority={false}
+                  />
+                )}
               </div>
 
               {/* Thumbs + arrows: vertical space is tight on mobile, so thumbs scroll horizontally */}
@@ -172,16 +181,23 @@ export default function CaseModal({
                   <style jsx>{`
                     div::-webkit-scrollbar { display: none; }
                   `}</style>
-                  {caseFile.images.map((img, i) => (
-                    <button
-                      key={img.src}
-                      onClick={() => setActiveImageIndex(i)}
-                      className={`relative h-12 w-20 flex-none overflow-hidden rounded-md border ${i === activeImageIndex ? 'border-[color:var(--brand)]' : 'border-zinc-200 dark:border-zinc-700'} snap-start`}
-                      aria-label={`Show image ${i + 1}`}
-                    >
-                      <Image src={img.src} alt={img.alt} fill className="object-cover" />
-                    </button>
-                  ))}
+                  {caseFile.images.map((img, i) => {
+                    const isVideo = img.src.toLowerCase().endsWith('.mp4');
+                    return (
+                      <button
+                        key={img.src}
+                        onClick={() => setActiveImageIndex(i)}
+                        className={`relative h-12 w-20 flex-none overflow-hidden rounded-md border ${i === activeImageIndex ? 'border-[color:var(--brand)]' : 'border-zinc-200 dark:border-zinc-700'} snap-start`}
+                        aria-label={`Show image ${i + 1}`}
+                      >
+                        {isVideo ? (
+                          <video src={img.src} className="h-full w-full object-cover" />
+                        ) : (
+                          <Image src={img.src} alt={img.alt} fill className="object-cover" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="flex gap-2 sm:mt-0">
