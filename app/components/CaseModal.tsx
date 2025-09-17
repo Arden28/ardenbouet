@@ -158,7 +158,7 @@ export default function CaseModal({
                   <video
                     src={caseFile.images[activeImageIndex].src}
                     // controls
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                     autoPlay
                     loop
                     muted
