@@ -11,6 +11,7 @@ import LivewireIcon from "./icons/LivewireIcon";
 import CpanelIcon from "./icons/CpanelIcon";
 import StackIcon from "tech-stack-icons";
 import AnimatedTitle from "./AnimatedTitle";
+import Mapbox from './icons/Mapbox';
 
 /** Simple Upwork glyph (mono, accessible) */
 function UpworkIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -166,7 +167,7 @@ export const Hero = () => {
           {t('hero.stack', { defaultValue: 'Tech I enjoy' })}
         </h2>
 
-        {/* Line 1   Stacks (icons) */}
+        {/* Line 1 — Stacks (icons) */}
         <div
           className="pause-on-hover relative mx-auto overflow-hidden"
           aria-label={t('hero.stackAria') || 'Technology carousel'}
@@ -189,6 +190,7 @@ export const Hero = () => {
                 <StackIcon name="tailwindcss" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="mysql" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="prisma" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
+                <Mapbox name="mapbox" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="docker" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="redis" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="aws" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
@@ -204,7 +206,7 @@ export const Hero = () => {
           </div>
         </div>
 
-        {/* Line 2   Solutions (text chips, reverse scroll) */}
+        {/* Line 2 — Solutions (text chips, reverse scroll) */}
         <div
           className="pause-on-hover relative mx-auto mt-3 overflow-hidden"
           aria-label="Solutions carousel"

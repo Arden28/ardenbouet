@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { ScrollProgress, RichBody, Toc, ShareRow, Copyable, ArticleActions } from "./NoteClient";
+
 
 export const revalidate = 0;          // always fresh
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,8 @@ type Post = {
   date?: string;
   reading?: string;
   tags?: string[];
+  bodyMd?: string;
+  bodyHtml?: string;
 };
 
 type ContentBundle = {
@@ -113,6 +117,8 @@ export default async function NotePage({ params }: { params: { slug: string } })
 
   return (
     <section className="mx-auto mt-12 max-w-3xl px-4 pb-20">
+      <ScrollProgress />
+
       {/* Back link */}
       <div className="mb-4">
         <Link
@@ -169,13 +175,28 @@ export default async function NotePage({ params }: { params: { slug: string } })
       {/* Body placeholder
           (Your current schema doesn't store a rich "body". If/when you add MD/MDX,
            render it here. For now we show a tidy placeholder.) */}
-      <article className="prose prose-zinc mt-6 max-w-none dark:prose-invert">
+      <article
+        id="note-article"
+        className="prose prose-zinc mt-6 max-w-none rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm backdrop-blur dark:prose-invert dark:border-zinc-700/50 dark:bg-zinc-900/70"
+      >
+        <ArticleActions
+          articleSelector="#note-article"
+          permalink={`${getBaseUrl()}/notes/${note.slug}`}
+          className="mb-4 flex flex-wrap items-center gap-2 not-prose"
+        />
+
+        {/* Render your rich HTML body when you add it to the note shape */}
+        {/* For now you can keep your placeholder OR pass a real HTML string */}
+        {note.bodyHtml ? (
+          <RichBody html={note.bodyHtml ?? note.bodyMd ?? ""} />
+        ):
+        (
         <p>
-          <em>
-            This note currently has a short summary only. The full write-up will be published here.
-          </em>
+          <em>This note currently has a short summary only. The full write-up will be published here.</em>
         </p>
+        )}
       </article>
+
 
       {/* Prev / Next */}
       <nav className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">

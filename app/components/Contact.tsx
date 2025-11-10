@@ -73,9 +73,9 @@ export const Contact = () => {
 
 ${message}
 
-  Project chips: ${chips.join(', ') || ' '}
-  Timeframe: ${timeframe}
-  Budget: ${budgetLabel}
+— Project chips: ${chips.join(', ') || '—'}
+— Timeframe: ${timeframe}
+— Budget: ${budgetLabel}
 
 From: ${name}
 Email: ${email}`
@@ -116,7 +116,7 @@ Email: ${email}`
         </span>
       </h2>
       <p className="reveal mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-        Tell me the problem, constraints, and desired outcomes I'll propose a pragmatic path to production.
+        Tell me the problem, constraints, and desired outcomes—I'll propose a pragmatic path to production.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-5">

@@ -3,6 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+// MDEditor is client-only; lazy-load it to avoid SSR issues
+const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
+// Editor CSS (safe to import in this client file)
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
+
 /* ===================== Types ===================== */
 type CaseImage = { src: string; alt: string };
 type CaseFile = {
@@ -56,6 +63,7 @@ type Note = {
   date: string;
   reading: string;
   tags: string[];
+  bodyMd?: string;              // NEW: Markdown body
 };
 type ContentBundle = {
   projects: Project[];
@@ -148,6 +156,20 @@ function Chip({
       {children}
     </button>
   );
+}
+
+/* ===================== Theme bridge for Editor ===================== */
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => setIsDark(root.classList.contains('dark'));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
 }
 
 /* ===================== Editors ===================== */
@@ -524,23 +546,41 @@ function JourneyEditor({ value, onChange }: { value: JourneyItem[]; onChange: (j
 
 /* -- Notes */
 function NotesEditor({ value, onChange }: { value: Note[]; onChange: (n: Note[]) => void }) {
-  const empty: Note = { id: uid(), slug: '', title: '', excerpt: '', cover: '', date: '', reading: '5 min', tags: [] };
+  const empty: Note = { id: uid(), slug: '', title: '', excerpt: '', cover: '', date: '', reading: '5 min', tags: [], bodyMd: '' };
   const [draft, setDraft] = useState<Note>(empty);
   const [editId, setEditId] = useState<string | null>(null);
   const [tagsText, setTagsText] = useState('');
+  const [previewMode, setPreviewMode] = useState<'edit' | 'live' | 'preview'>('edit');
+  const isDark = useIsDark();
 
-  const startNew = () => { setDraft({ ...empty, id: uid() }); setTagsText(''); setEditId(null); };
+  const startNew = () => { setDraft({ ...empty, id: uid() }); setTagsText(''); setPreviewMode('edit'); setEditId(null); };
   const startEdit = (id: string) => {
     const n = value.find(v => v.id === id); if (!n) return;
-    setDraft(JSON.parse(JSON.stringify(n))); setTagsText((n.tags || []).join(', ')); setEditId(id);
+    setDraft(JSON.parse(JSON.stringify(n)));
+    setTagsText((n.tags || []).join(', '));
+    setPreviewMode('edit');
+    setEditId(id);
   };
+
   const save = () => {
-    const item = { ...draft, slug: draft.slug || slugify(draft.title), tags: splitComma(tagsText) };
+    const item: Note = {
+      ...draft,
+      slug: draft.slug || slugify(draft.title),
+      tags: splitComma(tagsText),
+    };
     if (!item.title.trim()) return;
+
+    // If body exists and reading not set, compute it
+    if ((item.bodyMd?.trim()?.length ?? 0) > 0 && !item.reading?.trim()) {
+      const words = item.bodyMd!.trim().split(/\s+/).length;
+      item.reading = `${Math.max(1, Math.round(words / 200))} min`;
+    }
+
     if (editId) onChange(value.map(v => (v.id === editId ? item : v)));
     else onChange([item, ...value]);
     startNew();
   };
+
   const del = (id: string) => onChange(value.filter(v => v.id !== id));
   const move = (id: string, dir: -1 | 1) => {
     const i = value.findIndex(v => v.id === id); const j = i + dir;
@@ -560,6 +600,107 @@ function NotesEditor({ value, onChange }: { value: Note[]; onChange: (n: Note[])
           <TextField label="Date (ISO)" value={draft.date} onChange={v => setDraft({ ...draft, date: v })} placeholder="2025-09-01" />
           <TextField label="Reading time" value={draft.reading} onChange={v => setDraft({ ...draft, reading: v })} placeholder="5 min" />
           <TextField label="Tags (comma)" value={tagsText} onChange={setTagsText} placeholder="saaS, devops" />
+
+          {/* BODY (Markdown) */}
+          <div className="mt-2">
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Body (Markdown)</span>
+            <div
+              data-color-mode={isDark ? 'dark' : 'light'}
+              className="mt-2 rounded-lg border border-zinc-200/70 bg-white/80 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70"
+            >
+              <MDEditor
+                value={draft.bodyMd || ''}
+                onChange={(v) => setDraft({ ...draft, bodyMd: v || '' })}
+                height={360}
+                preview={previewMode}          // 'edit' | 'live' | 'preview'
+                visibleDragbar={false}
+                textareaProps={{ placeholder: 'Write your note in Markdown…' }}
+                overflow
+              />
+            </div>
+
+            {/* Editor actions */}
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <button className="rounded border px-2 py-1" onClick={() => setPreviewMode('edit')}>Edit</button>
+              <button className="rounded border px-2 py-1" onClick={() => setPreviewMode('live')}>Live</button>
+              <button className="rounded border px-2 py-1" onClick={() => setPreviewMode('preview')}>Preview</button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                onClick={() => {
+                  const md = (draft.bodyMd || '').trim();
+                  const words = md ? md.split(/\s+/).length : 0;
+                  const mins = Math.max(1, Math.round(words / 200));
+                  setDraft({ ...draft, reading: `${mins} min` });
+                }}
+              >
+                Auto reading time
+              </button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                onClick={() => {
+                  if (!draft.excerpt?.trim()) {
+                    const para = (draft.bodyMd || '').split(/\n\s*\n/)[0] || '';
+                    setDraft({ ...draft, excerpt: para.slice(0, 240) });
+                  }
+                }}
+              >
+                Generate excerpt
+              </button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                title="Insert callout"
+                onClick={() => {
+                  const snippet = `\n> [!NOTE]\n> Your callout here.\n\n`;
+                  setDraft((d) => ({ ...d, bodyMd: (d.bodyMd || '') + snippet }));
+                }}
+              >
+                + Callout
+              </button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                title="Insert fenced code block"
+                onClick={() => {
+                  const snippet = `\n\`\`\`tsx\n// code here\n\`\`\`\n\n`;
+                  setDraft((d) => ({ ...d, bodyMd: (d.bodyMd || '') + snippet }));
+                }}
+              >
+                + Code block
+              </button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                title="Insert image"
+                onClick={() => {
+                  const snippet = `\n![alt text](https://.../image.png)\n\n`;
+                  setDraft((d) => ({ ...d, bodyMd: (d.bodyMd || '') + snippet }));
+                }}
+              >
+                + Image
+              </button>
+
+              <button
+                type="button"
+                className="rounded border px-2 py-1"
+                title="Insert table"
+                onClick={() => {
+                  const snippet = `\n| Col A | Col B |\n|:-----:|:-----:|\n|  A1   |  B1   |\n|  A2   |  B2   |\n\n`;
+                  setDraft((d) => ({ ...d, bodyMd: (d.bodyMd || '') + snippet }));
+                }}
+              >
+                + Table
+              </button>
+            </div>
+          </div>
+
           <div className="mt-2 flex gap-2">
             <button onClick={save} className="rounded-md bg-[color:var(--brand)] px-3 py-2 text-sm font-semibold text-white hover:opacity-95">
               {editId ? 'Update' : 'Add note'}
@@ -568,6 +709,7 @@ function NotesEditor({ value, onChange }: { value: Note[]; onChange: (n: Note[])
           </div>
         </div>
       </div>
+
       <div className="md:col-span-3 reel-frame grain p-4">
         <h3 className="text-sm font-semibold">Notes ({value.length})</h3>
         <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
