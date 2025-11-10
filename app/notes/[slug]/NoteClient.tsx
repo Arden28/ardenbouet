@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
 
 /* ─────────────────  Scroll progress  ───────────────── */
 export function ScrollProgress() {
@@ -22,7 +24,7 @@ export function ScrollProgress() {
   );
 }
 
-/* ─────────────────  Rich body (anchors, copy, callouts)  ───────────────── */
+/* ─────────────────  Rich body  ───────────────── */
 export function RichBody({ html }: { html: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -30,13 +32,18 @@ export function RichBody({ html }: { html: string }) {
     const root = ref.current;
     if (!root) return;
 
-    // Headings → ids + copyable anchor
+    /* 1) Syntax highlighting (safe & idempotent) */
+    hljs.highlightAll();
+
+    /* 2) Headings → ids + copyable anchor (only if missing) */
     const headings = root.querySelectorAll<HTMLElement>("h2, h3");
     headings.forEach((h) => {
       if (!h.id) {
         const slug =
           (h.textContent || "")
             .toLowerCase()
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
             .replace(/[^a-z0-9\s-]/g, "")
             .trim()
             .replace(/\s+/g, "-") || Math.random().toString(36).slice(2, 8);
@@ -67,8 +74,8 @@ export function RichBody({ html }: { html: string }) {
       }
     });
 
-    // Code blocks → copy button
-    const pres = root.querySelectorAll<HTMLPreElement>("pre");
+    /* 3) Code blocks → copy button (idempotent) */
+    const pres = root.querySelectorAll<HTMLPreElement>("pre.hljs, pre");
     pres.forEach((pre) => {
       if (pre.querySelector(".code-copy-btn")) return;
       pre.classList.add("relative");
@@ -90,45 +97,73 @@ export function RichBody({ html }: { html: string }) {
       pre.appendChild(btn);
     });
 
-    // Callouts: > [!NOTE]|[!TIP]|[!WARNING]|[!IMPORTANT]
-    const bqs = root.querySelectorAll("blockquote");
-    bqs.forEach((bq) => {
-      const first = bq.firstElementChild;
-      if (!first) return;
-      const txt = (first.textContent || "").trim();
-      const m = txt.match(/^\[\!(NOTE|TIP|WARNING|IMPORTANT)\]\s*/i);
-      if (!m) return;
-      const kind = m[1].toUpperCase() as "NOTE" | "TIP" | "WARNING" | "IMPORTANT";
-      first.textContent = (first.textContent || "").replace(m[0], "");
+    /* 4) External links → open safely */
+    const links = root.querySelectorAll<HTMLAnchorElement>("a[href]");
+    links.forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      const isExternal =
+        /^https?:\/\//i.test(href) && !href.includes(location.host.replace(/^www\./, ""));
+      if (isExternal) {
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+      }
+    });
 
-      const base = "not-prose my-4 rounded-xl border p-4 shadow-sm";
-      const light = {
-        NOTE: "border-zinc-200/70 bg-white/70",
-        TIP: "border-emerald-200/70 bg-emerald-50/70",
-        WARNING: "border-amber-200/70 bg-amber-50/70",
-        IMPORTANT: "border-sky-200/70 bg-sky-50/70",
-      } as const;
-      const dark = {
-        NOTE: "dark:border-zinc-700/50 dark:bg-zinc-900/70",
-        TIP: "dark:border-emerald-700/40 dark:bg-emerald-950/30",
-        WARNING: "dark:border-amber-700/40 dark:bg-amber-950/30",
-        IMPORTANT: "dark:border-sky-700/40 dark:bg-sky-950/30",
-      } as const;
-
-      bq.className = `${base} ${light[kind]} ${dark[kind]}`;
+    /* 5) Callouts
+       - Preferred server form: <div class="callout callout-note|tip|warning|danger">…</div>
+       - Fallback client form:  blockquotes starting with > [!NOTE] … (transform them) */
+    // (A) Style server-built callouts (ensure label exists)
+    const callouts = root.querySelectorAll<HTMLDivElement>(".callout");
+    callouts.forEach((div) => {
+      if (div.querySelector(".callout-label")) return;
+      const m = div.className.match(/callout-(note|tip|warning|danger)/i);
+      const kind = (m?.[1] || "note").toLowerCase();
       const label = document.createElement("div");
       label.className =
-        "mb-2 inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-semibold tracking-wide text-zinc-700 dark:text-zinc-200";
-      label.textContent = kind[0] + kind.slice(1).toLowerCase();
-      bq.insertBefore(label, bq.firstChild);
+        "callout-label mb-2 inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-semibold tracking-wide text-zinc-700 dark:text-zinc-200";
+      label.textContent = kind[0].toUpperCase() + kind.slice(1);
+      div.insertBefore(label, div.firstChild);
     });
+
+    // (B) Fallback: convert markdown blockquotes with [!NOTE] into styled divs
+    const bqs = root.querySelectorAll("blockquote");
+    bqs.forEach((bq) => {
+      // skip if already converted
+      if (bq.closest(".callout")) return;
+      const first = bq.firstElementChild || bq.firstChild;
+      const raw = (first?.textContent || bq.textContent || "").trim();
+      const m = raw.match(/^\[\!(NOTE|TIP|WARNING|DANGER|IMPORTANT)\]\s*/i);
+      if (!m) return;
+      const kind = (m[1] || "NOTE").toLowerCase().replace("important", "warning"); // map IMPORTANT→warning
+      const div = document.createElement("div");
+      div.className = `callout callout-${kind}`;
+      // label
+      const label = document.createElement("div");
+      label.className =
+        "callout-label mb-2 inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-semibold tracking-wide text-zinc-700 dark:text-zinc-200";
+      label.textContent = kind[0].toUpperCase() + kind.slice(1);
+      div.appendChild(label);
+      // content (without the [!KIND] token)
+      const content = bq.cloneNode(true) as HTMLElement;
+      content.innerHTML = content.innerHTML.replace(/^\s*<p>\s*\[\!.*?\]\s*/i, "<p>");
+      div.appendChild(content);
+      bq.replaceWith(div);
+    });
+
   }, [html]);
 
   return (
     <div
       ref={ref}
-      className="prose-headings:scroll-mt-24"
-      dangerouslySetInnerHTML={{ __html: html }} // supply sanitized HTML from your API
+      className={[
+        "prose prose-zinc max-w-none dark:prose-invert",
+        // nice defaults
+        "prose-pre:overflow-x-auto prose-pre:rounded-xl prose-pre:border prose-pre:border-zinc-200/60 dark:prose-pre:border-zinc-700/50",
+        "prose-img:rounded-xl prose-img:border prose-img:border-zinc-200/60 dark:prose-img:border-zinc-700/50",
+        "prose-table:overflow-hidden",
+        "prose-headings:scroll-mt-24",
+      ].join(" ")}
+      dangerouslySetInnerHTML={{ __html: html }} // already sanitized on server
     />
   );
 }

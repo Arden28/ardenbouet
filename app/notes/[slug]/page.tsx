@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { ScrollProgress, RichBody, Toc, ShareRow, Copyable, ArticleActions } from "./NoteClient";
+import { mdToSafeHtml } from '@/lib/mardown';
 
 
 export const revalidate = 0;          // always fresh
@@ -72,6 +73,11 @@ async function getNote(slug: string) {
   const idx = notes.findIndex(n => n.slug === slug);
   const note = notes[idx];
   if (!note) return { note: null, prev: null, next: null };
+
+  // If MD provided but no HTML, compile once here
+  if (!note.bodyHtml && note.bodyMd) {
+    note.bodyHtml = mdToSafeHtml(note.bodyMd);
+  }
 
   const prev = idx > 0 ? notes[idx - 1] : null;               // previous in list (newer)
   const next = idx < notes.length - 1 ? notes[idx + 1] : null; // next in list (older)
@@ -188,7 +194,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
         {/* Render your rich HTML body when you add it to the note shape */}
         {/* For now you can keep your placeholder OR pass a real HTML string */}
         {note.bodyHtml ? (
-          <RichBody html={note.bodyHtml ?? note.bodyMd ?? ""} />
+          <RichBody html={note.bodyHtml} />
         ):
         (
         <p>

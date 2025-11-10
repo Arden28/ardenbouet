@@ -534,3 +534,38 @@
 /* Make reveal kick in as items enter view (uses your .reveal base) */
 .reveal { opacity: 0; transform: translateY(14px); }
 .reveal.in { animation: rise .45s ease both; }
+
+/* Better tables */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.prose table th,
+.prose table td {
+  border: 1px solid color-mix(in oklab, currentColor 15%, transparent);
+  padding: .5rem .75rem;
+}
+.prose table thead th {
+  background: color-mix(in oklab, currentColor 6%, transparent);
+}
+
+/* Callouts */
+.callout {
+  border: 1px solid color-mix(in oklab, currentColor 20%, transparent);
+  border-left-width: .3rem;
+  padding: .75rem .9rem;
+  border-radius: .6rem;
+  margin: .75rem 0;
+  background: color-mix(in oklab, currentColor 3%, transparent);
+}
+.callout-note { border-left-color: #3b82f6; }
+.callout-tip { border-left-color: #10b981; }
+.callout-warning { border-left-color: #f59e0b; }
+.callout-danger { border-left-color: #ef4444; }
+
+/* Code blocks look nicer inside prose */
+.prose pre code {
+  display: block;
+  font-size: .9em;
+  line-height: 1.6;
+}
