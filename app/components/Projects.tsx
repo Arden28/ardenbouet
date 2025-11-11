@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import CaseModal from './CaseModal';
+import ImageWithFallback from './ImageWithFallback';
 
 type Project = {
   id: string; // stored as string in DB
@@ -170,7 +171,13 @@ export const Projects = () => {
                   <li key={p.id} className="relative">
                     <article className="case-card h-full p-4 dark:bg-zinc-900" style={{ animationDelay: `${(i % 6) * 60}ms` }}>
                       <div className="flex items-center gap-3">
-                        <Image src={p.logoUrl} alt={`${p.title} logo`} width={44} height={44} className="rounded-lg" />
+                        <ImageWithFallback
+                          src={p.logoUrl}
+                          alt={`${p.title} logo`}
+                          width={44}
+                          height={44}
+                          className="rounded-lg border border-zinc-200/60 dark:border-zinc-700/50 object-cover"
+                        />
                         <div className="min-w-0">
                           <h3 className="truncate font-semibold text-zinc-900 dark:text-zinc-100">{p.title}</h3>
                           <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{p.description}</p>
@@ -192,6 +199,7 @@ export const Projects = () => {
                       </div>
 
                       <div className="mt-4 flex items-center justify-between">
+                        {p.url && p.url.trim() !== "" && (
                         <a
                           href={p.url}
                           target="_blank"
@@ -201,6 +209,7 @@ export const Projects = () => {
                         >
                           {t('experiences.projects.see', { defaultValue: 'See project' })}
                         </a>
+                        )}
 
                         <button
                           type="button"

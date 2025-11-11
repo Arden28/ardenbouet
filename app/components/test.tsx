@@ -144,7 +144,7 @@ export default function CaseModal({
     <div
       ref={backdropRef}
       className="fixed inset-0 z-[70] overflow-y-auto"
-      onClick={onBackdropClick}
+      onMouseDown={onBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="casefile-title"
@@ -410,10 +410,6 @@ export default function CaseModal({
                   </button>
                   <a
                     href="#contact"
-                    onClick={(e) => {
-                      // small delay ensures the anchor scrolls first before closing
-                      setTimeout(onClose, 150);
-                    }}
                     className="rounded-md bg-[color:var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:opacity-95 sm:min-w-[150px]"
                   >
                     Discuss this build

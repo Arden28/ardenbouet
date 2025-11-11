@@ -11,14 +11,6 @@ function MailIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-function LinkIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" {...props}>
-      <path fill="currentColor" d="M10.59 13.41a1 1 0 0 0 1.41 1.41l4.59-4.59a3 3 0 1 0-4.24-4.24L10 7.34a1 1 0 1 0 1.41 1.41l2-2a1 1 0 0 1 1.41 1.41l-4.59 4.59Zm2.82-2.82a1 1 0 0 0-1.41-1.41L7 13.17a3 3 0 0 0 4.24 4.24l2.35-2.35a1 1 0 1 0-1.41-1.41l-2.35 2.35A1 1 0 1 1 7 13.17l6.41-6.58Z"/>
-    </svg>
-  );
-}
-
 function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5" {...props}>
@@ -26,7 +18,6 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
 function LinkedInIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5" {...props}>
@@ -34,7 +25,6 @@ function LinkedInIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
 function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" {...props}>
@@ -44,7 +34,7 @@ function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export const Contact = () => {
-  // ---- state ----
+  // ── form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -52,9 +42,11 @@ export const Contact = () => {
   const [timeframe, setTimeframe] = useState<'soon'|'this quarter'|'flexible'>('flexible');
   const [budget, setBudget] = useState(3); // 1..5
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<{email?: boolean; name?: boolean; message?: boolean}>({});
 
-  // ---- derived ----
-  const budgetLabel = useMemo(() => ['< $1k', '$1–3k', '$3–8k', '$8–20k', '$20k+'][budget-1], [budget]);
+  // ── derived
+  const budgetLabel = useMemo(() => ['<$500','$500–2k','$2–8k','$8–20k','$20k+'][budget-1], [budget]);
   const isEmailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()), [email]);
   const canSend = !!(name.trim() && isEmailValid && message.trim());
   const messageCount = message.length;
@@ -63,27 +55,34 @@ export const Contact = () => {
   const toggleChip = (c: Chip) =>
     setChips(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
 
-  // ---- submit ----
+  // ── submit (mailto)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSend) return;
+    if (!canSend || submitting) return;
+    setSubmitting(true);
+
     const subj = encodeURIComponent(`New inquiry from ${name} (${timeframe}, ${budgetLabel})`);
     const body = encodeURIComponent(
 `Hi Arden,
 
 ${message}
 
-— Project chips: ${chips.join(', ') || '—'}
+— Services: ${chips.join(', ') || '—'}
 — Timeframe: ${timeframe}
 — Budget: ${budgetLabel}
 
 From: ${name}
 Email: ${email}`
     );
-    window.location.href = `mailto:laudbouetoumoussa@koverae.com?subject=${subj}&body=${body}`;
+
+    // tiny delay for button animation; then hand off to email client
+    setTimeout(() => {
+      window.location.href = `mailto:laudbouetoumoussa@koverae.com?subject=${subj}&body=${body}`;
+      setSubmitting(false);
+    }, 200);
   };
 
-  // ---- copy email ----
+  // ── copy email
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText('laudbouetoumoussa@koverae.com');
@@ -92,7 +91,7 @@ Email: ${email}`
     } catch {}
   };
 
-  // ---- soft reveal on scroll ----
+  // ── reveal on scroll (keep your pattern)
   const sectionRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const root = sectionRef.current;
@@ -116,13 +115,13 @@ Email: ${email}`
         </span>
       </h2>
       <p className="reveal mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-        Tell me the problem, constraints, and desired outcomes—I'll propose a pragmatic path to production.
+        Tell me the problem, constraints, and desired outcomes, I'll propose a pragmatic path to production.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-5">
-        {/* Left: Contact methods / pitch */}
-        <aside className="reveal md:col-span-2 engineer-grid scanline p-4 sm:p-5">
-          {/* animated nodes (softer) */}
+        {/* Left: Direct lines */}
+        <aside className="reveal md:col-span-2 engineer-grid scanline p-4 sm:p-5 rounded-xl border border-zinc-200/70 bg-white/70 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70">
+          {/* subtle animated dots */}
           <div className="node node-soft" style={{ left: '10%', top: '20%' }} />
           <div className="node node-soft" style={{ right: '10%', top: '40%' }} />
           <div className="node node-soft" style={{ left: '16%', bottom: '22%' }} />
@@ -138,13 +137,13 @@ Email: ${email}`
                   href="mailto:laudbouetoumoussa@koverae.com"
                   className="group inline-flex flex-1 items-center gap-2 rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/60"
                 >
-                  <MailIcon className="text-[color:var(--brand)] h-[20px]" />
+                  <MailIcon className="text-[color:var(--brand)] h-[18px]" />
                   laudbouetoumoussa@koverae.com
                 </a>
                 <button
                   onClick={copyEmail}
                   type="button"
-                  className="inline-flex items-center rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+                  className="inline-flex items-center rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-xs text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
                   aria-label="Copy email"
                 >
                   {copied ? 'Copied' : 'Copy'}
@@ -157,7 +156,7 @@ Email: ${email}`
                 target="_blank"
                 className="group inline-flex items-center gap-2 rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/60"
               >
-                <LinkedInIcon className="text-[color:var(--brand)] h-[20px]" />
+                <LinkedInIcon className="text-[color:var(--brand)] h-[18px]" />
                 LinkedIn
               </Link>
             </li>
@@ -167,7 +166,7 @@ Email: ${email}`
                 target="_blank"
                 className="group inline-flex items-center gap-2 rounded-md border border-zinc-200/70 bg-white px-3 py-2 text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/60"
               >
-                <GithubIcon className="text-[color:var(--brand)] h-[20px]" />
+                <GithubIcon className="text-[color:var(--brand)] h-[18px]" />
                 GitHub
               </Link>
             </li>
@@ -185,7 +184,7 @@ Email: ${email}`
                   key={txt}
                   className="inline-flex items-center gap-2 rounded-full border border-zinc-200/70 bg-white px-3 py-1.5 text-xs text-zinc-800 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-200"
                 >
-                  <CheckIcon className="text-[color:var(--brand)] h-[20px]" />
+                  <CheckIcon className="text-[color:var(--brand)] h-[16px]" />
                   {txt}
                 </span>
               ))}
@@ -194,40 +193,54 @@ Email: ${email}`
         </aside>
 
         {/* Right: Form */}
-        <div className="reveal md:col-span-3 engineer-grid scanline p-4 sm:p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="reveal md:col-span-3 engineer-grid scanline rounded-xl border border-zinc-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70 sm:p-6">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Your name</label>
+                <label htmlFor="name" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Your name</label>
                 <input
-                  className="input mt-1"
+                  id="name"
+                  autoComplete="name"
+                  className={`input mt-1 ${touched.name && !name.trim() ? 'ring-2 ring-red-400' : ''}`}
                   value={name}
+                  onBlur={() => setTouched(s => ({...s, name: true}))}
                   onChange={e=>setName(e.target.value)}
                   placeholder="Jane Doe"
                   required
+                  aria-invalid={!!(touched.name && !name.trim())}
                 />
+                {touched.name && !name.trim() && (
+                  <p className="mt-1 text-xs text-red-500">Please enter your name.</p>
+                )}
               </div>
               <div>
-                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Email</label>
+                <label htmlFor="email" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Email</label>
                 <input
+                  id="email"
                   type="email"
+                  autoComplete="email"
                   className={`input mt-1 ${email && !isEmailValid ? 'ring-2 ring-red-400' : ''}`}
                   value={email}
+                  onBlur={() => setTouched(s => ({...s, email: true}))}
                   onChange={e=>setEmail(e.target.value)}
                   placeholder="jane@example.com"
                   aria-invalid={!!(email && !isEmailValid)}
                   required
                 />
                 {email && !isEmailValid && (
-                  <p className="mt-1 text-xs text-red-500">Enter a valid email.</p>
+                  <p className="mt-1 text-xs text-red-500">Enter a valid email address.</p>
                 )}
               </div>
             </div>
 
-            {/* chips */}
+            {/* chips (keyboard-friendly) */}
             <div>
-              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">I’m looking for</label>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">I’m looking for</span>
+              <div
+                role="group"
+                aria-label="Services"
+                className="mt-2 flex flex-wrap gap-2"
+              >
                 {(['SaaS build','API integration','IoT/Telemetry','UI/Frontend','Consultation'] as Chip[]).map(c => {
                   const pressed = chips.includes(c);
                   return (
@@ -235,10 +248,13 @@ Email: ${email}`
                       key={c}
                       type="button"
                       onClick={()=>toggleChip(c)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(c); }
+                      }}
                       aria-pressed={pressed}
-                      className="chip-btn transition"
+                      className={`chip-btn transition ${pressed ? 'ring-1 ring-[color:var(--brand)]' : ''}`}
                     >
-                      {pressed && <CheckIcon className="text-[color:var(--brand)] h-[20px]" />}
+                      {pressed && <CheckIcon className="text-[color:var(--brand)] h-[16px]" />}
                       {c}
                     </button>
                   );
@@ -249,8 +265,9 @@ Email: ${email}`
             {/* timeframe + budget */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Timeframe</label>
+                <label htmlFor="timeframe" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Timeframe</label>
                 <select
+                  id="timeframe"
                   className="input mt-1"
                   value={timeframe}
                   onChange={e=>setTimeframe(e.target.value as any)}
@@ -272,23 +289,46 @@ Email: ${email}`
                   value={budget}
                   onChange={e=>setBudget(parseInt(e.target.value))}
                   className="mt-3 w-full accent-[color:var(--brand)]"
+                  aria-valuemin={1} aria-valuemax={5} aria-valuenow={budget}
                 />
+                <div className="mt-1 flex justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
+                  {['<$500','$500–2k','$2–8k','$8–20k','$20k+'].map((t,i)=>(
+                    <span key={i}>{t}</span>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Tell me about the problem</label>
+              <label htmlFor="message" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Tell me about the problem</label>
               <textarea
-                className="input mt-1 min-h-[140px]"
+                id="message"
+                className={`input mt-1 min-h-[140px] ${touched.message && !message.trim() ? 'ring-2 ring-red-400' : ''}`}
                 value={message}
+                onBlur={() => setTouched(s => ({...s, message: true}))}
                 onChange={e=>setMessage(e.target.value.slice(0, messageLimit))}
                 placeholder="What are we building? Who’s it for? Any constraints (time, budget, stack)?"
                 required
+                aria-describedby="message-count"
               />
-              <div className="mt-1 text-right text-[11px] text-zinc-500 dark:text-zinc-400">
-                {messageCount}/{messageLimit}
+              <div id="message-count" className="mt-1 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                {touched.message && !message.trim() ? (
+                  <span className="text-red-500">Please add a short project description.</span>
+                ) : <span />}
+                <span>{messageCount}/{messageLimit}</span>
               </div>
             </div>
+
+            {/* honeypot (basic anti-bot) */}
+            <input
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+              name="website"
+              onChange={()=>{/* if filled, ignore submit server-side (future) */}}
+            />
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -296,10 +336,19 @@ Email: ${email}`
               </p>
               <button
                 type="submit"
-                disabled={!canSend}
-                className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-white transition ${canSend ? 'bg-[color:var(--brand)] hover:opacity-95' : 'bg-zinc-400 cursor-not-allowed'}`}
+                disabled={!canSend || submitting}
+                className={`inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white transition
+                  ${canSend && !submitting ? 'bg-[color:var(--brand)] hover:opacity-95' : 'bg-zinc-400 cursor-not-allowed'}`}
+                aria-live="polite"
               >
-                Send message
+                {submitting ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/60 border-t-white" />
+                    Sending…
+                  </>
+                ) : (
+                  <>Send message</>
+                )}
               </button>
             </div>
           </form>
@@ -307,7 +356,7 @@ Email: ${email}`
       </div>
     </section>
   );
-}
+};
 
 // Optional named alias if you prefer named import
 export const ContactSection = Contact;
