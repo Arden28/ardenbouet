@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_2_URL")
+  url      = env("DATABASE_URL")
 }
 
 model Content {
@@ -12,3 +12,27 @@ model Content {
   data      Json
   updatedAt DateTime @updatedAt
 }
+model Message {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+
+  // sender
+  name       String
+  email      String
+
+  // project details
+  services   String?   // CSV
+  timeframe  String?
+  budget     Int?      // 1..5
+  body       String
+
+  // meta
+  ip         String?
+  userAgent  String?
+  read       Boolean   @default(false)
+  archived   Boolean   @default(false)
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
