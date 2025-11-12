@@ -91,7 +91,7 @@ export const Hero = () => {
           {/* Role badge */}
           <div className="animate-fade-in mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-300/60 bg-white/70 px-3 py-1 text-xs font-semibold text-zinc-800 backdrop-blur dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200">
             <span className="inline-block h-2 w-2 rounded-full bg-sky-500" />
-            {t('hero.role', { defaultValue: 'Software & IoT Developer' })}
+            {t('hero.role', { defaultValue: 'Software Engineer' })}
           </div>
 
           {/* Headline */}
