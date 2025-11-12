@@ -185,7 +185,7 @@ export const Hero = () => {
                 <LivewireIcon name="livewire" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="reactjs" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="nodejs" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
-                <StackIcon name="python" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
+                {/* <StackIcon name="python" className="w-10 transition-transform duration-300 hover:-translate-y-1" /> */}
                 <StackIcon name="js" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="tailwindcss" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="mysql" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
@@ -193,7 +193,7 @@ export const Hero = () => {
                 <Mapbox name="mapbox" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="docker" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="redis" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
-                <StackIcon name="aws" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
+                {/* <StackIcon name="aws" className="w-10 transition-transform duration-300 hover:-translate-y-1" /> */}
                 <StackIcon name="postman" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <StackIcon name="gcloud" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
                 <CpanelIcon name="cpanel" className="w-10 transition-transform duration-300 hover:-translate-y-1" />
@@ -225,8 +225,8 @@ export const Hero = () => {
                   'Multi-tenant SaaS',
                   'Booking & Inventory',
                   'Maps & Geolocation',
-                  'PDF pipelines',
-                  'IoT telemetry',
+                  // 'PDF pipelines',
+                  // 'IoT telemetry',
                   'Admin dashboards',
                   'RBAC & audit logs',
                   'Payments/Stripe',
