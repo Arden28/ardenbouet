@@ -23,8 +23,9 @@ i18n
               openSource: "and open-source contributor"
             },
             description: {
-              phrase1: "I’m <strong>Arden BOUET</strong>, a full-stack developer focused on clean code and smooth UX. I build <strong>Laravel-powered</strong> web apps, SaaS, and automations that streamline workflows. I partner with startups, SMEs, and businesses to launch faster and scale reliably.",
-              phrase2: "Whether it’s streamlining workflows or bringing new ideas to life, I’m all about building smart, scalable solutions with a practical edge. Always open to fun challenges, fresh ideas, and meaningful collaborations."
+              phrase1: "I’m <strong>Arden BOUET</strong>, a full-stack developer focused on clean code and smooth UX. I craft modern web applications, SaaS platforms, and smart automations that streamline workflows and enhance everyday efficiency. I collaborate with startups, SMEs, and established businesses to design and launch reliable, future-proof solutions that scale seamlessly as they grow.",
+              phrase2: "I collaborate with startups, SMEs, and established businesses to design and launch reliable, future-proof solutions that scale seamlessly as they grow.",
+              phrase3: "Whether it’s streamlining workflows or bringing new ideas to life, I’m all about building smart, scalable solutions with a practical edge. Always open to fun challenges, fresh ideas, and meaningful collaborations."
             }, 
             stack: "Technologies I love working with"
           },
