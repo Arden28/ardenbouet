@@ -1,76 +1,82 @@
-# Developer Portfolio
+<div align="center">
 
-Welcome to my Developer Portfolio! This project showcases a sleek, one-page portfolio designed for developers. Built with modern technologies and a clean design, it offers a compact yet engaging presentation of your work and skills. 
+  # Arden CMS v2
+  
+  **The Developer-First Portfolio System**
+  
+  <p>
+    <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript" alt="TypeScript" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind-3.0-38bdf8?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" /></a>
+    <img src="https://img.shields.io/badge/Status-Production-success?style=flat-square" alt="Status" />
+  </p>
 
-![Portfolio GIF Placeholder](https://github.com/7wenty7/Developper-Portfolio/blob/master/Demo.gif) 
+  <p align="center">
+    A high-performance, lightweight Content Management System built to centralize a freelance presence, showcase projects, and publish technical notes without the bloat of traditional headless CMS solutions.
+  </p>
 
-## Demo
+  [View Live Site](https://ardenbouet.me) · [Report Bug](https://github.com/arden28/ardenbouet/issues) · [Request Feature](https://github.com/arden28/ardenbouet/issues)
+</div>
 
-Check out the live demo of the portfolio [here](https://slimbouras.com/). 
+---
 
-## Features
+## 📸 The Interface
 
-- **Modern Technologies**: Utilizes Next.js for server-side rendering, Tailwind CSS for utility-first styling, ShadcnUI for elegant components, and DaisyUI for additional UI components.
-- **Clean Design**: Simple, yet effective design to highlight your work and skills without distractions.
-- **Animations**: Smooth animations to enhance user experience and add a touch of sophistication.
-- **Customizable**: Easily customizable to fit your personal branding and preferences.
+![Preview](/images/cms-preview.png)
+*The custom-built featuring Master-Detail views, glassmorphic design, and instant preview.*
 
-## Getting Started
+---
 
-To get started with this portfolio, follow these steps:
+## 🧠 Case Study
 
-### Prerequisites
+### The Problem
+Managing and updating a personal portfolio website often required manual code edits, commits, and redeployments. Existing CMS solutions (Strapi, Contentful) felt bloated and overkill for a lightweight, developer-focused personal brand. I needed a fast, customizable system to showcase my projects, publish notes, and centralize my freelance presence, all in one place.
 
-Ensure you have the following installed:
+### The Approach
+1.  **Engineered from Scratch:** Designed a bespoke CMS optimized specifically for portfolio data structures (Case Studies, Tech Stacks, Timelines).
+2.  **Modular Architecture:** Implemented isolated editors for Projects, Experience, Journey, and Notes, supporting both Markdown and JSON data structures.
+3.  **Modern UX Patterns:** Moved away from standard CRUD tables to a **Master-Detail (Drawer)** interface with optimistic UI updates and auto-saving capabilities.
+4.  **High-Performance Stack:** Leveraged Next.js App Router and TypeScript for type-safe content rendering and instant page loads.
+5.  **Seamless Deployment:** Integrated with Vercel for zero-config deployments, allowing content updates without touching the codebase.
 
-- [Node.js](https://nodejs.org/) (v14 or later)
-- [Yarn](https://classic.yarnpkg.com/) or [npm](https://www.npmjs.com/)
+### The Result
+Launched a fully customizable personal CMS that now powers my entire freelance portfolio. Content updates (like adding a new client project) now take seconds instead of hours. This architectural shift strengthened my online presence, resulting in **increased engagement, visibility, and client inquiries** on freelance platforms.
 
-### Installation
+---
 
-1. Clone the repository:
-   
-   ```bash
-   git clone https://github.com/your-username/your-repo-name.git
-   
-4. Navigate to the project directory:
+## ⚡ Key Features
 
-  ```bash
-  cd your-repo-name
-  ```
+* **Master-Detail Editing:** A productive drawer-based workflow that allows editing content without losing context of the main list.
+* **Markdown Support:** Full Markdown editor with syntax highlighting for technical notes and blog posts.
+* **Drag-and-Drop Organization:** Reorder projects and experiences to highlight the most relevant work.
+* **Smart Auto-Save:** Debounced local storage and server syncing ensures data is never lost.
+* **Glassmorphism UI:** A polished, modern aesthetic using Tailwind CSS, `framer-motion`, and `lucide-react`.
+* **Type-Safe:** End-to-end TypeScript validation from the API layer to the React components.
 
+---
 
-3. Install dependencies:
+## 🛠 Tech Stack
 
-  ```bash
-  yarn install
-  # or
-  npm install
-  ```
+* **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
+* **Language:** [TypeScript](https://www.typescriptlang.org/)
+* **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+* **Components:** [Shadcn UI](https://ui.shadcn.com/) (Headless)
+* **Animations:** [Framer Motion](https://www.framer.com/motion/)
+* **Icons:** [Lucide React](https://lucide.dev/)
+* **Editor:** [UIW React MD Editor](https://uiwjs.github.io/react-md-editor/)
 
+---
 
-4. Start the development server:
+## 🤝 Contact
 
-  ```bash
-  yarn dev
-  # or
-  npm run dev
-  ```
+**Arden BOUET** - Software Engineer
 
+  * **Email:** [laudbouetoumoussa@gmail.com](mailto:laudbouetoumoussa@gmail.com)
+  * **LinkedIn:** [Arden BOUET](https://www.linkedin.com/in/arden-bouet/)
+  * **GitHub:** [@arden28](https://github.com/arden28)
 
-Your portfolio will be available at http://localhost:3000.
+-----
 
-### Customization 
-To customize the portfolio:
-
-Update Content: Modify the content in pages/index.tsx (or pape.tsx in your case) to include your projects, skills, and other relevant information.
-Style Adjustments: Adjust styles in styles/globals.css and use Tailwind's utility classes for further customization.
-Animations: Tweak animations and transitions in components/Animation.tsx to suit your preferences.
-### Deployment
-To deploy your portfolio, you can use platforms like Vercel or Netlify. Follow their documentation to connect your repository and deploy.
-
-### Contributing
-If you'd like to contribute to this project, please fork the repository and submit a pull request with your changes.
-
-License
-This project is licensed under the MIT License. See the LICENSE file for details.
+\<div align="center"\>
+\<sub\>Built with ❤️ in Nairobi, Kenya.\</sub\>
+\</div\>
