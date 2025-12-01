@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "daisyui": "^4.12.10",
+    "framer-motion": "^12.23.24",
     "highlight.js": "^11.11.1",
     "i18next-browser-languagedetector": "^8.1.0",
     "lucide-react": "^0.438.0",
@@ -36,7 +37,7 @@
     "react-dom": "^18",
     "react-i18next": "^15.5.1",
     "sanitize-html": "^2.17.0",
-    "tailwind-merge": "^2.5.2",
+    "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tech-stack-icons": "^2.1.0",
     "typed.js": "^2.1.0"

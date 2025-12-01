@@ -60,7 +60,7 @@ export type ContentBundle = {
   experiences: Experience[];
   journey: JourneyItem[];
   notes: Note[]
-  messages: Message[];          // NEW
+  // messages: Message[];          // NEW
 };
 
 export type Note = {

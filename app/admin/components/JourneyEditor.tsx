@@ -1,83 +1,79 @@
 'use client';
 
 import { useState } from 'react';
+import { Plus, GraduationCap, Award, ExternalLink, MoveUp, MoveDown, X } from 'lucide-react';
 import type { JourneyItem } from '../types';
-import { Chip, TextField, uid } from './atoms';
+import { TextField, uid, EditorDrawer, Button } from './atoms';
 
 export default function JourneyEditor({ value, onChange }: { value: JourneyItem[]; onChange: (j: JourneyItem[]) => void }) {
-  const empty: JourneyItem = { id: uid(), kind: 'education', year: '', title: '', org: '', url: '', note: '' };
-  const [draft, setDraft] = useState<JourneyItem>(empty);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<JourneyItem | null>(null);
 
-  const startNew = () => { setDraft({ ...empty, id: uid() }); setEditId(null); };
-  const startEdit = (id: string) => {
-    const x = value.find(v => v.id === id); if (!x) return;
-    setDraft(JSON.parse(JSON.stringify(x))); setEditId(id);
-  };
   const save = () => {
-    if (!draft.title.trim()) return;
-    if (editId) onChange(value.map(v => (v.id === editId ? draft : v)));
-    else onChange([draft, ...value]);
-    startNew();
+    if (!draft || !draft.title.trim()) return;
+    const exists = value.find(p => p.id === draft.id);
+    const next = exists ? value.map(p => (p.id === draft.id ? draft : p)) : [draft, ...value];
+    onChange(next);
+    setDraft(null);
   };
-  const del = (id: string) => onChange(value.filter(v => v.id !== id));
+  
+  const remove = (id: string) => { if (confirm('Delete item?')) onChange(value.filter(j => j.id !== id)); };
   const move = (id: string, dir: -1 | 1) => {
-    const i = value.findIndex(v => v.id === id); const j = i + dir;
-    if (i < 0 || j < 0 || j >= value.length) return;
-    const clone = [...value]; const [it] = clone.splice(i, 1); clone.splice(j, 0, it); onChange(clone);
+    const idx = value.findIndex(j => j.id === id);
+    if (idx < 0 || idx + dir < 0 || idx + dir >= value.length) return;
+    const next = [...value]; [next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]; onChange(next);
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-      <div className="md:col-span-2 reel-frame grain p-4">
-        <h3 className="text-sm font-semibold">Journey Editor</h3>
-        <div className="mt-3 grid grid-cols-1 gap-3">
-          <label className="block">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Kind</span>
-            <select
-              className="mt-1 w-full rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-zinc-800 shadow-sm backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)] dark:border-zinc-700/50 dark:bg-zinc-900/70 dark:text-zinc-200"
-              value={draft.kind} onChange={e => setDraft({ ...draft, kind: e.target.value as JourneyItem['kind'] })}
-            >
-              <option value="education">Education</option>
-              <option value="cert">Certification</option>
-            </select>
-          </label>
-          <TextField label="Year / Range" value={draft.year} onChange={v => setDraft({ ...draft, year: v })} placeholder="e.g., 2024 ~ Present" />
-          <TextField label="Title" value={draft.title} onChange={v => setDraft({ ...draft, title: v })} required />
-          <TextField label="Organization (optional)" value={draft.org || ''} onChange={v => setDraft({ ...draft, org: v })} />
-          <TextField label="URL (optional)" value={draft.url || ''} onChange={v => setDraft({ ...draft, url: v })} />
-          <TextField label="Note (optional)" value={draft.note || ''} onChange={v => setDraft({ ...draft, note: v })} textarea />
-          <div className="mt-2 flex gap-2">
-            <button onClick={save} className="rounded-md bg-[color:var(--brand)] px-3 py-2 text-sm font-semibold text-white hover:opacity-95">
-              {editId ? 'Update' : 'Add item'}
-            </button>
-            <button onClick={startNew} className="rounded-md border px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300">Reset form</button>
+    <>
+      <div className="space-y-3 max-w-4xl mx-auto">
+        <Button variant="secondary" className="w-full h-12 border-dashed" onClick={() => setDraft({ id: uid(), kind: 'education', year: '', title: '', org: '', url: '', note: '' })}>
+            <Plus className="h-4 w-4 mr-2" /> Add Journey Step
+        </Button>
+
+        {value.map((j) => (
+          <div key={j.id} className="group flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${j.kind === 'education' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'}`}>
+                {j.kind === 'education' ? <GraduationCap className="h-6 w-6" /> : <Award className="h-6 w-6" />}
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase text-zinc-400">{j.year}</span>
+                    <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                    <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">{j.kind}</span>
+                </div>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{j.title}</h3>
+                <div className="text-sm text-zinc-500">{j.org}</div>
+            </div>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => move(j.id, -1)} className="p-2 hover:bg-zinc-100 rounded dark:hover:bg-zinc-800"><MoveUp className="h-4 w-4 text-zinc-400" /></button>
+                <button onClick={() => move(j.id, 1)} className="p-2 hover:bg-zinc-100 rounded dark:hover:bg-zinc-800"><MoveDown className="h-4 w-4 text-zinc-400" /></button>
+                <Button variant="secondary" className="h-8 text-xs" onClick={() => setDraft({ ...j })}>Edit</Button>
+                <Button variant="ghost" className="h-8 w-8 p-0 text-red-400 hover:text-red-600" onClick={() => remove(j.id)}><X className="h-4 w-4" /></Button>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
-      <div className="md:col-span-3 reel-frame grain p-4">
-        <h3 className="text-sm font-semibold">Journey ({value.length})</h3>
-        <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {value.map(x => (
-            <li key={x.id} className="rounded-lg border border-zinc-200/70 p-3 text-sm dark:border-zinc-700/50">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-zinc-500">{x.kind}</div>
-                  <div className="font-semibold">{x.title}</div>
-                  <div className="text-xs text-zinc-500">{x.org} {x.org && '•'} {x.year}</div>
+
+      <EditorDrawer isOpen={!!draft} onClose={() => setDraft(null)} title="Edit Journey" actions={<Button variant="primary" onClick={save}>Save</Button>}>
+        {draft && (
+            <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Kind</span>
+                        <select className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-900" 
+                            value={draft.kind} onChange={e => setDraft({...draft, kind: e.target.value as any})}>
+                            <option value="education">Education</option><option value="cert">Certification</option>
+                        </select>
+                    </div>
+                    <TextField label="Year" value={draft.year} onChange={v => setDraft({...draft, year: v})} placeholder="2023" />
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => move(x.id, -1)} className="rounded border px-2 py-1">↑</button>
-                  <button onClick={() => move(x.id, 1)} className="rounded border px-2 py-1">↓</button>
-                  <button onClick={() => startEdit(x.id)} className="rounded border px-2 py-1">Edit</button>
-                  <button onClick={() => del(x.id)} className="rounded border px-2 py-1 text-red-600">Del</button>
-                </div>
-              </div>
-              {x.note && <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300">{x.note}</p>}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+                <TextField label="Title (Degree/Cert Name)" value={draft.title} onChange={v => setDraft({...draft, title: v})} required />
+                <TextField label="Organization" value={draft.org || ''} onChange={v => setDraft({...draft, org: v})} placeholder="University or Platform" />
+                <TextField label="Credential URL" value={draft.url || ''} onChange={v => setDraft({...draft, url: v})} />
+                <TextField label="Note" value={draft.note || ''} onChange={v => setDraft({...draft, note: v})} textarea />
+            </div>
+        )}
+      </EditorDrawer>
+    </>
   );
 }
