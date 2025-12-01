@@ -22,7 +22,7 @@
 
 ## 📸 The Interface
 
-![Preview](/images/preview.png)
+![Preview](/public/images/preview.png)
 *The custom-built featuring Master-Detail views, glassmorphic design, and instant preview.*
 
 ---
