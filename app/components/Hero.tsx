@@ -82,8 +82,8 @@ export const Hero = () => {
               style={{ transform: 'translateZ(20px)' }} // Adds depth inside the 3D space
             >
               <Image
-                src="/images/profile-1.jpeg"
-                alt={t('hero.alt.profile') || 'Arden BOUET portrait'}
+                src="/images/me.png"
+                alt={t('hero.alt.profile') || 'Arden BOUET'}
                 className="rounded-2xl object-cover pointer-events-none" // prevent image drag
                 width={600}
                 height={600}
