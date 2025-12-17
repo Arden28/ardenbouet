@@ -150,7 +150,7 @@ export const Header = () => {
       >
         {/* Brand */}
         <Link href="/" className="group flex items-center gap-3">
-          <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-zinc-900/5 shadow-zinc-800/5 shadow-sm dark:ring-white/10 overflow-hidden">
+          {/* <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-zinc-900/5 shadow-zinc-800/5 shadow-sm dark:ring-white/10 overflow-hidden">
             <Image
               src="/images/avatar-1.jpg"
               alt="Arden BOUET"
@@ -159,7 +159,7 @@ export const Header = () => {
               className="rounded-full object-cover"
               priority
             />
-          </span>
+          </span> */}
           <span className="hidden text-sm font-semibold text-zinc-900 group-hover:no-underline dark:text-zinc-100 sm:inline">
             Arden BOUET
           </span>
