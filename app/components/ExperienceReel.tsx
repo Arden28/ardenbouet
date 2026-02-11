@@ -8,7 +8,8 @@ type ExperienceRow = {
   job: string;                                 // role
   fromTo: string;                              // "Sept 2024 – Mar 2025 · 7 months"
   bullets: string[];
-  type: 'Freelance' | 'Remote' | 'Intern';
+  type: 'Freelance' | 'Contract' | 'Full-time' | 'Part-time' | 'Intern';
+  location?: 'On-site' | 'Hybrid' | 'Remote'
 
   // NEW (now present in DB)
   logline?: string;
@@ -22,7 +23,8 @@ type Scene = {
   company: string;
   role: string;
   period: string;
-  location?: string;                           // from .type
+  type?: string;                           // from .type
+  location?: string;
   logline?: string;
   bullets: string[];
   outcomes?: string[];
@@ -68,7 +70,8 @@ export default function ExperienceTimeline() {
           company: x.title,
           role: x.job,
           period: x.fromTo,
-          location: x.type,                   // Freelance / Remote / Intern
+          type: x.type,                
+          location: x.location,
           logline: x.logline || undefined,
           bullets: Array.isArray(x.bullets) ? x.bullets : [],
           outcomes: Array.isArray(x.outcomes) ? x.outcomes : undefined,
@@ -155,6 +158,7 @@ export default function ExperienceTimeline() {
                         </h4>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                           {s.role} · <span className="whitespace-nowrap">{s.period}</span>
+                          {s.type ? <> · <span className="whitespace-nowrap">{s.type}</span></> : null}
                           {s.location ? <> · <span className="whitespace-nowrap">{s.location}</span></> : null}
                         </p>
                       </div>
