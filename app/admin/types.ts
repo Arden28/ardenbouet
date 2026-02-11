@@ -26,7 +26,8 @@ export type Experience = {
   job: string;                   // Role
   fromTo: string;                // "Apr 2023 ~ Oct 2023 · 7 months"
   bullets: string[];
-  type: 'Freelance' | 'Remote' | 'Intern';
+  type: 'Freelance' | 'Contract' | 'Full-time' | 'Part-time' | 'Intern';
+  location?: 'On-site' | 'Hybrid' | 'Remote'
   logline?: string;
   outcomes?: string[];
   tags?: string[];
