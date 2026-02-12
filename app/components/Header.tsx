@@ -210,7 +210,7 @@ export const Header = () => {
               </svg>
             </Link>
             <a
-              href="mailto:laudbouetoumoussa@koverae.com"
+              href="mailto:laudbouetoumoussa@gmail.com"
               className="ml-1 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand,#2467AC)] dark:border-zinc-700/60 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Mail
@@ -270,7 +270,7 @@ export const Header = () => {
             ))}
             <li className="mt-1 flex flex-wrap items-center gap-2">
               <a href="/files/cv-v4.pdf" className="chip-outline">CV</a>
-              <a href="mailto:laudbouetoumoussa@koverae.com" className="chip-outline">Mail</a>
+              <a href="mailto:laudbouetoumoussa@gmail.com" className="chip-outline">Mail</a>
               <Link href="https://github.com/arden28" className="chip-outline">GitHub</Link>
               <Link href="https://www.linkedin.com/in/ardenbouet/" className="chip-outline">LinkedIn</Link>
               <Link href="https://www.upwork.com/freelancers/~01abcdef0123456789" className="chip-outline">Upwork</Link>

@@ -68,7 +68,7 @@ DETAILS
     );
 
     setTimeout(() => {
-      window.location.href = `mailto:laudbouetoumoussa@koverae.com?subject=${subj}&body=${body}`;
+      window.location.href = `mailto:laudbouetoumoussa@gmail.com?subject=${subj}&body=${body}`;
       setSubmitting(false);
     }, 800);
   };
@@ -76,7 +76,7 @@ DETAILS
   // ── copy handlers
   const copyEmail = async () => {
     try {
-      await navigator.clipboard.writeText('laudbouetoumoussa@koverae.com');
+      await navigator.clipboard.writeText('laudbouetoumoussa@gmail.com');
       setEmailCopied(true);
       setTimeout(() => setEmailCopied(false), 2000);
     } catch {}
