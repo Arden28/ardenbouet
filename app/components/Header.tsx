@@ -189,7 +189,7 @@ export const Header = () => {
             ))}
             <li>
               <a
-                href="/files/cv-v4.pdf"
+                href="/#"
                 className="nav-chip !border-[color:var(--brand,#2467AC)] !text-[color:var(--brand,#2467AC)] hover:!bg-[color:var(--brand,#2467AC)] hover:!text-white"
               >
                 {t('menu.cv')}
@@ -269,7 +269,7 @@ export const Header = () => {
               </li>
             ))}
             <li className="mt-1 flex flex-wrap items-center gap-2">
-              <a href="/files/cv-v4.pdf" className="chip-outline">CV</a>
+              <a href="/#" className="chip-outline">CV</a>
               <a href="mailto:laudbouetoumoussa@gmail.com" className="chip-outline">Mail</a>
               <Link href="https://github.com/arden28" className="chip-outline">GitHub</Link>
               <Link href="https://www.linkedin.com/in/ardenbouet/" className="chip-outline">LinkedIn</Link>
