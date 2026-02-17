@@ -189,7 +189,7 @@ export const Header = () => {
             ))}
             <li>
               <a
-                href="/#"
+                href="/files/cv-v5.pdf"
                 className="nav-chip !border-[color:var(--brand,#2467AC)] !text-[color:var(--brand,#2467AC)] hover:!bg-[color:var(--brand,#2467AC)] hover:!text-white"
               >
                 {t('menu.cv')}

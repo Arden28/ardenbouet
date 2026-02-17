@@ -14,7 +14,7 @@ export default function Home() {
       <ExperienceReel></ExperienceReel> 
       <Journey></Journey>
       <Contact/>
-      <Notes></Notes>
+      {/* <Notes></Notes> */}
 
     </main>
 
