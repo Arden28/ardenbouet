@@ -1,16 +1,18 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import QuickPeek from './QuickPeek';
 
+// ─── Types (unchanged) ───────────────────────────────────────────────────────
 type Post = {
-  id: string;             
+  id: string;
   slug: string;
   title: string;
   excerpt: string;
   cover?: string;
-  date: string;           // ISO
+  date: string;
   reading: string;
   tags: string[];
 };
@@ -24,20 +26,33 @@ type ContentBundle = {
 
 type Filter = 'all' | string;
 
+// ─── Motion ──────────────────────────────────────────────────────────────────
+const EXPO = [0.16, 1, 0.3, 1] as const;
+
+// ─── Design primitives ───────────────────────────────────────────────────────
+function Rule({ className = '' }: { className?: string }) {
+  return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+const fmtDate = (d: string) => {
+  const dt = new Date(d);
+  return isNaN(dt.getTime())
+    ? d
+    : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function Notes() {
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [query, setQuery]       = useState('');
+  const [filter, setFilter]     = useState<Filter>('all');
   const [peekSlug, setPeekSlug] = useState<string | null>(null);
-  const [notes, setNotes] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [notes, setNotes]       = useState<Post[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [err, setErr]           = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLElement | null>(null);
-
-  /* ------------------------------ Fetch from DB ----------------------------- */
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true;
-
     async function load() {
       try {
         setLoading(true);
@@ -45,21 +60,10 @@ export default function Notes() {
         const res = await fetch('/api/content', { credentials: 'same-origin', cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json: ContentBundle = await res.json();
-
-        // sort newest first; guard missing fields
         const clean = (json.notes || [])
           .filter(n => n && n.title && n.slug)
-          .map(n => ({
-            ...n,
-            reading: n.reading || '5 min',
-            tags: Array.isArray(n.tags) ? n.tags : [],
-          }))
-          .sort((a, b) => {
-            const ad = new Date(a.date || 0).getTime();
-            const bd = new Date(b.date || 0).getTime();
-            return bd - ad;
-          });
-
+          .map(n => ({ ...n, reading: n.reading || '5 min', tags: Array.isArray(n.tags) ? n.tags : [] }))
+          .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
         if (alive) setNotes(clean);
       } catch (e: any) {
         if (alive) setErr(e?.message || 'Failed to load notes');
@@ -67,12 +71,11 @@ export default function Notes() {
         if (alive) setLoading(false);
       }
     }
-
     void load();
     return () => { alive = false; };
   }, []);
 
-  /* --------------------------- Derived collections -------------------------- */
+  // ── Derived ───────────────────────────────────────────────────────────────
   const tags = useMemo(() => {
     const set = new Set<string>();
     notes.forEach(p => p.tags?.forEach(t => t && set.add(t)));
@@ -82,11 +85,9 @@ export default function Notes() {
   const featured = notes[0];
   const all = notes;
 
-  // Filter across ALL posts (case-insensitive tag match + query search)
   const filteredAll = useMemo(() => {
     const q = query.trim().toLowerCase();
     const f = filter.toLowerCase();
-
     return all.filter(p => {
       const matchesTag = f === 'all' || p.tags?.some(t => t.toLowerCase() === f);
       if (!matchesTag) return false;
@@ -99,226 +100,308 @@ export default function Notes() {
     });
   }, [query, filter, all]);
 
-  // Show featured block only when "idle" (no query, no filter)
   const showFeatured = filter === 'all' && query.trim() === '' && !!featured;
 
-  // Grid contents:
-  // - idle: all minus featured
-  // - filtering/searching: all matches (including featured if it matches)
-  const gridPosts = useMemo(() => {
-    if (showFeatured) return all.slice(1);
-    return filteredAll;
-  }, [showFeatured, filteredAll, all]);
+  const gridPosts = useMemo(
+    () => showFeatured ? all.slice(1) : filteredAll,
+    [showFeatured, filteredAll, all]
+  );
 
-  /* --------------------------- Soft reveal animation ------------------------ */
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>('.reveal'));
-    if (!nodes.length) return;
-
-    nodes.forEach(n => n.classList.remove('in'));
-
-    const io = new IntersectionObserver(
-      entries => {
-        entries.forEach(e => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { root: null, rootMargin: '0px 0px -10% 0px', threshold: 0.15 }
-    );
-
-    nodes.forEach(n => io.observe(n));
-    return () => io.disconnect();
-  }, [filter, query, showFeatured, gridPosts.length]);
-
-  /* --------------------------------- Helpers -------------------------------- */
-  const openPeek = (slug: string) => setPeekSlug(slug);
-  const closePeek = () => setPeekSlug(null);
-
-  const fmtDate = (d: string) => {
-    const dt = new Date(d);
-    return isNaN(dt.getTime()) ? d : dt.toLocaleDateString();
-  };
-
-  /* --------------------------------- Render --------------------------------- */
   return (
-    <section
-      id="notes"
-      ref={containerRef as any}
-      className="mx-auto mt-16 max-w-6xl px-4 pb-12 sm:mt-20 sm:pb-16"
-    >
-      <header className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <h2 className="text-left text-2xl font-extrabold">
-          <span className="bg-gradient-to-r from-black to-[color:var(--brand)] bg-clip-text text-transparent dark:from-white dark:to-[color:var(--brand)]">
-            Thoughts &amp; Field Notes
-          </span>
+    <section id="notes" className="mx-auto mt-24 max-w-6xl px-4 pb-16">
+
+      {/* ── Section header + search row ────────────────────────────── */}
+      <Rule />
+      <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
+          Thoughts &amp; Field Notes
         </h2>
 
-        {/* search + rss */}
-        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
-          <div className="relative">
-            <input
-              placeholder="Search notes…"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-zinc-800 shadow-sm backdrop-blur focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand)]
-                         dark:border-zinc-700/50 dark:bg-zinc-900/70 dark:text-zinc-200"
-            />
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">⌘K</span>
-          </div>
+        {/* Search + RSS — flat, no rounded corners */}
+        <div className="flex items-center gap-2 shrink-0">
+          <input
+            type="search"
+            placeholder="Search notes…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            aria-label="Search notes"
+            className={[
+              'w-44 border border-zinc-200 dark:border-zinc-800',
+              'bg-transparent px-3 py-2',
+              'font-mono text-[11px] text-zinc-800 dark:text-zinc-200',
+              'placeholder:text-zinc-400 dark:placeholder:text-zinc-600',
+              'focus:border-zinc-900 dark:focus:border-zinc-100 focus:outline-none',
+              'transition-colors duration-150',
+            ].join(' ')}
+          />
           <a
             href="/rss.xml"
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-zinc-800 shadow-sm backdrop-blur hover:bg-white
-                       dark:border-zinc-700/50 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            aria-label="RSS feed"
+            className={[
+              'border border-zinc-200 dark:border-zinc-800',
+              'px-3 py-2 font-mono text-[11px] uppercase tracking-widest',
+              'text-zinc-400 dark:text-zinc-500',
+              'hover:border-zinc-900 hover:text-zinc-900',
+              'dark:hover:border-zinc-100 dark:hover:text-zinc-100',
+              'transition-colors duration-150',
+            ].join(' ')}
           >
             RSS
           </a>
         </div>
-      </header>
+      </div>
+      <Rule />
 
-      {/* Filters */}
+      {/* ── Tag filters — bordered chips (no pill/rounded shape) ─────── */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {tags.map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setFilter(t)}
-            aria-pressed={filter.toLowerCase() === t.toLowerCase()}
-            className={[
-              'rounded-full border px-3 py-1 text-xs font-medium transition',
-              filter.toLowerCase() === t.toLowerCase()
-                ? 'border-[color:var(--brand)] bg-[color:var(--brand-soft)] text-[color:var(--brand)]'
-                : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800/60',
-            ].join(' ')}
-          >
-            {t === 'all' ? 'All' : t}
-          </button>
-        ))}
+        {tags.map(t => {
+          const isActive = filter.toLowerCase() === t.toLowerCase();
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setFilter(t)}
+              aria-pressed={isActive}
+              className={[
+                'border px-3 py-1',
+                'font-mono text-[10px] uppercase tracking-widest',
+                'transition-colors duration-150 focus-visible:outline-none',
+                isActive
+                  ? 'border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100'
+                  : 'border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300',
+              ].join(' ')}
+            >
+              {t === 'all' ? 'All' : t}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Loading / error */}
+      {/* ── Loading skeleton ─────────────────────────────────────────── */}
       {loading && (
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-44 animate-pulse rounded-2xl border border-zinc-200/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-900/60" />
+            <div
+              key={i}
+              className="animate-pulse border-b border-r border-zinc-200 dark:border-zinc-800 p-5"
+            >
+              <div className="mb-4 aspect-[3/2] w-full bg-zinc-100 dark:bg-zinc-800" />
+              <div className="mb-2 h-3 w-20 bg-zinc-100 dark:bg-zinc-800" />
+              <div className="mb-2 h-5 w-3/4 bg-zinc-100 dark:bg-zinc-800" />
+              <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800" />
+            </div>
           ))}
         </div>
       )}
+
+      {/* ── Error state ──────────────────────────────────────────────── */}
       {!!err && !loading && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50/70 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-          Could not load notes: {err}
+        <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
+            Could not load notes: {err}
+          </p>
         </div>
       )}
 
-      {/* Featured (only when idle) */}
-      {!loading && !err && showFeatured && featured && (
-        <article className="reveal mt-6 grid grid-cols-1 gap-5 rounded-2xl border border-zinc-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-zinc-700/50 dark:bg-zinc-900/70 sm:p-5 lg:grid-cols-2">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-200/60 dark:border-zinc-700/50">
-            <Image
-              src={featured.cover || '/blog/placeholder.jpg'}
-              alt={featured.title}
-              fill
-              className="object-cover"
-              sizes="(max-width:1024px) 100vw, 520px"
-              priority
-            />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex flex-wrap items-center gap-2">
-              <time className="text-xs text-zinc-500 dark:text-zinc-400">{fmtDate(featured.date)}</time>
-              <span className="rounded-full bg-[color:var(--brand-soft)] px-2 py-[2px] text-[11px] text-[color:var(--brand)]">
-                {featured.reading}
-              </span>
-              {featured.tags.map(tag => (
-                <span key={tag} className="rounded-md bg-zinc-500/10 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <h3 className="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-100">{featured.title}</h3>
-            <p className="mt-1 line-clamp-3 text-zinc-700 dark:text-zinc-300">{featured.excerpt}</p>
-            <div className="mt-4 flex items-center gap-3">
-              <Link
-                href={`/notes/${featured.slug}`}
-                className="rounded-md bg-[color:var(--brand)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-95"
-              >
-                Read note
-              </Link>
-              <button
-                onClick={() => openPeek(featured.slug)}
-                className="rounded-md border border-zinc-200/70 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700/60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
-              >
-                Quick peek
-              </button>
-            </div>
-          </div>
-        </article>
-      )}
-
-      {/* Two-column grid */}
       {!loading && !err && (
-        <ul className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {gridPosts.map((p, i) => (
-            <li key={p.id} className="reveal">
-              <article
-                className="reel-frame grain p-4"
-                style={{ animationDelay: `${(i % 4) * 60}ms` as any }}
-              >
-                {p.cover && (
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-zinc-200/60 dark:border-zinc-700/50">
-                    <Image
-                      src={p.cover}
-                      alt={p.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width:768px) 100vw, 600px"
-                    />
-                  </div>
-                )}
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <time className="text-xs text-zinc-500 dark:text-zinc-400">{fmtDate(p.date)}</time>
-                  <span className="rounded-full bg-[color:var(--brand-soft)] px-2 py-[2px] text-[11px] text-[color:var(--brand)]">
-                    {p.reading}
-                  </span>
-                  {p.tags.map(tag => (
-                    <span key={`${p.id}-${tag}`} className="rounded-md bg-zinc-500/10 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
-                      {tag}
-                    </span>
-                  ))}
+        <>
+          {/* ── FEATURED — editorial inner-border split ───────────────── */}
+          {/*
+            Desktop: image left 50% | content right 50%, separated by 1px rule.
+            No background fill, no shadow. Bordered rectangular container.
+            Consistent with CaseModal's split-panel concept.
+          */}
+          {showFeatured && featured && (
+            <motion.article
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.65, ease: EXPO }}
+              className="group mt-8 grid grid-cols-1 border border-zinc-200 dark:border-zinc-800 lg:grid-cols-2"
+            >
+              {/* Cover image */}
+              {featured.cover ? (
+                <div className="relative aspect-[3/2] overflow-hidden border-b border-zinc-200 dark:border-zinc-800 lg:border-b-0 lg:border-r">
+                  <Image
+                    src={featured.cover}
+                    alt={featured.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                    sizes="(max-width:1024px) 100vw, 520px"
+                    priority
+                  />
                 </div>
-                <h3 className="mt-2 line-clamp-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{p.title}</h3>
-                <p className="line-clamp-3 text-sm text-zinc-700 dark:text-zinc-300">{p.excerpt}</p>
-                <div className="mt-3 flex items-center justify-between">
-                  <Link
-                    href={`/notes/${p.slug}`}
-                    className="text-sm text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+              ) : (
+                /* No-image fallback: ruled texture block */
+                <div className="flex aspect-[3/2] items-center justify-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 lg:border-b-0 lg:border-r">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                    No cover
+                  </span>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="flex flex-col p-6 lg:p-8">
+                {/* Meta row */}
+                <div className="mb-3 flex flex-wrap items-center gap-3">
+                  <span
+                    className={[
+                      'border border-zinc-200 dark:border-zinc-800',
+                      'px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest',
+                      'text-zinc-400 dark:text-zinc-500',
+                    ].join(' ')}
                   >
-                    Read note
+                    Featured
+                  </span>
+                  <time className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                    {fmtDate(featured.date)}
+                  </time>
+                  <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                    {featured.reading}
+                  </span>
+                </div>
+
+                <h3 className="font-heading text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 lg:text-2xl">
+                  {featured.title}
+                </h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 line-clamp-4">
+                  {featured.excerpt}
+                </p>
+
+                {featured.tags.length > 0 && (
+                  <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                    {featured.tags.join(' · ')}
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="mt-5 flex items-center gap-3">
+                  <Link
+                    href={`/notes/${featured.slug}`}
+                    className={[
+                      'inline-flex items-center justify-center',
+                      'bg-zinc-900 dark:bg-zinc-50',
+                      'px-4 py-2 text-[11px] font-semibold uppercase tracking-widest',
+                      'text-white dark:text-zinc-900',
+                      'hover:bg-zinc-700 dark:hover:bg-zinc-200',
+                      'transition-colors duration-150',
+                    ].join(' ')}
+                  >
+                    Read note →
                   </Link>
                   <button
-                    onClick={() => openPeek(p.slug)}
-                    className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    type="button"
+                    onClick={() => setPeekSlug(featured.slug)}
+                    className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                   >
                     Quick peek
                   </button>
                 </div>
-              </article>
-            </li>
-          ))}
-        </ul>
+              </div>
+            </motion.article>
+          )}
+
+          {/* ── NOTES GRID — inner-border 2-col ─────────────────────── */}
+          {gridPosts.length > 0 && (
+            <motion.ul
+              layout
+              className="mt-6 grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 sm:grid-cols-2"
+            >
+              <AnimatePresence mode="popLayout">
+                {gridPosts.map((p, i) => (
+                  <motion.li
+                    key={p.id}
+                    layout
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-50px' }}
+                    transition={{ duration: 0.5, ease: EXPO, delay: (i % 4) * 0.07 }}
+                    exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                    className="group relative border-b border-r border-zinc-200 dark:border-zinc-800"
+                  >
+                    <article className="h-full p-5 transition-colors duration-150 hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+
+                      {/* Cover */}
+                      {p.cover && (
+                        <div className="relative mb-4 aspect-[3/2] w-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                          <Image
+                            src={p.cover}
+                            alt={p.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                            sizes="(max-width:768px) 100vw, 600px"
+                          />
+                        </div>
+                      )}
+
+                      {/* Meta */}
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <time className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                          {fmtDate(p.date)}
+                        </time>
+                        <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
+                          {p.reading}
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="mb-1.5 font-heading text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50 line-clamp-2">
+                        {p.title}
+                      </h3>
+
+                      {/* Excerpt */}
+                      <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+                        {p.excerpt}
+                      </p>
+
+                      {/* Tags — monospace dot-separated */}
+                      {p.tags.length > 0 && (
+                        <p className="mb-4 font-mono text-[9px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                          {p.tags.join(' · ')}
+                        </p>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/notes/${p.slug}`}
+                          className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                        >
+                          Read →
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setPeekSlug(p.slug)}
+                          className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                        >
+                          Peek
+                        </button>
+                      </div>
+
+                      {/* Hover left-edge lime accent */}
+                      <span
+                        aria-hidden
+                        className="absolute left-0 top-0 h-0 w-[2px] bg-[#CBFF4D] transition-[height] duration-300 group-hover:h-full"
+                      />
+                    </article>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </motion.ul>
+          )}
+
+          {/* ── Empty state ──────────────────────────────────────────── */}
+          {gridPosts.length === 0 && (
+            <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 py-12 text-center">
+              <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                No notes match that filter… yet.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {!loading && !err && gridPosts.length === 0 && (
-        <div className="mt-8 rounded-xl border border-dashed p-6 text-center text-sm text-zinc-500 dark:border-zinc-700/40 dark:text-zinc-400">
-          No notes match that filter… yet.
-        </div>
-      )}
-
-      <QuickPeek slug={peekSlug} onClose={closePeek} posts={notes} />
+      <QuickPeek slug={peekSlug} onClose={() => setPeekSlug(null)} posts={notes} />
     </section>
   );
 }

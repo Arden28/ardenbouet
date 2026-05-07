@@ -2,14 +2,14 @@
 import '../i18n';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 import CaseModal from './CaseModal';
 import ImageWithFallback from './ImageWithFallback';
 
+// ─── Types ──────────────────────────────────────────────────────────────────
 type Project = {
-  id: string; // stored as string in DB
+  id: string;
   title: string;
   description: string;
   logoUrl: string;
@@ -34,213 +34,370 @@ type ContentBundle = {
   notes: unknown[];
 };
 
+type Filter = 'all' | 'saas' | 'client' | 'open-source';
+
+// ─── Config ──────────────────────────────────────────────────────────────────
+const EXPO = [0.16, 1, 0.3, 1] as const;
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all',         label: 'All'         },
+  { key: 'saas',        label: 'SaaS'        },
+  { key: 'client',      label: 'Client'      },
+  { key: 'open-source', label: 'Open Source' },
+];
+
+// ─── Inline ruled line (consistent with Hero / Header motif) ─────────────────
+function Rule() {
+  return <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />;
+}
+
+// ─── Skeleton card ───────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse border-b border-r border-zinc-200 dark:border-zinc-800 p-6">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="h-[18px] w-16 bg-zinc-100 dark:bg-zinc-800" />
+        <div className="h-8 w-8 bg-zinc-100 dark:bg-zinc-800" />
+      </div>
+      <div className="mb-2 h-7 w-10 bg-zinc-100 dark:bg-zinc-800" />
+      <div className="mb-1 h-5 w-3/4 bg-zinc-100 dark:bg-zinc-800" />
+      <div className="mb-4 h-3 w-full bg-zinc-100 dark:bg-zinc-800" />
+      <div className="mb-5 h-2 w-1/2 bg-zinc-100 dark:bg-zinc-800" />
+      <div className="flex justify-between">
+        <div className="h-3 w-12 bg-zinc-100 dark:bg-zinc-800" />
+        <div className="h-3 w-20 bg-zinc-100 dark:bg-zinc-800" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 export const Projects = () => {
   const { t } = useTranslation();
 
-  // remote state
+  // ── Remote data ──────────────────────────────────────────────────────────
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [err, setErr]           = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch('/api/content', { cache: 'no-store' });
+        const res  = await fetch('/api/content', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = (await res.json()) as ContentBundle;
-        if (mounted) {
-          setProjects(json.projects || []);
-          setErr(null);
-        }
+        if (mounted) { setProjects(json.projects || []); setErr(null); }
       } catch (e: any) {
         if (mounted) setErr(e?.message ?? 'Failed to load projects');
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
-  
 
-  type Filter = 'all' | 'saas' | 'client' | 'open-source';
+  // ── Filter ───────────────────────────────────────────────────────────────
   const [filter, setFilter] = useState<Filter>('all');
 
-  const filtered = useMemo(() => {
-    if (filter === 'all') return projects;
-    return projects.filter((p) => p.tags?.includes(filter));
-  }, [filter, projects]);
-
-  // Modal state
-  const [open, setOpen] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const activeProject = useMemo(
-    () => projects.find((p) => p.id === activeProjectId) || null,
-    [projects, activeProjectId],
+  const filtered = useMemo(
+    () => filter === 'all' ? projects : projects.filter(p => p.tags?.includes(filter)),
+    [filter, projects]
   );
 
-  const openCase = (id: string) => {
-    setActiveProjectId(id);
-    setActiveImageIndex(0);
-    setOpen(true);
-  };
-  const closeCase = () => {
-    setOpen(false);
-    setTimeout(() => setActiveProjectId(null), 200);
-  };
+  // ── Modal ────────────────────────────────────────────────────────────────
+  const [open, setOpen]                     = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeProjectId, setActiveProjectId]   = useState<string | null>(null);
+
+  const activeProject = useMemo(
+    () => projects.find(p => p.id === activeProjectId) || null,
+    [projects, activeProjectId]
+  );
+
+  const openCase = (id: string) => { setActiveProjectId(id); setActiveImageIndex(0); setOpen(true); };
+  const closeCase = () => { setOpen(false); setTimeout(() => setActiveProjectId(null), 400); };
 
   return (
-    <section id="projects" className="relative mt-20 px-4">
-      <h2 className="mx-auto max-w-6xl text-left text-2xl font-extrabold leading-8">
-        <span className="bg-gradient-to-r from-black to-[color:var(--brand)] bg-clip-text text-transparent dark:from-white dark:to-[color:var(--brand)]">
-          Builds & Case Files
-        </span>
-      </h2>
+    <section id="projects" className="relative mx-auto mt-24 max-w-6xl px-4">
 
-      <div className="mx-auto mt-6 grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-4">
-        {/* Filters */}
-        <aside className="self-start space-y-4 lg:sticky lg:top-24 lg:col-span-1">
-          <div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-700/40 dark:bg-zinc-900">
-            <h3 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {t('projects.filters', { defaultValue: 'Filter' })}
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {(['all', 'saas', 'client', 'open-source'] as Filter[]).map((f) => (
+      {/* ── SECTION HEADER — ruled line system ─────────────────────────── */}
+      <Rule />
+      <div className="flex items-baseline justify-between py-4">
+        <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
+          Builds &amp; Case Files
+        </h2>
+        {!loading && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+            {filtered.length} project{filtered.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+      <Rule />
+
+      {/* ── BODY GRID ──────────────────────────────────────────────────── */}
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[180px_1fr]">
+
+        {/* ── SIDEBAR ──────────────────────────────────────────────────── */}
+        <aside className="self-start lg:sticky lg:top-28">
+
+          {/* Filter label — desktop only */}
+          <p className="mb-3 hidden font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600 lg:block">
+            Filter
+          </p>
+
+          {/* Filter buttons */}
+          <div
+            className={[
+              'flex flex-row flex-wrap gap-2',
+              'lg:flex-col lg:gap-0',
+              'lg:border-t lg:border-zinc-200 lg:dark:border-zinc-800',
+            ].join(' ')}
+          >
+            {FILTERS.map(f => {
+              const isActive = filter === f.key;
+              return (
                 <button
-                  key={f}
+                  key={f.key}
                   type="button"
-                  onClick={() => setFilter(f)}
-                  aria-pressed={filter === f}
+                  onClick={() => setFilter(f.key)}
+                  aria-pressed={isActive}
                   className={[
-                    'w-full rounded-lg border px-3 py-1.5 text-sm transition',
-                    filter === f
-                      ? 'border-[color:var(--brand)] bg-[color:var(--brand-soft)] text-zinc-800'
-                      : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800/60',
+                    'relative flex items-center gap-2.5',
+                    'focus-visible:outline-none transition-colors duration-150',
+                    // Mobile: small bordered chip
+                    'rounded-sm border border-zinc-200 dark:border-zinc-800 px-3 py-1.5',
+                    // Desktop: full-width row
+                    'lg:rounded-none lg:border-0 lg:border-b lg:border-zinc-100 lg:dark:border-zinc-900 lg:px-0 lg:py-3 lg:w-full',
+                    isActive
+                      ? 'text-zinc-900 dark:text-zinc-50 border-zinc-900 dark:border-zinc-100 lg:border-zinc-100 lg:dark:border-zinc-900'
+                      : 'text-zinc-400 dark:text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300',
                   ].join(' ')}
                 >
-                  {f === 'open-source' ? 'Open Source' : f[0].toUpperCase() + f.slice(1)}
+                  {/* Animated lime dash — desktop */}
+                  <span
+                    aria-hidden
+                    className={[
+                      'hidden lg:block h-px bg-[#2467AC] shrink-0',
+                      'transition-[width,opacity] duration-300',
+                      isActive ? 'w-5 opacity-100' : 'w-0 opacity-0',
+                    ].join(' ')}
+                  />
+                  <span className="font-mono text-[10px] uppercase tracking-widest">
+                    {f.label}
+                  </span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          <div className="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-700/40 dark:bg-zinc-900">
-            <h3 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {t('projects.contact', { defaultValue: 'Need a build?' })}
-            </h3>
-            <Button asChild className="w-full bg-[color:var(--brand)] hover:opacity-95">
-              <Link href="#contact">{t('projects.cta', { defaultValue: "Let's talk" })}</Link>
-            </Button>
+          {/* CTA — desktop */}
+          <div className="mt-8 hidden lg:block">
+            <Rule />
+            <div className="py-4">
+              <p className="mb-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                {t('projects.contact', { defaultValue: 'Need a build?' })}
+              </p>
+              <Link
+                href="#contact"
+                className={[
+                  'flex w-full items-center justify-between',
+                  'border border-zinc-900 dark:border-zinc-100',
+                  'px-3 py-2 text-[11px] font-semibold uppercase tracking-widest',
+                  'text-zinc-900 dark:text-zinc-100',
+                  'hover:bg-zinc-900 hover:text-white',
+                  'dark:hover:bg-zinc-50 dark:hover:text-zinc-900',
+                  'transition-colors duration-150',
+                ].join(' ')}
+              >
+                {t('projects.cta', { defaultValue: "Let's talk" })}
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
           </div>
         </aside>
 
-        {/* List */}
-        <div className="lg:col-span-3">
-          {loading && (
-            <ul className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <li key={i} className="relative">
-                  <div className="case-card h-full p-4 animate-pulse">
-                    <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-lg bg-zinc-200 dark:bg-zinc-800" />
-                      <div className="flex-1">
-                        <div className="h-4 w-2/3 rounded bg-zinc-200 dark:bg-zinc-800" />
-                        <div className="mt-2 h-3 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
-                      </div>
-                    </div>
-                    <div className="mt-4 h-6 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800" />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* ── PROJECT GRID ─────────────────────────────────────────────── */}
+        <div>
 
-          {!loading && err && (
-            <div className="rounded-xl border border-dashed p-6 text-center text-sm text-red-600 dark:border-zinc-700/40 dark:text-red-400">
-              {t('projects.error', { defaultValue: 'Failed to load projects.' })} {err}
+          {/* Loading state */}
+          {loading && (
+            <div className="grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 md:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           )}
 
+          {/* Error state */}
+          {!loading && err && (
+            <div className="border border-dashed border-zinc-200 dark:border-zinc-800 p-10 text-center">
+              <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
+                {t('projects.error', { defaultValue: 'Failed to load projects.' })}
+              </p>
+              <p className="mt-1 font-mono text-[10px] text-zinc-300 dark:text-zinc-700">{err}</p>
+            </div>
+          )}
+
+          {/* Loaded state */}
           {!loading && !err && (
             <>
-              <ul className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                {filtered.map((p, i) => (
-                  <li key={p.id} className="relative">
-                    <article className="case-card h-full p-4 dark:bg-zinc-900" style={{ animationDelay: `${(i % 6) * 60}ms` }}>
-                      <div className="flex items-center gap-3">
-                        <ImageWithFallback
-                          src={p.logoUrl}
-                          alt={`${p.title} logo`}
-                          width={44}
-                          height={44}
-                          className="rounded-lg border border-zinc-200/60 dark:border-zinc-700/50 object-cover"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="truncate font-semibold text-zinc-900 dark:text-zinc-100">{p.title}</h3>
-                          <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{p.description}</p>
+              {/*
+                Inner-border grid:
+                  container has border-t border-l
+                  each cell has border-b border-r
+                → creates a clean grid-line pattern with no outer shadow
+              */}
+              <motion.ul
+                layout
+                className="grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 md:grid-cols-2"
+              >
+                <AnimatePresence mode="popLayout">
+                  {filtered.map((p, i) => (
+                    <motion.li
+                      key={p.id}
+                      layout
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-60px' }}
+                      transition={{ duration: 0.55, ease: EXPO, delay: (i % 4) * 0.07 }}
+                      exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
+                      className="relative border-b border-r border-zinc-200 dark:border-zinc-800"
+                    >
+                      <article
+                        className={[
+                          'group relative h-full p-5 lg:p-6',
+                          'transition-colors duration-200',
+                          'hover:bg-zinc-50 dark:hover:bg-zinc-900/60',
+                        ].join(' ')}
+                      >
+
+                        {/* Top row: category tags + logo mark */}
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {p.tags?.map(tag => (
+                              <span
+                                key={tag}
+                                className={[
+                                  'border border-zinc-200 dark:border-zinc-800',
+                                  'px-2 py-0.5',
+                                  'font-mono text-[9px] uppercase tracking-widest',
+                                  'text-zinc-400 dark:text-zinc-500',
+                                ].join(' ')}
+                              >
+                                {tag.replace('-', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                          <ImageWithFallback
+                            src={p.logoUrl}
+                            alt={`${p.title} logo`}
+                            width={32}
+                            height={32}
+                            className="shrink-0 border border-zinc-200/60 dark:border-zinc-700/50 object-cover"
+                          />
                         </div>
-                      </div>
 
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {p.tags?.map((tag) => (
-                          <span key={tag} className="chip chip-brand capitalize">
-                            {tag.replace('-', ' ')}
-                          </span>
-                        ))}
-                        {p.tech?.slice(0, 3).map((tk) => (
-                          <span key={tk} className="chip chip-brand">
-                            {tk}
-                          </span>
-                        ))}
-                        {p.metric && <span className="chip chip-brand">{p.metric}</span>}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between">
-                        {p.url && p.url.trim() !== "" && (
-                        <a
-                          href={p.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm link-brand"
-                          aria-label={`Open ${p.title}`}
-                        >
-                          {t('experiences.projects.see', { defaultValue: 'See project' })}
-                        </a>
+                        {/*
+                          Metric as large display number.
+                          Treated like a KPI callout — the first thing your eye lands on.
+                        */}
+                        {p.metric && (
+                          <p className="mb-1 font-mono text-3xl font-bold leading-none tracking-tight text-zinc-900 dark:text-zinc-50">
+                            {p.metric}
+                          </p>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => (p.caseFile ? openCase(p.id) : undefined)}
-                          disabled={!p.caseFile}
-                          className={`text-sm ${
-                            p.caseFile
-                              ? 'text-zinc-600 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-100'
-                              : 'text-zinc-400 dark:text-zinc-600 cursor-not-allowed'
-                          }`}
-                          aria-disabled={!p.caseFile}
-                        >
-                          {p.caseFile ? 'View case file' : 'Case file soon'}
-                        </button>
-                      </div>
-                    </article>
-                  </li>
-                ))}
-              </ul>
+                        {/* Title */}
+                        <h3 className="mb-1.5 font-heading text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                          {p.title}
+                        </h3>
 
+                        {/* Description */}
+                        <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+                          {p.description}
+                        </p>
+
+                        {/* Tech — monospace dot-separated, understated */}
+                        {p.tech && p.tech.length > 0 && (
+                          <p className="mb-5 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                            {p.tech.slice(0, 4).join(' · ')}
+                          </p>
+                        )}
+
+                        {/* Action row */}
+                        <div className="flex items-center justify-between">
+                          {p.url && p.url.trim() !== '' ? (
+                            <a
+                              href={p.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Open ${p.title}`}
+                              className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                            >
+                              Visit →
+                            </a>
+                          ) : <span />}
+
+                          <button
+                            type="button"
+                            onClick={() => p.caseFile ? openCase(p.id) : undefined}
+                            disabled={!p.caseFile}
+                            aria-disabled={!p.caseFile}
+                            className={[
+                              'font-mono text-[10px] uppercase tracking-widest transition-colors',
+                              p.caseFile
+                                ? 'cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-[#2467AC]'
+                                : 'cursor-not-allowed text-zinc-300 dark:text-zinc-700',
+                            ].join(' ')}
+                          >
+                            {p.caseFile ? 'Case file ↗' : 'Case file soon'}
+                          </button>
+                        </div>
+
+                        {/*
+                          Hover border accent: a 2px line that grows on the card's
+                          left edge — matches the Hero's ruled-line motion language
+                        */}
+                        <span
+                          aria-hidden
+                          className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full"
+                        />
+                      </article>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </motion.ul>
+
+              {/* Empty state */}
               {filtered.length === 0 && (
-                <div className="mt-8 rounded-xl border border-dashed p-6 text-center text-sm text-zinc-500 dark:border-zinc-700/40 dark:text-zinc-400">
-                  {t('projects.empty', { defaultValue: 'No projects in this filter… yet.' })}
+                <div className="border border-dashed border-zinc-200 dark:border-zinc-800 py-16 text-center">
+                  <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                    {t('projects.empty', { defaultValue: 'No projects in this filter… yet.' })}
+                  </p>
                 </div>
               )}
+
+              {/* Mobile CTA */}
+              <div className="mt-8 flex justify-start lg:hidden">
+                <Link
+                  href="#contact"
+                  className={[
+                    'inline-flex items-center gap-2',
+                    'border border-zinc-900 dark:border-zinc-100',
+                    'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest',
+                    'text-zinc-900 dark:text-zinc-100',
+                    'hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-50 dark:hover:text-zinc-900',
+                    'transition-colors duration-150',
+                  ].join(' ')}
+                >
+                  {t('projects.cta', { defaultValue: "Let's talk" })} →
+                </Link>
+              </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Modal */}
+      {/* ── MODAL ──────────────────────────────────────────────────────── */}
       <CaseModal
         open={open && !!activeProject?.caseFile}
         onClose={closeCase}

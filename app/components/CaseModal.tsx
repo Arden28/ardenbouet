@@ -2,8 +2,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import ImageWithFallback from './ImageWithFallback';
 
+// ─── Types ──────────────────────────────────────────────────────────────────
 type CaseFile = {
   problem: string;
   approach: string[];
@@ -22,6 +24,58 @@ type Props = {
   setActiveImageIndex: (i: number) => void;
 };
 
+// ─── Motion config ──────────────────────────────────────────────────────────
+const EXPO     = [0.16, 1, 0.3, 1] as const;
+const EXPO_OUT = [0.32, 0, 0.67, 0] as const;
+
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit:   { opacity: 0, transition: { duration: 0.3,  ease: 'easeIn' } },
+};
+
+// Media area fades + scales in from darkness
+const mediaVariants = {
+  hidden: { opacity: 0, scale: 0.97 },
+  show:   { opacity: 1, scale: 1, transition: { duration: 0.6, ease: EXPO, delay: 0.12 } },
+};
+
+// Right detail panel slides in from the right
+const detailVariants = {
+  hidden: { x: 48, opacity: 0 },
+  show:   { x: 0,  opacity: 1, transition: { duration: 0.55, ease: EXPO, delay: 0.08 } },
+  exit:   { x: 48, opacity: 0, transition: { duration: 0.3,  ease: EXPO_OUT } },
+};
+
+// Content sections stagger in after panel arrives
+const sectionVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show:   (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.5, ease: EXPO, delay: 0.25 + i * 0.09 },
+  }),
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** 01, 02, 03 … */
+const ordinal = (n: number) => String(n).padStart(2, '0');
+
+/** Thin ruled line — same motif as Hero / Header / Projects */
+function Rule({ className = '' }: { className?: string }) {
+  return <div className={`h-px bg-zinc-200 ${className}`} />;
+}
+
+/** Diagonal arrow icon for "Discuss" CTA */
+function ArrowUpRightIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 10 10" className={className} aria-hidden>
+      <path fill="currentColor" d="M1 1h8v8H7.5V3.621L2.56 8.56 1.44 7.44 6.379 2.5H1V1Z" />
+    </svg>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 export default function CaseModal({
   open,
   onClose,
@@ -30,57 +84,47 @@ export default function CaseModal({
   activeImageIndex,
   setActiveImageIndex,
 }: Props) {
-  const backdropRef = useRef<HTMLDivElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const mediaFrameRef = useRef<HTMLDivElement | null>(null);
-  const firstFocusRef = useRef<HTMLButtonElement | null>(null);
-  const lastFocusRef = useRef<HTMLButtonElement | null>(null);
+  const backdropRef    = useRef<HTMLDivElement | null>(null);
+  const mediaFrameRef  = useRef<HTMLDivElement | null>(null);
+  const firstFocusRef  = useRef<HTMLButtonElement | null>(null);
+  const lastFocusRef   = useRef<HTMLButtonElement | null>(null);
 
-  // ---- state
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [fitMode, setFitMode] = useState<'contain' | 'cover'>('contain');
-  const [isFs, setIsFs] = useState(false);
+  const [fitMode, setFitMode]         = useState<'contain' | 'cover'>('contain');
+  const [isFs, setIsFs]               = useState(false);
 
-  const images = useMemo(() => (caseFile.images ?? []).filter(Boolean), [caseFile.images]);
-  const count = images.length;
+  const images  = useMemo(() => (caseFile.images ?? []).filter(Boolean), [caseFile.images]);
+  const count   = images.length;
   const current = count ? images[activeImageIndex % count] : null;
-  const isVideo = current ? current.src.toLowerCase().endsWith('.mp4') : false;
+  const isVideo = current?.src.toLowerCase().endsWith('.mp4') ?? false;
 
-  // ---- Lock body scroll
+  // ── Body scroll lock ──────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
 
-  // ---- Fullscreen sync
+  // ── Fullscreen sync ───────────────────────────────────────────────────
   useEffect(() => {
-    const onFsChange = () => {
-      setIsFs(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
+    const onChange = () => setIsFs(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
-  // ---- Keyboard
+  // ── Keyboard handling ─────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // if in fullscreen, exit fullscreen first
-        if (document.fullscreenElement) {
-          void document.exitFullscreen();
-          return;
-        }
+        if (document.fullscreenElement) { void document.exitFullscreen(); return; }
         e.preventDefault();
         onClose();
       }
       if (!count) return;
       if (e.key === 'ArrowRight') setActiveImageIndex((activeImageIndex + 1) % count);
-      if (e.key === 'ArrowLeft') setActiveImageIndex((activeImageIndex - 1 + count) % count);
+      if (e.key === 'ArrowLeft')  setActiveImageIndex((activeImageIndex - 1 + count) % count);
       if (e.key.toLowerCase() === 'f') toggleFullscreen();
     };
     document.addEventListener('keydown', onKey);
@@ -88,347 +132,450 @@ export default function CaseModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeImageIndex, count, onClose, setActiveImageIndex]);
 
-  // ---- Focus on open
-  useEffect(() => {
-    if (open) firstFocusRef.current?.focus();
-  }, [open]);
+  // ── Focus management ──────────────────────────────────────────────────
+  useEffect(() => { if (open) firstFocusRef.current?.focus(); }, [open]);
 
-  // ---- focus trap
+  // ── Focus trap ────────────────────────────────────────────────────────
   const onTrapFirst = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key !== 'Tab' || !e.shiftKey) return;
-    e.preventDefault();
-    lastFocusRef.current?.focus();
+    if (e.key === 'Tab' && e.shiftKey) { e.preventDefault(); lastFocusRef.current?.focus(); }
   };
   const onTrapLast = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key !== 'Tab' || e.shiftKey) return;
-    e.preventDefault();
-    firstFocusRef.current?.focus();
+    if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); firstFocusRef.current?.focus(); }
   };
 
-  // ---- gestures
+  // ── Touch / swipe ─────────────────────────────────────────────────────
   const onTouchStart = (e: React.TouchEvent) => setTouchStartX(e.changedTouches[0].clientX);
-  const onTouchEnd = (e: React.TouchEvent) => {
+  const onTouchEnd   = (e: React.TouchEvent) => {
     if (touchStartX == null || !count) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    const THRESH = 40;
-    if (dx > THRESH) setActiveImageIndex((activeImageIndex - 1 + count) % count);
-    if (dx < -THRESH) setActiveImageIndex((activeImageIndex + 1) % count);
+    if (dx >  40) setActiveImageIndex((activeImageIndex - 1 + count) % count);
+    if (dx < -40) setActiveImageIndex((activeImageIndex + 1) % count);
     setTouchStartX(null);
   };
 
-  // ---- fullscreen
+  // ── Fullscreen ────────────────────────────────────────────────────────
   const toggleFullscreen = () => {
     const el = mediaFrameRef.current;
     if (!el) return;
-    if (!document.fullscreenElement) {
-      void el.requestFullscreen?.();
-    } else {
-      void document.exitFullscreen?.();
-    }
+    if (!document.fullscreenElement) void el.requestFullscreen?.();
+    else                              void document.exitFullscreen?.();
   };
 
-  // ---- close on backdrop
+  // ── Backdrop click ────────────────────────────────────────────────────
   const onBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === backdropRef.current) {
-      if (document.fullscreenElement) {
-        void document.exitFullscreen();
-        return;
-      }
-      onClose();
-    }
+    if (e.target !== backdropRef.current) return;
+    if (document.fullscreenElement) { void document.exitFullscreen(); return; }
+    onClose();
   };
 
-  if (!open) return null;
+  if (typeof document === 'undefined') return null;
 
-  const content = (
-    <div
-      ref={backdropRef}
-      className="fixed inset-0 z-[70] overflow-y-auto"
-      onClick={onBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="casefile-title"
-    >
-      {/* Backdrop: vignette + subtle blur */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.55),rgba(0,0,0,0.75))] backdrop-blur-sm" />
-
-      {/* Panel wrapper */}
-      <div className="relative mx-auto my-4 w-full max-w-[110rem] px-3 sm:my-8 sm:px-6">
-        <div
-          ref={panelRef}
-          className="
-            relative overflow-hidden rounded-2xl border border-zinc-200/20 bg-zinc-50/80 shadow-2xl backdrop-blur
-            dark:border-zinc-700/40 dark:bg-zinc-900/70
-          "
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        /*
+          BACKDROP — true full-screen overlay.
+          Near-black #0A0A0A: cinematic, not generic modal-grey.
+        */
+        <motion.div
+          ref={backdropRef}
+          variants={backdropVariants}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          onClick={onBackdropClick}
+          className="fixed inset-0 z-[70] flex flex-col bg-[#0A0A0A]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="casefile-title"
         >
-          {/* Top bar */}
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-200/50 px-3 py-2 dark:border-zinc-700/50 sm:px-4">
+
+          {/* ── TOP BAR ──────────────────────────────────────────────── */}
+          {/*
+            Full-width. Dark bg. Left: title + meta. Right: controls.
+            Height is intentionally compact — the media should dominate.
+          */}
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-zinc-800 px-4 py-3 sm:px-6">
+
+            {/* Left: title + tags/tech */}
             <div className="min-w-0">
               <h2
                 id="casefile-title"
-                className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100 sm:text-base"
+                className="font-heading text-sm font-bold text-zinc-100 sm:text-base"
                 title={`${title} — Case File`}
               >
-                {title} <span className="font-medium opacity-70">• Case File</span>
+                <span className="truncate">{title}</span>
+                <span className="ml-2 font-normal text-zinc-500">· Case File</span>
               </h2>
               {(caseFile.tags?.length || caseFile.tech?.length) && (
-                <div className="mt-1 flex max-w-full flex-wrap items-center gap-2">
-                  {caseFile.tags?.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-zinc-300/60 bg-white/60 px-2 py-[2px] text-[11px] font-medium text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {caseFile.tech?.map((tech) => (
-                    <span
-                      key={tech}
-                      className="rounded-full border border-zinc-300/60 bg-white/60 px-2 py-[2px] text-[11px] font-medium text-zinc-700 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
+                <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                  {[...(caseFile.tags ?? []), ...(caseFile.tech ?? [])].join(' · ')}
+                </p>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Right: controls */}
+            <div className="flex shrink-0 items-center gap-2">
               {count > 0 && (
                 <>
+                  {/* Fit/Fill toggle */}
                   <button
                     ref={firstFocusRef}
-                    onClick={() => setFitMode((m) => (m === 'contain' ? 'cover' : 'contain'))}
                     onKeyDown={onTrapFirst}
-                    className="rounded-md border border-zinc-200/60 bg-white/70 px-2 py-1 text-xs font-medium text-zinc-700 shadow-sm hover:bg-white dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    onClick={() => setFitMode(m => m === 'contain' ? 'cover' : 'contain')}
+                    className={[
+                      'hidden sm:inline-flex items-center',
+                      'border border-zinc-800 px-2.5 py-1',
+                      'font-mono text-[10px] uppercase tracking-widest text-zinc-400',
+                      'hover:border-zinc-600 hover:text-zinc-200 transition-colors',
+                    ].join(' ')}
                     title={fitMode === 'contain' ? 'Fill frame' : 'Fit inside'}
                   >
                     {fitMode === 'contain' ? 'Fill' : 'Fit'}
                   </button>
 
+                  {/* Fullscreen */}
                   <button
                     onClick={toggleFullscreen}
-                    className="rounded-md border border-zinc-200/60 bg-white/70 px-2 py-1 text-xs font-medium text-zinc-700 shadow-sm hover:bg-white dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    className={[
+                      'hidden sm:inline-flex items-center',
+                      'border border-zinc-800 px-2.5 py-1',
+                      'font-mono text-[10px] uppercase tracking-widest text-zinc-400',
+                      'hover:border-zinc-600 hover:text-zinc-200 transition-colors',
+                    ].join(' ')}
                     title={isFs ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'}
                   >
-                    {isFs ? 'Exit FS' : 'Fullscreen'}
+                    {isFs ? 'Exit FS' : 'Full ↗'}
                   </button>
                 </>
               )}
 
+              {/* Close */}
               <button
                 onClick={onClose}
-                className="rounded-md border border-zinc-200/60 bg-white/70 p-2 text-xs text-zinc-600 shadow-sm hover:bg-white dark:border-zinc-700/60 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:bg-zinc-900"
                 aria-label="Close case file"
+                className={[
+                  'inline-flex h-8 w-8 items-center justify-center',
+                  'border border-zinc-800 text-zinc-400',
+                  'hover:border-zinc-200 hover:text-zinc-100',
+                  'transition-colors duration-150 text-sm',
+                ].join(' ')}
               >
                 ✕
               </button>
             </div>
           </div>
 
-          {/* Media + Details grid */}
-          <div className="grid grid-cols-1 gap-0 lg:grid-cols-5">
-            {/* Media column */}
-            <div className="col-span-3 border-b border-zinc-200/50 dark:border-zinc-700/50 lg:border-b-0 lg:border-r">
+          {/* ── MAIN SPLIT ───────────────────────────────────────────── */}
+          {/*
+            Desktop: 60 / 40 split — media theatre left, case study right.
+            Mobile: single column — media on top, scrollable detail below.
+            The contrast between the near-black left and warm-white right
+            creates the "cinematic press kit" split-screen effect.
+          */}
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+
+            {/* ── LEFT: MEDIA PANEL ──────────────────────────────────── */}
+            <motion.div
+              variants={mediaVariants}
+              initial="hidden"
+              animate="show"
+              className="relative flex flex-col bg-[#0A0A0A] lg:w-[60%]"
+            >
               {count > 0 ? (
-                <div className="p-3 sm:p-4">
+                <>
+                  {/* Main image / video frame */}
                   <div
                     ref={mediaFrameRef}
-                    className="group relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-zinc-200/60 bg-zinc-100/70 dark:border-zinc-700/50 dark:bg-zinc-900/40"
+                    className={[
+                      'group relative flex-1 overflow-hidden',
+                      // Mobile: fixed height; Desktop: fills remaining space
+                      'h-[45vw] max-h-[55vh] lg:h-auto lg:max-h-none',
+                    ].join(' ')}
                     onTouchStart={onTouchStart}
                     onTouchEnd={onTouchEnd}
                     onDoubleClick={toggleFullscreen}
                     aria-label="Case media"
                   >
-                    {/* Current media */}
                     {isVideo ? (
                       <video
                         src={current!.src}
                         className={`h-full w-full ${fitMode === 'contain' ? 'object-contain' : 'object-cover'}`}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
+                        autoPlay loop muted playsInline
                       />
                     ) : (
-                      <Image
-                        src={current!.src}
-                        alt={current!.alt}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 66vw"
-                        className={`${fitMode === 'contain' ? 'object-contain' : 'object-cover'}`}
-                        priority={false}
-                      />
+                      current && (
+                        <Image
+                          src={current.src}
+                          alt={current.alt}
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 60vw"
+                          className={fitMode === 'contain' ? 'object-contain' : 'object-cover'}
+                          priority={false}
+                        />
+                      )
                     )}
 
-                    {/* Top-right overlay controls */}
-                    <div className="pointer-events-none absolute right-2 top-2 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="pointer-events-auto select-none rounded-md bg-black/40 px-2 py-[2px] text-[11px] text-white backdrop-blur">
+                    {/* Counter badge — top right, appears on hover */}
+                    {count > 1 && (
+                      <span className="pointer-events-none absolute right-3 top-3 font-mono text-[10px] uppercase tracking-widest text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100">
                         {activeImageIndex + 1} / {count}
                       </span>
-                    </div>
+                    )}
 
-                    {/* Prev / Next arrows */}
+                    {/* Prev / Next — transparent full-height click zones */}
                     {count > 1 && (
                       <>
                         <button
                           onClick={() => setActiveImageIndex((activeImageIndex - 1 + count) % count)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur transition hover:bg-black/60"
                           aria-label="Previous media"
+                          className={[
+                            'absolute left-0 top-0 flex h-full w-1/4 items-center justify-start pl-3',
+                            'text-zinc-500 opacity-0 transition-opacity hover:opacity-100',
+                            'focus-visible:opacity-100 focus-visible:outline-none',
+                          ].join(' ')}
                         >
-                          ←
+                          <span className="flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-900/80 text-sm backdrop-blur-sm">
+                            ←
+                          </span>
                         </button>
                         <button
                           onClick={() => setActiveImageIndex((activeImageIndex + 1) % count)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur transition hover:bg-black/60"
                           aria-label="Next media"
+                          className={[
+                            'absolute right-0 top-0 flex h-full w-1/4 items-center justify-end pr-3',
+                            'text-zinc-500 opacity-0 transition-opacity hover:opacity-100',
+                            'focus-visible:opacity-100 focus-visible:outline-none',
+                          ].join(' ')}
                         >
-                          →
+                          <span className="flex h-8 w-8 items-center justify-center border border-zinc-700 bg-zinc-900/80 text-sm backdrop-blur-sm">
+                            →
+                          </span>
                         </button>
                       </>
                     )}
                   </div>
 
-                  {/* Thumbnails */}
+                  {/* Caption */}
+                  {current?.alt && (
+                    <p className="border-t border-zinc-900 px-4 py-2 font-mono text-[10px] text-zinc-600">
+                      {current.alt}
+                    </p>
+                  )}
+
+                  {/* Thumbnail strip */}
                   {count > 1 && (
-                    <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="border-t border-zinc-900 px-4 py-3">
                       <div
-                        className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none]"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
+                        className={[
+                          'flex gap-2 overflow-x-auto pb-1',
+                          '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]',
+                        ].join(' ')}
                       >
-                        <style jsx>{`div::-webkit-scrollbar { display: none; }`}</style>
                         {images.map((img, i) => {
-                          const v = img.src.toLowerCase().endsWith('.mp4');
+                          const isThumbVideo = img.src.toLowerCase().endsWith('.mp4');
+                          const isActive = i === activeImageIndex;
                           return (
                             <button
                               key={`${img.src}-${i}`}
                               onClick={() => setActiveImageIndex(i)}
-                              className={`relative h-14 w-24 flex-none overflow-hidden rounded-md border ${
-                                i === activeImageIndex
-                                  ? 'border-[color:var(--brand)]'
-                                  : 'border-zinc-200 dark:border-zinc-700'
-                              } snap-start`}
                               aria-label={`Show item ${i + 1}`}
+                              className={[
+                                'relative h-12 w-20 shrink-0 overflow-hidden border',
+                                'transition-[border-color,opacity] duration-150',
+                                isActive
+                                  ? 'border-[#2467AC] opacity-100'
+                                  : 'border-zinc-800 opacity-50 hover:opacity-80',
+                              ].join(' ')}
                             >
-                              {v ? (
-                                <video 
-                                    src={img.src} 
-                                    className="h-full w-full object-cover" 
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline 
-                                />
+                              {isThumbVideo ? (
+                                <video src={img.src} className="h-full w-full object-cover" autoPlay loop muted playsInline />
                               ) : (
                                 <ImageWithFallback
                                   src={img.src}
                                   alt={img.alt}
                                   className="h-full w-full object-cover"
-                                  width={96}
-                                  height={56}
-                                  rounded=''
+                                  width={80}
+                                  height={48}
+                                  rounded=""
                                 />
                               )}
                             </button>
                           );
                         })}
-                      </div>
 
-                      {/* Dots (compact) */}
-                      <div className="hidden gap-1 lg:flex">
-                        {images.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setActiveImageIndex(i)}
-                            className={`h-1.5 w-4 rounded-full ${
-                              i === activeImageIndex ? 'bg-[color:var(--brand)]' : 'bg-zinc-300 dark:bg-zinc-700'
-                            }`}
-                            aria-label={`Go to ${i + 1}`}
-                          />
-                        ))}
+                        {/* Dot indicators */}
+                        <div className="ml-auto flex items-center gap-1.5 shrink-0 pl-2">
+                          {images.map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setActiveImageIndex(i)}
+                              aria-label={`Go to ${i + 1}`}
+                              className={[
+                                'h-1 transition-[width,background] duration-200',
+                                i === activeImageIndex
+                                  ? 'w-4 bg-[#2467AC]'
+                                  : 'w-1.5 bg-zinc-700 hover:bg-zinc-500',
+                              ].join(' ')}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
-
-                  {/* Caption */}
-                  {current?.alt && (
-                    <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                      {current.alt}
-                    </p>
-                  )}
-                </div>
+                </>
               ) : (
-                <div className="p-6">
-                  <div className="flex aspect-[16/9] w-full items-center justify-center rounded-xl border border-dashed border-zinc-300 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                /* No media placeholder */
+                <div className="flex flex-1 items-center justify-center border border-dashed border-zinc-800 m-4">
+                  <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-700">
                     No media yet.
-                  </div>
+                  </p>
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            {/* Details column */}
-            <div className="col-span-2">
-              <div className="space-y-4 p-3 sm:p-5">
-                {/* Problem */}
-                <section className="rounded-xl border border-zinc-200/60 bg-white/70 p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/70">
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Problem</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            {/* ── RIGHT: DETAIL PANEL ────────────────────────────────── */}
+            {/*
+              Warm paper (#F5F4F0) creates a strong contrast with the dark media left.
+              This split reads as "the evidence on the wall vs the dossier on the table."
+            */}
+            <motion.div
+              variants={detailVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className={[
+                'flex flex-col bg-[#F5F4F0] lg:w-[40%]',
+                'overflow-y-auto',
+                '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]',
+              ].join(' ')}
+            >
+              <div className="flex flex-1 flex-col p-5 sm:p-7">
+
+                {/* ── SECTION 01: Problem ──────────────────────────── */}
+                <motion.section
+                  custom={0}
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="mb-6"
+                >
+                  <div className="mb-2 flex items-center gap-3">
+                    <span className="font-mono text-[10px] font-bold text-zinc-400">
+                      {ordinal(1)}
+                    </span>
+                    <Rule className="flex-1 bg-zinc-300" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">
+                      Problem
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-zinc-700">
                     {caseFile.problem}
                   </p>
-                </section>
+                </motion.section>
 
-                {/* Approach */}
-                <section className="rounded-xl border border-zinc-200/60 bg-white/70 p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/70">
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Approach</h3>
-                  <ol className="mt-2 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                {/* ── SECTION 02: Approach ─────────────────────────── */}
+                <motion.section
+                  custom={1}
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="mb-6"
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="font-mono text-[10px] font-bold text-zinc-400">
+                      {ordinal(2)}
+                    </span>
+                    <Rule className="flex-1 bg-zinc-300" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">
+                      Approach
+                    </span>
+                  </div>
+                  <ol className="space-y-3">
                     {caseFile.approach.map((step, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="mt-[2px] inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[color:var(--brand-soft)] text-[11px] font-semibold text-[color:var(--brand)]">
-                          {i + 1}
+                      <li key={i} className="flex gap-3">
+                        {/*
+                          Step number: large monospace — editorial, not a
+                          generic filled circle badge
+                        */}
+                        <span className="shrink-0 font-mono text-[11px] font-bold text-zinc-400 pt-0.5">
+                          {ordinal(i + 1)}.
                         </span>
-                        <span className="leading-relaxed">{step}</span>
+                        <p className="text-sm leading-relaxed text-zinc-700">{step}</p>
                       </li>
                     ))}
                   </ol>
-                </section>
+                </motion.section>
 
-                {/* Result */}
-                <section className="rounded-xl border border-zinc-200/60 bg-white/70 p-4 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900/70">
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Result</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                {/* ── SECTION 03: Result ───────────────────────────── */}
+                <motion.section
+                  custom={2}
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="mb-8"
+                >
+                  <div className="mb-2 flex items-center gap-3">
+                    <span className="font-mono text-[10px] font-bold text-zinc-400">
+                      {ordinal(3)}
+                    </span>
+                    <Rule className="flex-1 bg-zinc-300" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">
+                      Result
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-zinc-700">
                     {caseFile.result}
                   </p>
-                </section>
+                </motion.section>
 
-                {/* CTA row */}
-                <div className="flex flex-col-reverse items-stretch gap-2 pt-2 sm:flex-row sm:justify-end">
-                  <button
-                    onClick={onClose}
-                    className="rounded-md border border-zinc-200/60 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700/50 dark:text-zinc-300 dark:hover:bg-zinc-800/60 sm:min-w-[110px]"
-                  >
-                    Close
-                  </button>
-                  <a
-                    href="#contact"
-                    onClick={(e) => {
-                      // small delay ensures the anchor scrolls first before closing
-                      setTimeout(onClose, 150);
-                    }}
-                    className="rounded-md bg-[color:var(--brand)] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:opacity-95 sm:min-w-[150px]"
-                  >
-                    Discuss this build
-                  </a>
-                </div>
+                {/* ── SPACER ───────────────────────────────────────── */}
+                <div className="flex-1" />
+
+                {/* ── CTA ROW ──────────────────────────────────────── */}
+                <motion.div
+                  custom={3}
+                  variants={sectionVariants}
+                  initial="hidden"
+                  animate="show"
+                >
+                  <Rule className="mb-4 bg-zinc-300" />
+                  <div className="flex items-center gap-3">
+                    <button
+                      ref={lastFocusRef}
+                      onKeyDown={onTrapLast}
+                      onClick={onClose}
+                      className={[
+                        'border border-zinc-300 px-4 py-2',
+                        'font-mono text-[11px] uppercase tracking-widest text-zinc-600',
+                        'hover:border-zinc-900 hover:text-zinc-900',
+                        'transition-colors duration-150',
+                      ].join(' ')}
+                    >
+                      Close
+                    </button>
+
+                    <a
+                      href="#contact"
+                      onClick={() => setTimeout(onClose, 150)}
+                      className={[
+                        'flex-1 flex items-center justify-center gap-1.5',
+                        'bg-[#0A0A0A] px-4 py-2',
+                        'font-mono text-[11px] uppercase tracking-widest text-[#F5F4F0]',
+                        'hover:bg-zinc-800 transition-colors duration-150',
+                      ].join(' ')}
+                    >
+                      Discuss this build
+                      <ArrowUpRightIcon className="h-2.5 w-2.5" />
+                    </a>
+                  </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
-
-          {/* Focus sentinel */}
-          <button ref={lastFocusRef} className="sr-only" aria-hidden tabIndex={0} onKeyDown={onTrapLast} />
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
-
-  return typeof document === 'undefined' ? null : createPortal(content, document.body);
 }

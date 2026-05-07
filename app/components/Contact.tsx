@@ -1,51 +1,191 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Mail, 
-  Phone, // Added Phone icon
-  Github, 
-  Linkedin, 
-  Copy, 
-  Check, 
-  ArrowRight, 
-  Send, 
-  Loader2, 
-  Terminal, 
-  Clock, 
-  DollarSign 
-} from 'lucide-react';
-import { cn } from '@/lib/utils'; 
+import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
+import { Mail, Phone, Github, Linkedin, Copy, Check, Loader2, Clock, DollarSign } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 type Chip = 'SaaS build' | 'API integration' | 'IoT/Telemetry' | 'UI/Frontend' | 'Consultation';
 
+// ─── Motion ──────────────────────────────────────────────────────────────────
+const EXPO = [0.16, 1, 0.3, 1] as const;
+
+// "Curtain reveal" — text slides up from below a clipped container.
+// Each line is separate so they stagger independently.
+const lineVariants = {
+  hidden: { y: '115%' },
+  show:   (i: number) => ({
+    y: '0%',
+    transition: { duration: 0.85, ease: EXPO, delay: i * 0.13 },
+  }),
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show:   (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.65, ease: EXPO, delay: i * 0.1 },
+  }),
+};
+
+// ─── Design primitives ───────────────────────────────────────────────────────
+function Rule({ className = '' }: { className?: string }) {
+  return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+// ─── Magnetic social link ─────────────────────────────────────────────────────
+/*
+  On hover, the inner icon/content pulls gently toward the cursor.
+  The outer border/container stays fixed — only the child translates.
+*/
+function MagneticLink({
+  href,
+  label,
+  external = true,
+  children,
+}: {
+  href: string;
+  label: string;
+  external?: boolean;
+  children: React.ReactNode;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 240, damping: 22 });
+  const sy = useSpring(y, { stiffness: 240, damping: 22 });
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    x.set((e.clientX - r.left - r.width / 2) * 0.38);
+    y.set((e.clientY - r.top - r.height / 2) * 0.38);
+  };
+  const onMouseLeave = () => { x.set(0); y.set(0); };
+
+  return (
+    <div
+      ref={wrapRef}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      className="relative"
+    >
+      <Link
+        href={href}
+        aria-label={label}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        className={[
+          'inline-flex h-10 w-10 items-center justify-center',
+          'border border-zinc-200 dark:border-zinc-800',
+          'text-zinc-500 dark:text-zinc-400',
+          'hover:border-zinc-900 hover:text-zinc-900',
+          'dark:hover:border-zinc-100 dark:hover:text-zinc-100',
+          'transition-colors duration-150',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900',
+        ].join(' ')}
+      >
+        <motion.span
+          style={{ x: sx, y: sy }}
+          className="inline-flex items-center justify-center"
+        >
+          {children}
+        </motion.span>
+      </Link>
+    </div>
+  );
+}
+
+// ─── Inline copy button ───────────────────────────────────────────────────────
+function CopyButton({
+  onCopy,
+  copied,
+  label,
+}: {
+  onCopy: () => void;
+  copied: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      aria-label={label}
+      className={[
+        'inline-flex h-7 w-7 items-center justify-center shrink-0',
+        'border border-zinc-200 dark:border-zinc-800',
+        'text-zinc-400 dark:text-zinc-500',
+        'hover:border-zinc-900 hover:text-zinc-900',
+        'dark:hover:border-zinc-100 dark:hover:text-zinc-100',
+        'transition-colors duration-150',
+      ].join(' ')}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        {copied ? (
+          <motion.span
+            key="check"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Check className="h-3 w-3 text-[#2467AC]" />
+          </motion.span>
+        ) : (
+          <motion.span
+            key="copy"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Copy className="h-3 w-3" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </button>
+  );
+}
+
+// ─── Shared line-input class ──────────────────────────────────────────────────
+// Replaces all boxed inputs with a clean underline-only style.
+const lineInputBase =
+  'w-full bg-transparent border-b py-3 text-sm text-zinc-900 dark:text-zinc-100 ' +
+  'placeholder:text-zinc-400 dark:placeholder:text-zinc-600 ' +
+  'focus:outline-none transition-colors duration-150';
+
+const lineInputNormal = 'border-zinc-200 dark:border-zinc-800 focus:border-zinc-900 dark:focus:border-zinc-100';
+const lineInputError   = 'border-red-400 dark:border-red-500';
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export const Contact = () => {
-  // ── form state
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [chips, setChips] = useState<Chip[]>([]);
-  const [timeframe, setTimeframe] = useState<'soon'|'this quarter'|'flexible'>('flexible');
-  const [budget, setBudget] = useState(3); // 1..5
+  // ── Form state (unchanged) ─────────────────────────────────────────────────
+  const [name, setName]           = useState('');
+  const [email, setEmail]         = useState('');
+  const [message, setMessage]     = useState('');
+  const [chips, setChips]         = useState<Chip[]>([]);
+  const [timeframe, setTimeframe] = useState<'soon' | 'this quarter' | 'flexible'>('flexible');
+  const [budget, setBudget]       = useState(3);
   const [submitting, setSubmitting] = useState(false);
-  const [touched, setTouched] = useState<{email?: boolean; name?: boolean; message?: boolean}>({});
-  
-  // ── copy states
+  const [touched, setTouched]     = useState<{ email?: boolean; name?: boolean; message?: boolean }>({});
+
   const [emailCopied, setEmailCopied] = useState(false);
   const [phoneCopied, setPhoneCopied] = useState(false);
 
-  // ── derived
-  const budgetLabel = useMemo(() => ['<$500','$500–2k','$2–8k','$8–20k','$20k+'][budget-1], [budget]);
+  const budgetLabel = useMemo(
+    () => ['< $500', '$500 – 2k', '$2 – 8k', '$8 – 20k', '$20k +'][budget - 1],
+    [budget]
+  );
   const isEmailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()), [email]);
-  const canSend = !!(name.trim() && isEmailValid && message.trim());
+  const canSend      = !!(name.trim() && isEmailValid && message.trim());
   const messageLimit = 1200;
 
   const toggleChip = (c: Chip) =>
     setChips(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
 
-  // ── submit (mailto)
+  // ── Submit (mailto — unchanged) ────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSend || submitting) return;
@@ -66,14 +206,13 @@ DETAILS
 • Contact: ${name} (${email})
 `
     );
-
     setTimeout(() => {
       window.location.href = `mailto:laudbouetoumoussa@gmail.com?subject=${subj}&body=${body}`;
       setSubmitting(false);
     }, 800);
   };
 
-  // ── copy handlers
+  // ── Copy handlers (unchanged) ──────────────────────────────────────────────
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText('laudbouetoumoussa@gmail.com');
@@ -81,11 +220,9 @@ DETAILS
       setTimeout(() => setEmailCopied(false), 2000);
     } catch {}
   };
-
   const copyPhone = async () => {
     try {
-      // Replace with your actual phone number
-      await navigator.clipboard.writeText('+254 700 000 000'); 
+      await navigator.clipboard.writeText('+254 745 908 026');
       setPhoneCopied(true);
       setTimeout(() => setPhoneCopied(false), 2000);
     } catch {}
@@ -93,327 +230,352 @@ DETAILS
 
   return (
     <section id="contact" className="relative mx-auto mt-24 max-w-6xl px-4 pb-24 sm:pb-32">
-        
-      {/* Header */}
-      <div className="mb-12 md:mb-16">
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center gap-2 mb-4"
+
+      {/* ── Section rule ─────────────────────────────────────────────── */}
+      <Rule />
+
+      {/* ── Billboard headline — two-line clipped curtain reveal ──────── */}
+      {/*
+        Each line is wrapped in overflow-hidden so the upward slide creates
+        a clean "theatre curtain" effect. Stagger: line 1, then line 2.
+      */}
+      <motion.div
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="py-6 sm:py-8"
+      >
+        <div className="overflow-hidden">
+          <motion.p
+            custom={0}
+            variants={lineVariants}
+            className={[
+              'font-heading font-black uppercase tracking-tighter leading-[0.88]',
+              'text-[3rem] sm:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.5rem]',
+              'text-zinc-900 dark:text-zinc-50',
+            ].join(' ')}
+          >
+            Let&apos;s Build
+          </motion.p>
+        </div>
+        <div className="overflow-hidden">
+          <motion.p
+            custom={1}
+            variants={lineVariants}
+            className={[
+              'font-heading font-black uppercase tracking-tighter leading-[0.88]',
+              'text-[3rem] sm:text-[4.5rem] lg:text-[5.5rem] xl:text-[6.5rem]',
+              'text-zinc-900 dark:text-zinc-50',
+            ].join(' ')}
+          >
+            Something Reliable.
+          </motion.p>
+        </div>
+      </motion.div>
+
+      <Rule />
+
+      {/* ── Body grid ────────────────────────────────────────────────── */}
+      <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-[300px_1fr] lg:gap-16 xl:grid-cols-[340px_1fr]">
+
+        {/* ── LEFT: Contact details ──────────────────────────────────── */}
+        <motion.div
+          custom={0}
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="flex flex-col gap-6"
         >
-            <div className="h-px w-8 bg-[color:var(--brand)]" />
-            <span className="text-xs font-bold uppercase tracking-widest text-[color:var(--brand)]">Get in touch</span>
-        </motion.div>
-        
-        <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-3xl font-black tracking-tight sm:text-4xl md:text-4xl"
-        >
-            {/* Restored the gradient from black/white to Brand Color */}
-            <span className="bg-gradient-to-r from-black to-[color:var(--brand)] bg-clip-text text-transparent dark:from-white dark:to-[color:var(--brand)]">
-                Let's build something <br className="hidden sm:block" /> reliable together.
+          {/* Availability status */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2467AC] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2467AC]" />
             </span>
-        </motion.h2>
-      </div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+              Available for new projects
+            </p>
+          </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        
-        {/* --- LEFT COLUMN: CONTACT CARD --- */}
-        <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="lg:col-span-4 space-y-6"
-        >
-            {/* Main Contact Card */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                        <Terminal className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Direct Line</h3>
-                        <div className="flex items-center gap-2">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Available for new projects</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    {/* 1. Email Copy Component */}
-                    <div className="group relative overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="flex items-center justify-between px-3 py-2">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <Mail className="h-4 w-4 shrink-0 text-zinc-400" />
-                                <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    laudbouetoumoussa...
-                                </span>
-                            </div>
-                            <button 
-                                onClick={copyEmail}
-                                className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm transition-all hover:scale-105 hover:text-[color:var(--brand)] dark:bg-zinc-800 dark:text-zinc-400"
-                                aria-label="Copy email address"
-                            >
-                                <AnimatePresence mode='wait'>
-                                    {emailCopied ? (
-                                        <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                            <Check className="h-4 w-4 text-emerald-500" />
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                            <Copy className="h-4 w-4" />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* 2. Phone Copy Component (New) */}
-                    <div className="group relative overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="flex items-center justify-between px-3 py-2">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                                <Phone className="h-4 w-4 shrink-0 text-zinc-400" />
-                                <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    +254 745 908 026 {/* Replace with actual number */}
-                                </span>
-                            </div>
-                            <button 
-                                onClick={copyPhone}
-                                className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm transition-all hover:scale-105 hover:text-[color:var(--brand)] dark:bg-zinc-800 dark:text-zinc-400"
-                                aria-label="Copy phone number"
-                            >
-                                <AnimatePresence mode='wait'>
-                                    {phoneCopied ? (
-                                        <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                            <Check className="h-4 w-4 text-emerald-500" />
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                            <Copy className="h-4 w-4" />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Socials */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <Link 
-                            href="https://github.com/arden28" 
-                            target="_blank"
-                            className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                        >
-                            <Github className="h-4 w-4" /> GitHub
-                        </Link>
-                        <Link 
-                            href="https://www.linkedin.com/in/arden-bouet/" 
-                            target="_blank"
-                            className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                        >
-                            <Linkedin className="h-4 w-4" /> LinkedIn
-                        </Link>
-                    </div>
-                </div>
+          {/* Contact details */}
+          <div className="space-y-4">
+            {/* Email */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                Email
+              </p>
+              <div className="flex items-center gap-2.5">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden />
+                <span className="flex-1 truncate font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                  laudbouetoumoussa@gmail.com
+                </span>
+                <CopyButton onCopy={copyEmail} copied={emailCopied} label="Copy email" />
+              </div>
             </div>
 
-            {/* "Good Fits" Panel */}
-            <div className="p-6">
-                <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">I specialize in</h4>
-                <ul className="space-y-3">
-                    {[
-                        'Production-grade Web Apps',
-                        'Complex API Integrations',
-                        'IoT & Real-time Dashboards',
-                        'SaaS MVP Development'
-                    ].map((item, i) => (
-                        <li key={i} className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                <Check className="h-3 w-3" />
-                            </div>
-                            {item}
-                        </li>
-                    ))}
-                </ul>
+            {/* Phone */}
+            <div>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                Phone
+              </p>
+              <div className="flex items-center gap-2.5">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden />
+                <span className="flex-1 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                  +254 745 908 026
+                </span>
+                <CopyButton onCopy={copyPhone} copied={phoneCopied} label="Copy phone" />
+              </div>
             </div>
+          </div>
+
+          <Rule />
+
+          {/* Social links — magnetic */}
+          <div>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+              Find me on
+            </p>
+            <div className="flex items-center gap-2">
+              <MagneticLink href="https://github.com/arden28" label="GitHub">
+                <Github className="h-4 w-4" />
+              </MagneticLink>
+              <MagneticLink href="https://www.linkedin.com/in/arden-bouet/" label="LinkedIn">
+                <Linkedin className="h-4 w-4" />
+              </MagneticLink>
+              <MagneticLink href="https://www.upwork.com/freelancers/~01b718c179049bbd70" label="Upwork">
+                <img src="/images/upwork.svg" alt="" className="h-4 w-4 opacity-70" />
+              </MagneticLink>
+            </div>
+          </div>
+
+          <Rule />
+
+          {/* Specialisms — dash prefixed, lime accent */}
+          <div>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+              I specialize in
+            </p>
+            <ul className="space-y-2">
+              {[
+                'Production-grade Web Apps',
+                'Complex API Integrations',
+                'IoT & Real-time Systems',
+                'SaaS MVP Development',
+              ].map(item => (
+                <li key={item} className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                  <span className="text-[#2467AC] leading-none">—</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
         </motion.div>
 
-        {/* --- RIGHT COLUMN: THE FORM --- */}
-        <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-8"
+        {/* ── RIGHT: Form ────────────────────────────────────────────── */}
+        <motion.form
+          custom={1}
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-8"
+          noValidate
         >
-            <form onSubmit={handleSubmit} className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-10">
-                {/* Decorative background grid */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-                
-                <div className="relative space-y-8">
-                    
-                    {/* 1. Identity */}
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-zinc-500">Name</label>
-                            <input 
-                                id="name"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                                onBlur={() => setTouched(s => ({...s, name: true}))}
-                                placeholder="Jane Doe"
-                                className={cn(
-                                    "w-full rounded-lg border bg-zinc-50 px-4 py-3 text-sm outline-none transition-all focus:border-[color:var(--brand)] focus:ring-1 focus:ring-[color:var(--brand)] dark:bg-zinc-900 dark:text-zinc-100",
-                                    touched.name && !name.trim() ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-zinc-200 dark:border-zinc-800"
-                                )}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-zinc-500">Email</label>
-                            <input 
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                onBlur={() => setTouched(s => ({...s, email: true}))}
-                                placeholder="jane@company.com"
-                                className={cn(
-                                    "w-full rounded-lg border bg-zinc-50 px-4 py-3 text-sm outline-none transition-all focus:border-[color:var(--brand)] focus:ring-1 focus:ring-[color:var(--brand)] dark:bg-zinc-900 dark:text-zinc-100",
-                                    email && !isEmailValid ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-zinc-200 dark:border-zinc-800"
-                                )}
-                            />
-                        </div>
-                    </div>
 
-                    {/* 2. Services (Chips) */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">I need help with</label>
-                        <div className="flex flex-wrap gap-2">
-                            {(['SaaS build','API integration','IoT/Telemetry','UI/Frontend','Consultation'] as Chip[]).map(c => {
-                                const active = chips.includes(c);
-                                return (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => toggleChip(c)}
-                                        className={cn(
-                                            "relative flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all",
-                                            active 
-                                              ? "border-[color:var(--brand)] bg-[color:var(--brand)]/5 text-[color:var(--brand)]" 
-                                              : "border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
-                                        )}
-                                    >
-                                        {c}
-                                        {active && <motion.span initial={{scale:0}} animate={{scale:1}}><Check className="h-3.5 w-3.5" /></motion.span>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+          {/* 1. Identity — line inputs */}
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="contact-name"
+                className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
+              >
+                Name
+              </label>
+              <input
+                id="contact-name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onBlur={() => setTouched(s => ({ ...s, name: true }))}
+                placeholder="Jane Doe"
+                className={cn(
+                  lineInputBase,
+                  touched.name && !name.trim() ? lineInputError : lineInputNormal
+                )}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="contact-email"
+                className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onBlur={() => setTouched(s => ({ ...s, email: true }))}
+                placeholder="jane@company.com"
+                className={cn(
+                  lineInputBase,
+                  email && !isEmailValid ? lineInputError : lineInputNormal
+                )}
+              />
+            </div>
+          </div>
 
-                    {/* 3. Specs (Time & Budget) */}
-                    <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-5 dark:border-zinc-800 dark:bg-zinc-900/30">
-                        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                            {/* Timeframe */}
-                            <div className="space-y-3">
-                                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                                    <Clock className="h-3 w-3" /> Timeframe
-                                </label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['soon', 'this quarter', 'flexible'].map((opt) => (
-                                        <button
-                                            key={opt}
-                                            type="button"
-                                            onClick={() => setTimeframe(opt as any)}
-                                            className={cn(
-                                                "rounded-md py-2 text-xs font-medium capitalize transition-all",
-                                                timeframe === opt 
-                                                    ? "bg-white shadow-sm ring-1 ring-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:ring-zinc-700 dark:text-zinc-100" 
-                                                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                                            )}
-                                        >
-                                            {opt}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+          {/* 2. Services — sharp bordered chips, lime fill when active */}
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-3">
+              I need help with
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(
+                ['SaaS build', 'API integration', 'IoT/Telemetry', 'UI/Frontend', 'Consultation'] as Chip[]
+              ).map(c => {
+                const active = chips.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => toggleChip(c)}
+                    aria-pressed={active}
+                    className={cn(
+                      'border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest',
+                      'transition-colors duration-150 focus-visible:outline-none',
+                      active
+                        ? 'border-[#2467AC] bg-[#2467AC] text-zinc-900'
+                        : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-500 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    )}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                            {/* Budget */}
-                            <div className="space-y-3">
-                                <label className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
-                                    <span className="flex items-center gap-2"><DollarSign className="h-3 w-3" /> Budget</span>
-                                    <span className="text-[color:var(--brand)]">{budgetLabel}</span>
-                                </label>
-                                <input
-                                    type="range" min={1} max={5} step={1}
-                                    value={budget}
-                                    onChange={e => setBudget(parseInt(e.target.value))}
-                                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-[color:var(--brand)] outline-none dark:bg-zinc-700"
-                                />
-                                <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
-                                    <span>min</span>
-                                    <span>max</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+          {/* 3. Timeframe + Budget */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            {/* Timeframe — text toggles, no box */}
+            <div>
+              <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-3">
+                <Clock className="h-3 w-3" aria-hidden /> Timeframe
+              </p>
+              <div className="flex items-center gap-5">
+                {(['soon', 'this quarter', 'flexible'] as const).map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setTimeframe(opt)}
+                    className={cn(
+                      'font-mono text-[10px] uppercase tracking-widest capitalize',
+                      'transition-colors duration-150 focus-visible:outline-none',
+                      timeframe === opt
+                        ? 'text-zinc-900 dark:text-zinc-100 underline underline-offset-4 decoration-[#2467AC]'
+                        : 'text-zinc-400 dark:text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {/* 4. Message */}
-                    <div className="space-y-2">
-                        <label htmlFor="message" className="text-xs font-bold uppercase tracking-wider text-zinc-500">Project Details</label>
-                        <textarea 
-                            id="message"
-                            value={message}
-                            onChange={e => setMessage(e.target.value.slice(0, messageLimit))}
-                            onBlur={() => setTouched(s => ({...s, message: true}))}
-                            rows={4}
-                            placeholder="Tell me about the problem you're trying to solve..."
-                            className={cn(
-                                "w-full resize-none rounded-lg border bg-zinc-50 px-4 py-3 text-sm outline-none transition-all focus:border-[color:var(--brand)] focus:ring-1 focus:ring-[color:var(--brand)] dark:bg-zinc-900 dark:text-zinc-100",
-                                touched.message && !message.trim() ? "border-red-300" : "border-zinc-200 dark:border-zinc-800"
-                            )}
-                        />
-                        <div className="flex justify-end text-[10px] text-zinc-400">
-                            {message.length}/{messageLimit}
-                        </div>
-                    </div>
+            {/* Budget */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                  <DollarSign className="h-3 w-3" aria-hidden /> Budget
+                </p>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
+                  {budgetLabel}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                step={1}
+                value={budget}
+                onChange={e => setBudget(parseInt(e.target.value))}
+                className="h-px w-full cursor-pointer appearance-none bg-zinc-200 dark:bg-zinc-800 accent-[#2467AC] outline-none"
+                aria-label={`Budget: ${budgetLabel}`}
+              />
+              <div className="mt-1.5 flex justify-between font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                <span>Min</span>
+                <span>Max</span>
+              </div>
+            </div>
+          </div>
 
-                    <div className="pt-2">
-                        <button
-                            type="submit"
-                            disabled={!canSend || submitting}
-                            className={cn(
-                                "group flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-bold text-white transition-all",
-                                canSend && !submitting 
-                                    ? "bg-[color:var(--brand)] hover:opacity-90 shadow-lg shadow-[color:var(--brand)]/20" 
-                                    : "bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
-                            )}
-                        >
-                            {submitting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <>
-                                    Send Inquiry <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                </>
-                            )}
-                        </button>
-                        <p className="mt-3 text-center text-[10px] text-zinc-400">
-                            Starts a secure mailto link in your default email client.
-                        </p>
-                    </div>
+          {/* 4. Message — line textarea */}
+          <div>
+            <label
+              htmlFor="contact-message"
+              className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
+            >
+              Project Details
+            </label>
+            <textarea
+              id="contact-message"
+              value={message}
+              onChange={e => setMessage(e.target.value.slice(0, messageLimit))}
+              onBlur={() => setTouched(s => ({ ...s, message: true }))}
+              rows={5}
+              placeholder="Tell me about the problem you're trying to solve…"
+              className={cn(
+                lineInputBase,
+                'resize-none',
+                touched.message && !message.trim() ? lineInputError : lineInputNormal
+              )}
+            />
+            <div className="mt-1 flex justify-end font-mono text-[9px] text-zinc-400 dark:text-zinc-600">
+              {message.length}/{messageLimit}
+            </div>
+          </div>
 
-                </div>
-            </form>
-        </motion.div>
+          {/* 5. Submit */}
+          <div>
+            <button
+              type="submit"
+              disabled={!canSend || submitting}
+              className={cn(
+                'w-full py-4',
+                'font-mono text-[11px] uppercase tracking-widest',
+                'transition-colors duration-150 focus-visible:outline-none',
+                canSend && !submitting
+                  ? [
+                      'border border-zinc-900 dark:border-zinc-100',
+                      'bg-zinc-900 dark:bg-zinc-50',
+                      'text-white dark:text-zinc-900',
+                      'hover:bg-zinc-700 dark:hover:bg-zinc-200',
+                    ].join(' ')
+                  : [
+                      'border border-zinc-200 dark:border-zinc-800',
+                      'bg-zinc-100 dark:bg-zinc-900',
+                      'text-zinc-400 dark:text-zinc-600',
+                      'cursor-not-allowed',
+                    ].join(' ')
+              )}
+            >
+              {submitting ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending…
+                </span>
+              ) : (
+                'Send Inquiry →'
+              )}
+            </button>
+            <p className="mt-3 text-center font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+              Opens your default email client
+            </p>
+          </div>
+        </motion.form>
       </div>
     </section>
   );

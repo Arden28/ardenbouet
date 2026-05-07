@@ -1,21 +1,21 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
+// ─── Types (unchanged) ───────────────────────────────────────────────────────
 type ExperienceRow = {
-  id: string;                                  // uid
-  title: string;                               // company/title
-  job: string;                                 // role
-  fromTo: string;                              // "Sept 2024 – Mar 2025 · 7 months"
+  id: string;
+  title: string;
+  job: string;
+  fromTo: string;
   bullets: string[];
   type: 'Freelance' | 'Contract' | 'Full-time' | 'Part-time' | 'Intern';
-  location?: 'On-site' | 'Hybrid' | 'Remote'
-
-  // NEW (now present in DB)
+  location?: 'On-site' | 'Hybrid' | 'Remote';
   logline?: string;
   outcomes?: string[];
   tags?: string[];
-  poster?: string;                             // logo url
+  poster?: string;
 };
 
 type Scene = {
@@ -23,7 +23,7 @@ type Scene = {
   company: string;
   role: string;
   period: string;
-  type?: string;                           // from .type
+  type?: string;
   location?: string;
   logline?: string;
   bullets: string[];
@@ -39,20 +39,232 @@ type ContentBundle = {
   notes: unknown[];
 };
 
+// ─── Motion ──────────────────────────────────────────────────────────────────
+const EXPO = [0.16, 1, 0.3, 1] as const;
+
+// ─── Design primitives ───────────────────────────────────────────────────────
+function Rule({ className = '' }: { className?: string }) {
+  return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+// ─── Single "scene" entry ─────────────────────────────────────────────────────
+/*
+  Structure:
+    [logo 40px] [COMPANY NAME]                    [PERIOD]  [scene counter 01]
+                ROLE · TYPE · LOCATION
+
+                "Logline as the defining pull quote"
+
+                — Bullet one
+                — Bullet two
+
+                OUTCOMES
+                — Lime-accented outcome one
+
+                STACK: tag · tag · tag
+*/
+function SceneEntry({ s, index }: { s: Scene; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.65, ease: EXPO, delay: 0.04 }}
+      className="group"
+    >
+      <Rule />
+      <article className="py-8 transition-colors duration-200 hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40">
+
+        {/* ── Header row ─────────────────────────────────────────────── */}
+        <div className="flex items-start gap-4">
+
+          {/* Logo / initials mark */}
+          <div className="relative shrink-0">
+            {s.poster ? (
+              <div className="relative h-10 w-10 overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                <Image
+                  src={s.poster}
+                  alt={`${s.company} logo`}
+                  fill
+                  className="object-cover"
+                  sizes="40px"
+                />
+              </div>
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center border border-zinc-200 dark:border-zinc-800">
+                <span className="font-mono text-[9px] font-bold uppercase text-zinc-400 dark:text-zinc-600">
+                  {s.company.slice(0, 2)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Company + role */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-heading text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+              {s.company}
+            </h3>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+              {[s.role, s.type, s.location].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+
+          {/* Period + scene counter — right-aligned */}
+          <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+              {s.period}
+            </p>
+            {/* Film-reel scene number */}
+            <span className="font-mono text-[9px] text-zinc-300 dark:text-zinc-700">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+
+        {/* ── Period (mobile only) ────────────────────────────────────── */}
+        <p className="mt-2 pl-14 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 sm:hidden">
+          {s.period}
+        </p>
+
+        {/* ── Logline — the "title card" of each scene ──────────────── */}
+        {s.logline && (
+          <p className="mt-4 max-w-2xl pl-14 text-sm font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400">
+            "{s.logline}"
+          </p>
+        )}
+
+        {/* ── Bullets ────────────────────────────────────────────────── */}
+        {s.bullets.length > 0 && (
+          <ul className="mt-4 space-y-1.5 pl-14">
+            {s.bullets.map((b, i) => (
+              <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-none bg-zinc-400 dark:bg-zinc-600" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ── Outcomes — lime-accented dashes ────────────────────────── */}
+        {s.outcomes && s.outcomes.length > 0 && (
+          <div className="mt-5 pl-14">
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+              Outcomes
+            </p>
+            <ul className="space-y-1.5">
+              {s.outcomes.map((o, i) => (
+                <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                  {/* Lime dash — the single accent element per entry */}
+                  <span aria-hidden className="mt-2 h-px w-3 shrink-0 bg-[#2467AC]" />
+                  {o}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* ── Tech tags — monospace dot-separated ────────────────────── */}
+        {s.tags && s.tags.length > 0 && (
+          <p className="mt-4 pl-14 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+            {s.tags.join(' · ')}
+          </p>
+        )}
+      </article>
+    </motion.div>
+  );
+}
+
+// ─── Resume CTA ───────────────────────────────────────────────────────────────
+/*
+  Sharp-bordered box — no rounded-md anywhere.
+  Buttons match Hero's CTA style: uppercase tracking-widest, square edges.
+*/
+function ResumeCta() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.6, ease: EXPO }}
+      className="mt-12 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8"
+    >
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
+            Résumé
+          </p>
+          <h4 className="font-heading text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Want the concise version?
+          </h4>
+          <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
+            Projects, stack, and impact compacted into 1 page. Updated regularly.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <span
+              className={[
+                'border border-zinc-200 dark:border-zinc-800',
+                'px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest',
+                'text-zinc-400 dark:text-zinc-600',
+              ].join(' ')}
+            >
+              PDF · 1 page
+            </span>
+            <span
+              className={[
+                'border border-zinc-200 dark:border-zinc-800',
+                'px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest',
+                'text-zinc-400 dark:text-zinc-600',
+              ].join(' ')}
+            >
+              Updated {new Date().getFullYear()}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <a
+            href="/files/cv-v5.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={[
+              'inline-flex items-center justify-center',
+              'bg-zinc-900 dark:bg-zinc-50',
+              'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest',
+              'text-white dark:text-zinc-900',
+              'hover:bg-zinc-700 dark:hover:bg-zinc-200',
+              'transition-colors duration-150',
+            ].join(' ')}
+          >
+            View Résumé (PDF)
+          </a>
+          <a
+            href="/#contact"
+            className={[
+              'inline-flex items-center justify-center',
+              'border border-zinc-300 dark:border-zinc-700',
+              'px-5 py-2.5 text-[11px] font-medium uppercase tracking-widest',
+              'text-zinc-700 dark:text-zinc-300',
+              'hover:border-zinc-900 hover:text-zinc-900',
+              'dark:hover:border-zinc-200 dark:hover:text-zinc-100',
+              'transition-colors duration-150',
+            ].join(' ')}
+          >
+            Discuss opportunities
+          </a>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function ExperienceTimeline() {
-  const itemsRef = useRef<Array<HTMLDivElement | null>>([]);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // Set itemRef
-  const setItemRef = (index: number) =>
-    (el: HTMLDivElement | null) => { itemsRef.current[index] = el; };
-
-  // fetch experiences from public content endpoint
   useEffect(() => {
     const ctrl = new AbortController();
-
     async function load() {
       try {
         setLoading(true);
@@ -64,13 +276,12 @@ export default function ExperienceTimeline() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json: ContentBundle = await res.json();
-
-        const mapped: Scene[] = (json.experiences || []).map((x) => ({
+        const mapped: Scene[] = (json.experiences || []).map(x => ({
           id: x.id,
           company: x.title,
           role: x.job,
           period: x.fromTo,
-          type: x.type,                
+          type: x.type,
           location: x.location,
           logline: x.logline || undefined,
           bullets: Array.isArray(x.bullets) ? x.bullets : [],
@@ -78,7 +289,6 @@ export default function ExperienceTimeline() {
           poster: x.poster || undefined,
           tags: Array.isArray(x.tags) ? x.tags : undefined,
         }));
-
         setScenes(mapped);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
@@ -87,160 +297,66 @@ export default function ExperienceTimeline() {
         setLoading(false);
       }
     }
-
     void load();
     return () => ctrl.abort();
   }, []);
 
-  // subtle reveal-on-scroll (adds .in once)
-  useEffect(() => {
-    const nodes = itemsRef.current.filter(Boolean) as HTMLDivElement[];
-    if (!nodes.length) return;
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('in'); }),
-      { threshold: 0.25 }
-    );
-    nodes.forEach((n) => io.observe(n));
-    return () => io.disconnect();
-  }, [scenes.length]);
-
   return (
-    <section id="experience" className="relative mx-auto mt-20 max-w-6xl px-4">
-      <h3 className="text-left text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-black to-sky-500 dark:from-white dark:to-sky-400">
-        Professional Experience
-      </h3>
+    <section id="experience" className="relative mx-auto mt-24 max-w-6xl px-4">
 
-      {/* loading / error */}
+      {/* ── Section header ──────────────────────────────────────────── */}
+      <Rule />
+      <div className="flex items-baseline justify-between py-4">
+        <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
+          Professional Experience
+        </h2>
+        {!loading && scenes.length > 0 && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+            {scenes.length} role{scenes.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+      <Rule />
+
+      {/* ── Loading skeleton ────────────────────────────────────────── */}
       {loading && (
-        <div className="mt-6 grid gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-zinc-200/70 bg-white/60 dark:border-zinc-700/50 dark:bg-zinc-900/60" />
+        <div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse border-b border-zinc-200 dark:border-zinc-800 py-8">
+              <div className="flex gap-4">
+                <div className="h-10 w-10 shrink-0 bg-zinc-100 dark:bg-zinc-800" />
+                <div className="flex-1">
+                  <div className="mb-2 h-6 w-1/3 bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="mb-4 h-3 w-1/4 bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="h-3 w-2/3 bg-zinc-100 dark:bg-zinc-800" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
+
+      {/* ── Error state ─────────────────────────────────────────────── */}
       {!!err && !loading && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50/70 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-          Could not load experience: {err}
+        <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-center">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
+            Could not load experience: {err}
+          </p>
         </div>
       )}
 
+      {/* ── Scenes ──────────────────────────────────────────────────── */}
       {!loading && !err && (
-        <div className="tl mt-8">
-          <div className="tl-line" aria-hidden />
-          <ol className="tl-list">
-            {scenes.map((s, i) => {
-              const side = i % 2 === 0 ? 'left' : 'right'; // alternate on desktop
-              return (
-                <li key={s.id} className={`tl-item ${side}`}>
-                  {/* center marker + side connector */}
-                  <span className="tl-dot" aria-hidden />
-                  <span className="tl-connector" aria-hidden />
-
-                  {/* card */}
-                  <article
-                    ref={setItemRef(i)}
-                    className="tl-card reveal"
-                    style={{ animationDelay: `${(i % 6) * 60}ms` as any }}
-                  >
-                    {/* grain overlay */}
-                    <div className="grain absolute inset-0" aria-hidden />
-
-                    {/* Header */}
-                    <div className="flex items-start gap-3">
-                      {s.poster && (
-                        <span className="relative inline-flex h-10 w-10 overflow-hidden rounded-lg ring-1 ring-zinc-900/5 dark:ring-white/10">
-                          <Image src={s.poster} alt={`${s.company} logo`} fill className="object-cover" sizes="40px" />
-                        </span>
-                      )}
-                      <div className="min-w-0">
-                        <h4 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                          {s.company}
-                        </h4>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {s.role} · <span className="whitespace-nowrap">{s.period}</span>
-                          {s.type ? <> · <span className="whitespace-nowrap">{s.type}</span></> : null}
-                          {s.location ? <> · <span className="whitespace-nowrap">{s.location}</span></> : null}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Logline */}
-                    {s.logline && (
-                      <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
-                        {s.logline}
-                      </p>
-                    )}
-
-                    {/* Bullets */}
-                    {!!s.bullets?.length && (
-                      <ul className="mt-2 list-disc pl-5 text-sm text-zinc-700 dark:text-zinc-300">
-                        {s.bullets.map((b, idx) => <li key={idx}>{b}</li>)}
-                      </ul>
-                    )}
-
-                    {/* Outcomes */}
-                    {!!s.outcomes?.length && (
-                      <div className="mt-3">
-                        <h5 className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--brand)' }}>
-                          Outcome
-                        </h5>
-                        <ul className="mt-1 list-disc pl-5 text-sm text-zinc-700 dark:text-zinc-300">
-                          {s.outcomes.map((o, idx) => <li key={idx}>{o}</li>)}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {!!s.tags?.length && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {s.tags.map((t) => (
-                          <span key={t} className="tl-chip">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
+        <div>
+          {scenes.map((s, i) => (
+            <SceneEntry key={s.id} s={s} index={i} />
+          ))}
+          <Rule />
         </div>
       )}
 
-      {/* Resume CTA */}
-      <div className="mt-8">
-        <div className="resume-cta">
-          <span className="r-accent" aria-hidden />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h4 className="text-lg">Want the consise version?</h4>
-              <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-                Projects, stack, and impact compacted into 1 page. Updated regularly.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <span className="resume-chip">PDF • 1 page</span>
-                <span className="resume-chip">Latest • {new Date().getFullYear()}</span>
-              </div>
-            </div>
-
-            <div className="resume-actions">
-              <a
-                href="/files/cv-v5.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-md bg-[color:var(--brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-95"
-              >
-                View résumé (PDF)
-              </a>
-              <a
-                href="/#contact"
-                className="inline-flex items-center justify-center rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-white/60 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800/50"
-              >
-                Discuss opportunities
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ── Resume CTA ──────────────────────────────────────────────── */}
+      {!loading && !err && <ResumeCta />}
     </section>
   );
 }

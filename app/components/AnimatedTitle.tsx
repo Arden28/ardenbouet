@@ -20,7 +20,7 @@ export default function AnimatedTitle() {
   }, []);
 
   return (
-    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-500">
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-sky-600">
       <span ref={el} />
     </span>
   );
