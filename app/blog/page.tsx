@@ -75,9 +75,6 @@ export default async function BlogPage() {
   const archive  = notes.slice(1);
 
   return (
-    <>
-    
-    <Header />
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:pt-16">
 
       {/* ── Section header ──────────────────────────────────────────── */}
@@ -217,6 +214,5 @@ export default async function BlogPage() {
         </div>
       )}
     </main>
-    </>
   );
 }
