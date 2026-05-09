@@ -1,90 +1,160 @@
 'use client';
+// app/admin/components/ProjectsEditor.tsx
 
-import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, GripVertical, Image as ImageIcon, Briefcase, ExternalLink, Hash, X, MoveUp, MoveDown } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, MoveUp, MoveDown, Hash, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Project, CaseImage } from '../types';
-import { TextField, uid, splitComma, splitLines, EditorDrawer, Button, Chip, cn } from './atoms';
+import {
+  TextField, uid, EditorDrawer, Button, Chip, Rule, cn,
+} from './atoms';
+import { ArrayField } from './ArrayField';
 
-/* --- Helpers --- */
-function TokenInput({ label, value, onChange, placeholder }: { label: string; value: string[]; onChange: (t: string[]) => void; placeholder?: string }) {
+const EXPO = [0.16, 1, 0.3, 1] as const;
+
+// ─── Token input (tag chips, intentional Enter/comma commit) ──────────────────
+// This component correctly uses onKeyDown to commit chips — it is NOT affected
+// by the same bug as the plain textarea fields.
+function TokenInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string[];
+  onChange: (t: string[]) => void;
+  placeholder?: string;
+}) {
   const [input, setInput] = useState('');
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const val = input.trim();
-      if (val && !value.includes(val)) onChange([...value, val]);
-      setInput('');
-    }
+
+  const commit = () => {
+    const v = input.trim();
+    if (v && !value.includes(v)) onChange([...value, v]);
+    setInput('');
   };
+
   return (
-    <div className="space-y-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">{label}</span>
-      <div className="flex flex-wrap gap-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-2 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div>
+      <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+        {label}
+      </span>
+      <div className="flex min-h-[42px] flex-wrap gap-1.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2">
         {value.map(t => (
-          <span key={t} className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-medium shadow-sm dark:bg-zinc-800">
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400"
+          >
             {t}
-            <button onClick={() => onChange(value.filter(x => x !== t))} className="text-zinc-400 hover:text-red-500"><X className="h-3 w-3" /></button>
+            <button
+              type="button"
+              onClick={() => onChange(value.filter(x => x !== t))}
+              className="text-zinc-400 hover:text-red-500 transition-colors"
+            >
+              ×
+            </button>
           </span>
         ))}
-        <input 
-          className="flex-1 bg-transparent text-sm outline-none min-w-[100px]" 
-          placeholder={placeholder} 
-          value={input} 
-          onChange={e => setInput(e.target.value)} 
-          onKeyDown={handleKeyDown} 
-          onBlur={() => { if(input.trim()) { onChange([...value, input.trim()]); setInput(''); }}}
+        <input
+          className="min-w-[100px] flex-1 bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 outline-none"
+          placeholder={placeholder}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commit(); }
+          }}
+          onBlur={commit}
         />
       </div>
     </div>
   );
 }
 
-function ImagesManager({ images, onChange }: { images: CaseImage[]; onChange: (imgs: CaseImage[]) => void }) {
-    const add = () => onChange([...images, { src: '', alt: '' }]);
-    const update = (i: number, field: keyof CaseImage, val: string) => {
-        const next = [...images]; next[i] = { ...next[i], [field]: val }; onChange(next);
-    };
-    const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
-    
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Gallery Images</span>
-                <Button variant="secondary" onClick={add} className="h-6 text-xs px-2">+ Add Image</Button>
+// ─── Images manager ───────────────────────────────────────────────────────────
+function ImagesManager({
+  images,
+  onChange,
+}: {
+  images: CaseImage[];
+  onChange: (imgs: CaseImage[]) => void;
+}) {
+  const add    = () => onChange([...images, { src: '', alt: '' }]);
+  const update = (i: number, field: keyof CaseImage, val: string) => {
+    const next = [...images]; next[i] = { ...next[i], [field]: val }; onChange(next);
+  };
+  const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+          Gallery Images
+        </span>
+        <Button variant="secondary" size="sm" onClick={add}>+ Add</Button>
+      </div>
+      {images.length === 0 && (
+        <p className="font-mono text-[9px] text-zinc-400 dark:text-zinc-600">No images.</p>
+      )}
+      <div className="space-y-2">
+        {images.map((img, i) => (
+          <div
+            key={i}
+            className="flex items-start gap-3 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3"
+          >
+            <div className="h-12 w-16 shrink-0 overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800">
+              {img.src && <img src={img.src} className="h-full w-full object-cover" alt="" />}
             </div>
-            {images.length === 0 && <div className="text-xs text-zinc-400 italic">No images added.</div>}
-            <div className="space-y-2">
-                {images.map((img, i) => (
-                    <div key={i} className="flex gap-3 items-start rounded-md border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="h-12 w-16 shrink-0 bg-zinc-100 rounded overflow-hidden dark:bg-zinc-800">
-                            {img.src && <img src={img.src} className="h-full w-full object-cover" alt="" />}
-                        </div>
-                        <div className="flex-1 space-y-2">
-                            <input className="w-full bg-transparent text-xs outline-none border-b border-zinc-100 pb-1 dark:border-zinc-800" placeholder="Image URL" value={img.src} onChange={e => update(i, 'src', e.target.value)} />
-                            <input className="w-full bg-transparent text-xs outline-none" placeholder="Alt Description" value={img.alt} onChange={e => update(i, 'alt', e.target.value)} />
-                        </div>
-                        <button onClick={() => remove(i)} className="text-zinc-400 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                ))}
+            <div className="flex-1 space-y-1.5">
+              <input
+                className="w-full bg-transparent text-xs text-zinc-900 dark:text-zinc-100 outline-none border-b border-zinc-100 dark:border-zinc-800 pb-1 placeholder:text-zinc-400"
+                placeholder="Image URL"
+                value={img.src}
+                onChange={e => update(i, 'src', e.target.value)}
+              />
+              <input
+                className="w-full bg-transparent text-xs text-zinc-600 dark:text-zinc-400 outline-none placeholder:text-zinc-400"
+                placeholder="Alt description"
+                value={img.alt}
+                onChange={e => update(i, 'alt', e.target.value)}
+              />
             </div>
-        </div>
-    );
+            <button type="button" onClick={() => remove(i)} className="text-zinc-400 hover:text-red-500 transition-colors mt-0.5">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-/* --- Main Component --- */
-export default function ProjectsEditor({ value, onChange }: { value: Project[]; onChange: (p: Project[]) => void }) {
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function ProjectsEditor({
+  value,
+  onChange,
+}: {
+  value: Project[];
+  onChange: (p: Project[]) => void;
+}) {
   const [draft, setDraft] = useState<Project | null>(null);
+
+  const newProject = () =>
+    setDraft({ id: uid(), title: '', description: '', logoUrl: '', url: '', tags: [], tech: [] });
 
   const save = () => {
     if (!draft || !draft.title.trim()) return;
     const exists = value.find(p => p.id === draft.id);
-    const next = exists ? value.map(p => (p.id === draft.id ? draft : p)) : [draft, ...value];
+    const next   = exists
+      ? value.map(p => p.id === draft.id ? draft : p)
+      : [draft, ...value];
     onChange(next);
     setDraft(null);
   };
 
-  const remove = (id: string) => { if (confirm('Delete project?')) onChange(value.filter(p => p.id !== id)); };
-  
+  const remove = (id: string) => {
+    if (confirm('Delete this project?')) onChange(value.filter(p => p.id !== id));
+  };
+
   const move = (id: string, dir: -1 | 1) => {
     const idx = value.findIndex(p => p.id === id);
     if (idx < 0 || idx + dir < 0 || idx + dir >= value.length) return;
@@ -95,87 +165,256 @@ export default function ProjectsEditor({ value, onChange }: { value: Project[]; 
 
   return (
     <>
-      {/* GRID VIEW */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <button onClick={() => setDraft({ id: uid(), title: '', description: '', logoUrl: '', url: '', tags: [], tech: [] })} className="group flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 text-zinc-400 transition-colors hover:border-[color:var(--brand)] hover:bg-[color:var(--brand)]/5 hover:text-[color:var(--brand)] dark:border-zinc-700 dark:bg-zinc-900/50">
-          <div className="rounded-full bg-white p-3 shadow-sm transition-transform group-hover:scale-110 dark:bg-zinc-800"><Plus className="h-6 w-6" /></div>
-          <span className="text-sm font-medium">New Project</span>
+      <Rule />
+      <div className="flex items-baseline justify-between py-4">
+        <div className="flex items-baseline gap-3">
+          <h2 className="font-heading text-xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
+            Projects
+          </h2>
+          <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
+            ({value.length})
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={newProject}
+          className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        >
+          New project →
+        </button>
+      </div>
+      <Rule />
+
+      <motion.div
+        layout
+        className="mt-6 grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 sm:grid-cols-2 xl:grid-cols-3"
+      >
+        {/* Add new */}
+        <button
+          type="button"
+          onClick={newProject}
+          className="group flex h-48 flex-col items-center justify-center gap-3 border-b border-r border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors duration-150"
+        >
+          <div className="flex h-8 w-8 items-center justify-center border border-zinc-300 dark:border-zinc-700 group-hover:border-zinc-700 dark:group-hover:border-zinc-400 transition-colors">
+            <Plus className="h-4 w-4" />
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-widest">New Project</span>
         </button>
 
-        {value.map((p) => (
-          <div key={p.id} className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
-            <div>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  {p.logoUrl ? <img src={p.logoUrl} alt="" className="h-10 w-10 rounded-lg object-contain bg-zinc-50 p-1 ring-1 ring-zinc-100 dark:bg-black dark:ring-zinc-800" /> : <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400 dark:bg-zinc-800"><Briefcase className="h-5 w-5" /></div>}
-                  <div>
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-1">{p.title || 'Untitled'}</h3>
-                    <div className="flex items-center gap-2">
-                        {p.url && <a href={p.url} target="_blank" className="text-xs text-zinc-400 hover:text-[color:var(--brand)] truncate max-w-[120px] block">{p.url}</a>}
+        <AnimatePresence mode="popLayout">
+          {value.map(p => (
+            <motion.div
+              key={p.id}
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: EXPO }}
+              className="group relative border-b border-r border-zinc-200 dark:border-zinc-800"
+            >
+              <article className="flex h-full flex-col p-5 transition-colors duration-150 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40">
+                <div className="mb-3 flex items-start gap-3">
+                  {p.logoUrl ? (
+                    <img src={p.logoUrl} alt="" className="h-9 w-9 shrink-0 border border-zinc-200 dark:border-zinc-800 object-contain bg-white dark:bg-zinc-900 p-1" />
+                  ) : (
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800">
+                      <span className="font-mono text-[9px] text-zinc-400">{p.title.slice(0, 2).toUpperCase() || '??'}</span>
                     </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-heading text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+                      {p.title || 'Untitled'}
+                    </h3>
+                    {p.url && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1 font-mono text-[9px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors truncate mt-0.5">
+                        <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                        {p.url.replace(/^https?:\/\//, '').slice(0, 30)}
+                      </a>
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button onClick={() => move(p.id, -1)} className="p-1 hover:text-zinc-900 text-zinc-400"><MoveUp className="h-4 w-4" /></button>
-                    <button onClick={() => move(p.id, 1)} className="p-1 hover:text-zinc-900 text-zinc-400"><MoveDown className="h-4 w-4" /></button>
+                <p className="flex-1 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  {p.description || <span className="italic">No description.</span>}
+                </p>
+                {p.tech && p.tech.length > 0 && (
+                  <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                    {p.tech.slice(0, 4).join(' · ')}
+                  </p>
+                )}
+                {p.caseFile && (
+                  <div className="mt-2 inline-flex items-center gap-1 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5">
+                    <Hash className="h-3 w-3 text-zinc-400" />
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">Case file</span>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <button type="button" onClick={() => move(p.id, -1)} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                      <MoveUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => move(p.id, 1)} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                      <MoveDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="danger"    size="sm" onClick={() => remove(p.id)}>Delete</Button>
+                    <Button variant="secondary" size="sm" onClick={() => setDraft({ ...p })}>Edit</Button>
+                  </div>
                 </div>
-              </div>
-              <p className="mt-4 line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">{p.description}</p>
-              {p.caseFile && <div className="mt-3 inline-flex items-center gap-1 rounded bg-purple-50 px-2 py-1 text-[10px] font-bold uppercase text-purple-600 dark:bg-purple-900/20 dark:text-purple-300"><Hash className="h-3 w-3" /> Case File Active</div>}
-            </div>
-            <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                <div className="flex -space-x-1 overflow-hidden">
-                    {p.tags.map(t => <div key={t} className="h-2 w-2 rounded-full bg-zinc-300 ring-2 ring-white dark:ring-zinc-900" title={t} />)}
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="h-8 w-8 p-0 text-red-500" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                    <Button variant="secondary" className="h-8 text-xs" onClick={() => setDraft({ ...p })}>Edit</Button>
-                </div>
-            </div>
-          </div>
-        ))}
-      </div>
+              </article>
+              <span aria-hidden className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
 
-      {/* DRAWER EDITOR */}
-      <EditorDrawer isOpen={!!draft} onClose={() => setDraft(null)} title={draft?.title || 'New Project'} actions={<Button variant="primary" onClick={save}>Save</Button>}>
+      <EditorDrawer
+        isOpen={!!draft}
+        onClose={() => setDraft(null)}
+        title={draft?.title || 'New Project'}
+        actions={<Button variant="primary" onClick={save}>Save</Button>}
+      >
         {draft && (
-          <div className="space-y-6">
+          /*
+            key={draft.id} resets all local ArrayField string states when
+            a different draft is opened.
+          */
+          <div key={draft.id} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-               <TextField label="Title" value={draft.title} onChange={v => setDraft({...draft, title: v})} required />
-               <TextField label="Live URL" value={draft.url} onChange={v => setDraft({...draft, url: v})} />
+              <TextField
+                label="Title"
+                value={draft.title}
+                onChange={v => setDraft({ ...draft, title: v })}
+                required
+              />
+              <TextField
+                label="Live URL"
+                value={draft.url}
+                onChange={v => setDraft({ ...draft, url: v })}
+                placeholder="https://…"
+              />
             </div>
-            <TextField label="Description" value={draft.description} onChange={v => setDraft({...draft, description: v})} textarea />
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
-                <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-zinc-500">Tags</span>
-                <div className="flex gap-2 mb-4">
-                    {['saas', 'client', 'open-source'].map((t: any) => (
-                        <Chip key={t} active={draft.tags.includes(t)} onClick={() => setDraft({...draft, tags: draft.tags.includes(t) ? draft.tags.filter(x=>x!==t) : [...draft.tags, t]})}>{t}</Chip>
-                    ))}
-                </div>
-                <TextField label="Tech Stack" value={draft.tech?.join(', ') || ''} onChange={v => setDraft({...draft, tech: splitComma(v)})} placeholder="React, Next.js..." />
+
+            <TextField
+              label="Description"
+              value={draft.description}
+              onChange={v => setDraft({ ...draft, description: v })}
+              textarea
+              rows={3}
+            />
+
+            {/* Category tags — chip selector, no free-text parsing needed */}
+            <div>
+              <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                Category Tags
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {(['saas', 'client', 'open-source'] as const).map(t => (
+                  <Chip
+                    key={t}
+                    active={draft.tags.includes(t)}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        tags: draft.tags.includes(t)
+                          ? draft.tags.filter(x => x !== t)
+                          : [...draft.tags, t],
+                      })
+                    }
+                  >
+                    {t}
+                  </Chip>
+                ))}
+              </div>
             </div>
-            <TextField label="Logo URL" value={draft.logoUrl} onChange={v => setDraft({...draft, logoUrl: v})} />
-            
-            {/* --- IMPROVED CASE FILE SECTION --- */}
-            <div className="relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="bg-zinc-100 p-3 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
-                    <h3 className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-2">
-                        <Hash className="h-4 w-4 text-[color:var(--brand)]" /> Case File
-                    </h3>
-                    <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Deep Dive</div>
+
+            {/*
+              ArrayField (comma) — tech stack.
+              Previously: onChange={v => setDraft({...draft, tech: splitComma(v)})}
+              Bug: splitComma ran on every keystroke, stripping the trailing comma
+              before the user could finish typing the next technology.
+            */}
+            <ArrayField
+              label="Tech Stack (comma-separated)"
+              value={draft.tech ?? []}
+              onChange={v => setDraft({ ...draft, tech: v })}
+              separator="comma"
+              placeholder="React, Next.js, Prisma…"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
+                label="Logo URL"
+                value={draft.logoUrl}
+                onChange={v => setDraft({ ...draft, logoUrl: v })}
+              />
+              <TextField
+                label="Metric (e.g. 12k users)"
+                value={(draft as any).metric ?? ''}
+                onChange={v => setDraft({ ...draft, metric: v } as any)}
+                placeholder="Optional"
+              />
+            </div>
+
+            <Rule />
+
+            {/* Case File */}
+            <div>
+              <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+                Case File
+              </p>
+              <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50/50 dark:bg-zinc-900/30">
+                <TextField
+                  label="Problem"
+                  value={draft.caseFile?.problem ?? ''}
+                  onChange={v => setDraft({ ...draft, caseFile: { ...draft.caseFile!, problem: v } })}
+                  textarea
+                  rows={3}
+                />
+
+                {/*
+                  ArrayField (line) — approach steps.
+                  Previously: onChange called splitLines on each keystroke,
+                  which filtered out empty lines immediately, preventing Enter.
+                */}
+                <ArrayField
+                  label="Approach (one step per line)"
+                  value={draft.caseFile?.approach ?? []}
+                  onChange={v => setDraft({ ...draft, caseFile: { ...draft.caseFile!, approach: v } })}
+                  separator="line"
+                  rows={5}
+                  placeholder="Used Redis for caching…"
+                />
+
+                <TextField
+                  label="Result"
+                  value={draft.caseFile?.result ?? ''}
+                  onChange={v => setDraft({ ...draft, caseFile: { ...draft.caseFile!, result: v } })}
+                  textarea
+                  rows={3}
+                />
+
+                {/* TokenInput — intentional chip commit on Enter/comma (correct behaviour) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <TokenInput
+                    label="Case Tags"
+                    value={draft.caseFile?.tags ?? []}
+                    onChange={v => setDraft({ ...draft, caseFile: { ...draft.caseFile!, tags: v } })}
+                    placeholder="ux, design…"
+                  />
+                  <TokenInput
+                    label="Case Tech"
+                    value={draft.caseFile?.tech ?? []}
+                    onChange={v => setDraft({ ...draft, caseFile: { ...draft.caseFile!, tech: v } })}
+                    placeholder="Figma, Stripe…"
+                  />
                 </div>
-                <div className="p-4 space-y-5 bg-white dark:bg-[#09090b]">
-                    <TextField label="The Problem" value={draft.caseFile?.problem || ''} onChange={v => setDraft({...draft, caseFile: { ...draft.caseFile!, problem: v }})} textarea />
-                    <TextField label="Approach (One per line)" value={draft.caseFile?.approach?.join('\n') || ''} onChange={v => setDraft({...draft, caseFile: { ...draft.caseFile!, approach: splitLines(v) }})} textarea placeholder="• Utilized Redis for caching..." />
-                    <TextField label="The Result" value={draft.caseFile?.result || ''} onChange={v => setDraft({...draft, caseFile: { ...draft.caseFile!, result: v }})} textarea />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <TokenInput label="Case Tags" value={draft.caseFile?.tags || []} onChange={v => setDraft({...draft, caseFile: {...draft.caseFile!, tags: v}})} placeholder="ux, design" />
-                        <TokenInput label="Case Tech" value={draft.caseFile?.tech || []} onChange={v => setDraft({...draft, caseFile: {...draft.caseFile!, tech: v}})} placeholder="Figma, Stripe" />
-                    </div>
-                    
-                    <ImagesManager images={draft.caseFile?.images || []} onChange={imgs => setDraft({...draft, caseFile: {...draft.caseFile!, images: imgs}})} />
-                </div>
+
+                <ImagesManager
+                  images={draft.caseFile?.images ?? []}
+                  onChange={imgs => setDraft({ ...draft, caseFile: { ...draft.caseFile!, images: imgs } })}
+                />
+              </div>
             </div>
           </div>
         )}

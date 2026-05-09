@@ -398,7 +398,7 @@ DETAILS
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onBlur={() => setTouched(s => ({ ...s, name: true }))}
-                placeholder="Jane Doe"
+                placeholder="Brian Mwangi"
                 className={cn(
                   lineInputBase,
                   touched.name && !name.trim() ? lineInputError : lineInputNormal
@@ -418,7 +418,7 @@ DETAILS
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onBlur={() => setTouched(s => ({ ...s, email: true }))}
-                placeholder="jane@company.com"
+                placeholder="brian@company.com"
                 className={cn(
                   lineInputBase,
                   email && !isEmailValid ? lineInputError : lineInputNormal
