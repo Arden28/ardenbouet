@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import ImageWithFallback from './ImageWithFallback';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -25,30 +25,30 @@ type Props = {
 };
 
 // ─── Motion config ──────────────────────────────────────────────────────────
-const EXPO     = [0.16, 1, 0.3, 1] as const;
-const EXPO_OUT = [0.32, 0, 0.67, 0] as const;
+const EXPO: [number, number, number, number]     = [0.16, 1, 0.3, 1];
+const EXPO_OUT: [number, number, number, number] = [0.32, 0, 0.67, 0];
 
-const backdropVariants = {
+const backdropVariants: Variants = {
   hidden: { opacity: 0 },
   show:   { opacity: 1, transition: { duration: 0.35, ease: 'easeOut' } },
   exit:   { opacity: 0, transition: { duration: 0.3,  ease: 'easeIn' } },
 };
 
 // Media area fades + scales in from darkness
-const mediaVariants = {
+const mediaVariants: Variants = {
   hidden: { opacity: 0, scale: 0.97 },
   show:   { opacity: 1, scale: 1, transition: { duration: 0.6, ease: EXPO, delay: 0.12 } },
 };
 
 // Right detail panel slides in from the right
-const detailVariants = {
+const detailVariants: Variants = {
   hidden: { x: 48, opacity: 0 },
   show:   { x: 0,  opacity: 1, transition: { duration: 0.55, ease: EXPO, delay: 0.08 } },
   exit:   { x: 48, opacity: 0, transition: { duration: 0.3,  ease: EXPO_OUT } },
 };
 
 // Content sections stagger in after panel arrives
-const sectionVariants = {
+const sectionVariants: Variants = {
   hidden: { opacity: 0, y: 14 },
   show:   (i: number) => ({
     opacity: 1, y: 0,
