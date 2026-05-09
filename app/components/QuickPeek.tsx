@@ -33,8 +33,8 @@ const drawerVariants = {
 
 const backdropVariants = {
   hidden: { opacity: 0 },
-  show:   { opacity: 1, transition: { duration: 0.25, ease: 'easeOut' } },
-  exit:   { opacity: 0, transition: { duration: 0.25, ease: 'easeIn' } },
+  show:   { opacity: 1, transition: { duration: 0.25, ease: 'easeOut' as const } },
+  exit:   { opacity: 0, transition: { duration: 0.25, ease: 'easeIn' as const } },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
