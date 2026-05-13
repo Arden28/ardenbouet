@@ -12,6 +12,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import type { ShopProduct } from '@/app/admin/types';
+import { formatPrice, CURRENCIES, LS_KEY } from '@/lib/currency';
+import type { CurrencyCode } from '@/lib/currency';
 
 // ─── Stripe singleton ──────────────────────────────────────────────────────────
 let _stripePromise: ReturnType<typeof loadStripe> | null = null;
@@ -170,8 +172,8 @@ function MethodCard({ m, selected, onClick }: { m: typeof METHODS[0]; selected: 
 }
 
 // ─── Stripe form ───────────────────────────────────────────────────────────────
-function StripeCardForm({ product, name, email, onSuccess }: {
-  product: ShopProduct; name: string; email: string; onSuccess: (ref: string) => void;
+function StripeCardForm({ product, name, email, currency, onSuccess }: {
+  product: ShopProduct; name: string; email: string; currency: CurrencyCode; onSuccess: (ref: string) => void;
 }) {
   const stripe   = useStripe();
   const elements = useElements();
@@ -220,60 +222,124 @@ function StripeCardForm({ product, name, email, onSuccess }: {
       </div>
       {error && <ErrMsg msg={error} />}
       <PayBtn onClick={handlePay} loading={loading} disabled={!stripe}>
-        Pay {product.priceLabel} →
+        Pay {formatPrice(product.price, product.currency, currency)} →
       </PayBtn>
     </div>
   );
 }
 
 // ─── Paystack form ─────────────────────────────────────────────────────────────
+const PAYSTACK_CURRENCY = process.env.NEXT_PUBLIC_PAYSTACK_CURRENCY ?? 'KES';
+const PAYSTACK_RATES: Record<string, number> = {
+  NGN: Number(process.env.NEXT_PUBLIC_PAYSTACK_USD_TO_NGN) || 1600,
+  KES: Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES)    || 130,
+};
+const PAYSTACK_SYMBOLS: Record<string, string> = {
+  NGN: '₦', KES: 'KSh', GHS: '₵', ZAR: 'R',
+};
+
+type PaystackPopType = { setup: (o: object) => { openIframe: () => void } };
+
+function waitForPaystack(maxMs = 6000): Promise<PaystackPopType | null> {
+  return new Promise(resolve => {
+    let elapsed = 0;
+    const check = () => {
+      const pop = (window as unknown as { PaystackPop?: PaystackPopType }).PaystackPop;
+      if (pop) { resolve(pop); return; }
+      if (elapsed >= maxMs) { resolve(null); return; }
+      elapsed += 150;
+      setTimeout(check, 150);
+    };
+    check();
+  });
+}
+
 function PaystackForm({ product, name, email, onSuccess }: {
   product: ShopProduct; name: string; email: string; onSuccess: (ref: string) => void;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const rate      = Number(process.env.NEXT_PUBLIC_PAYSTACK_USD_TO_NGN) || 1600;
-  const amountNgn = Math.round(product.price * rate);
+  const [loading,   setLoading]   = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const rate        = PAYSTACK_RATES[PAYSTACK_CURRENCY] ?? 1;
+  const symbol      = PAYSTACK_SYMBOLS[PAYSTACK_CURRENCY] ?? PAYSTACK_CURRENCY;
+  const amountLocal = Math.round(product.price * rate);
 
-  const handlePay = () => {
-    const pop = (window as unknown as { PaystackPop?: { setup: (o: object) => { openIframe: () => void } } }).PaystackPop;
-    if (!pop) { setError('Paystack is still loading — please try again.'); return; }
+  const handlePay = async () => {
     setLoading(true);
     setError(null);
+
+    const pop = await waitForPaystack();
+    if (!pop) {
+      setLoading(false);
+      setError('Paystack could not be loaded. Please check your connection and try again.');
+      return;
+    }
+
     const ref = `arden_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const handler = pop.setup({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      email, amount: amountNgn * 100, currency: 'NGN', ref,
-      metadata: { productId: product.id, productTitle: product.title, customerName: name },
-      callback: async (response: { reference: string }) => {
-        try {
-          const res = await fetch('/api/checkout/paystack/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reference: response.reference,
-              productId: product.id, productTitle: product.title,
-              amount: product.price, currency: product.currency,
-              customerName: name, customerEmail: email,
-            }),
-          });
-          const data = await res.json();
-          if (data.ok) onSuccess(`paystack_${response.reference}`);
-          else setError('Verification failed. If charged, contact us with ref: ' + response.reference);
-        } catch { setError('Verification failed. Please contact support.'); }
-        finally { setLoading(false); }
-      },
-      onClose: () => setLoading(false),
-    });
-    handler.openIframe();
+
+    // Retry verify up to 3 times with increasing delay — Paystack can lag behind
+    const verifyWithRetry = (reference: string, attempt = 0): void => {
+      fetch('/api/checkout/paystack/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference,
+          productId: product.id, productTitle: product.title,
+          amount: product.price, currency: product.currency,
+          customerName: name, customerEmail: email,
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            setVerifying(false);
+            setLoading(false);
+            onSuccess(`paystack_${reference}`);
+          } else if (attempt < 2) {
+            setTimeout(() => verifyWithRetry(reference, attempt + 1), 1200 * (attempt + 1));
+          } else {
+            setVerifying(false);
+            setLoading(false);
+            setError(`Verification pending — your ref is ${reference}. Contact us if you were charged.`);
+          }
+        })
+        .catch(() => {
+          if (attempt < 2) {
+            setTimeout(() => verifyWithRetry(reference, attempt + 1), 1200 * (attempt + 1));
+          } else {
+            setVerifying(false);
+            setLoading(false);
+            setError(`Verification pending — your ref is ${reference}. Contact us if you were charged.`);
+          }
+        });
+    };
+
+    try {
+      const handler = pop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+        email, amount: amountLocal * 100, currency: PAYSTACK_CURRENCY, ref,
+        metadata: { productId: product.id, productTitle: product.title, customerName: name },
+        callback: (response: { reference: string }) => {
+          setVerifying(true);
+          verifyWithRetry(response.reference);
+        },
+        onClose: () => { setLoading(false); setVerifying(false); },
+      });
+      handler.openIframe();
+    } catch (e: unknown) {
+      setLoading(false);
+      setError(e instanceof Error ? e.message : 'Failed to open Paystack. Please try again.');
+    }
   };
+
+  const btnLabel = verifying ? 'Verifying payment…' : loading ? 'Opening Paystack…' : 'Pay with Paystack →';
 
   return (
     <div>
-      <AmountNote label="You'll be charged:" value={`₦${amountNgn.toLocaleString()} (≈ ${product.priceLabel})`} />
+      <AmountNote label="You'll be charged:" value={`${symbol} ${amountLocal.toLocaleString()} (≈ ${product.priceLabel})`} />
       {error && <ErrMsg msg={error} />}
       <PayBtn onClick={handlePay} loading={loading}>
-        {loading ? 'Opening Paystack…' : 'Pay with Paystack →'}
+        {btnLabel}
       </PayBtn>
     </div>
   );
@@ -493,6 +559,12 @@ export default function CheckoutClient() {
   const [success,    setSuccess]    = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
 
+  const [currency, setCurrency] = useState<CurrencyCode>('USD');
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_KEY) as CurrencyCode | null;
+    if (saved && CURRENCIES.some(c => c.code === saved)) setCurrency(saved);
+  }, []);
+
   useEffect(() => {
     if (!slug) { setNotFound(true); setFetching(false); return; }
     fetch('/api/content')
@@ -533,7 +605,7 @@ export default function CheckoutClient() {
 
   return (
     <>
-      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
 
       <main className="min-h-screen bg-white dark:bg-zinc-950">
         {/* Top bar */}
@@ -599,7 +671,7 @@ export default function CheckoutClient() {
 
                       {method === 'stripe' && (
                         <Elements stripe={getStripe()}>
-                          <StripeCardForm product={product} name={name} email={email} onSuccess={handleSuccess} />
+                          <StripeCardForm product={product} name={name} email={email} currency={currency} onSuccess={handleSuccess} />
                         </Elements>
                       )}
 
@@ -669,7 +741,7 @@ export default function CheckoutClient() {
                 <div className="border-t border-white/10 px-6 py-4 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-500">Subtotal</span>
-                    <span className="font-mono text-sm text-white">{product.priceLabel}</span>
+                    <span className="font-mono text-sm text-white">{formatPrice(product.price, product.currency, currency)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-500">Tax / Fees</span>
@@ -680,7 +752,7 @@ export default function CheckoutClient() {
                 <div className="border-t border-white/10 px-6 py-5">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase tracking-widest text-white">Total</span>
-                    <span className="font-mono text-2xl font-bold text-white">{product.priceLabel}</span>
+                    <span className="font-mono text-2xl font-bold text-white">{formatPrice(product.price, product.currency, currency)}</span>
                   </div>
                 </div>
 

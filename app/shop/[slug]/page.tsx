@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import type { ContentBundle, ShopProduct, ProductMediaItem } from '@/app/admin/types';
+import PriceTag from './PriceTag';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,11 +137,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
           {/* CTA row */}
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <span className="font-mono text-2xl font-bold text-white">{product.priceLabel}</span>
+            <PriceTag
+              price={product.price}
+              baseCurrency={product.currency}
+              fallback={product.priceLabel}
+              className="font-mono text-2xl font-bold text-white"
+            />
 
             <Link
               href={`/checkout?product=${product.slug}`}
-              className="inline-flex items-center bg-[#CBFF4D] px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-950 transition-colors duration-150 hover:bg-white"
+              className="inline-flex items-center bg-[#2467AC] px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-950 transition-colors duration-150 hover:bg-white"
             >
               {isService ? 'Book now →' : 'Buy now →'}
             </Link>
@@ -245,9 +251,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
                   Price
                 </p>
-                <p className="mt-1 font-mono text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-                  {product.priceLabel}
-                </p>
+                <PriceTag
+                  price={product.price}
+                  baseCurrency={product.currency}
+                  fallback={product.priceLabel}
+                  className="mt-1 block font-mono text-3xl font-bold text-zinc-900 dark:text-zinc-50"
+                />
               </div>
 
               {/* CTAs */}

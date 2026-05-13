@@ -3,23 +3,34 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layers, Package, FileText, Wrench } from 'lucide-react';
+import { Layers, Package, FileText, Wrench, ChevronDown } from 'lucide-react';
 import type { ShopProduct } from '@/app/admin/types';
+import { CURRENCIES, formatPrice, LS_KEY } from '@/lib/currency';
+import type { CurrencyCode } from '@/lib/currency';
 
+function useCurrency(): [CurrencyCode, (c: CurrencyCode) => void] {
+  const [currency, setCurrency] = useState<CurrencyCode>('USD');
+
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_KEY) as CurrencyCode | null;
+    if (saved && CURRENCIES.some(c => c.code === saved)) setCurrency(saved);
+  }, []);
+
+  const set = useCallback((c: CurrencyCode) => {
+    setCurrency(c);
+    localStorage.setItem(LS_KEY, c);
+  }, []);
+
+  return [currency, set];
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 type CategoryFilter = 'all' | 'platform' | 'app' | 'document' | 'service';
 
 const EXPO = [0.16, 1, 0.3, 1] as const;
-
-const CATEGORY_LABELS: Record<CategoryFilter, string> = {
-  all: 'All',
-  platform: 'Platforms',
-  app: 'Apps',
-  document: 'Documents',
-  service: 'Services',
-};
 
 const CATEGORY_ICON: Record<ShopProduct['category'], ReactNode> = {
   platform: <Layers className="h-8 w-8 text-zinc-300 dark:text-zinc-700" />,
@@ -28,15 +39,32 @@ const CATEGORY_ICON: Record<ShopProduct['category'], ReactNode> = {
   service:  <Wrench className="h-8 w-8 text-zinc-300 dark:text-zinc-700" />,
 };
 
+// ─── Design atoms ─────────────────────────────────────────────────────────────
 function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
 }
 
+// ─── Currency picker ──────────────────────────────────────────────────────────
+function CurrencyPicker({ value, onChange }: { value: CurrencyCode; onChange: (c: CurrencyCode) => void }) {
+  return (
+    <label className="relative flex cursor-pointer items-center gap-1">
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value as CurrencyCode)}
+        className="appearance-none bg-transparent font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 focus:outline-none cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors duration-150 pr-3"
+      >
+        {CURRENCIES.map(c => (
+          <option key={c.code} value={c.code}>{c.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-0 h-2.5 w-2.5 text-zinc-400" />
+    </label>
+  );
+}
+
+// ─── Sidebar filter ───────────────────────────────────────────────────────────
 function FilterGroup<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
+  label, options, value, onChange,
 }: {
   label: string;
   options: { key: T; label: string }[];
@@ -74,9 +102,7 @@ function FilterGroup<T extends string>({
                   isActive ? 'w-5 opacity-100' : 'w-0 opacity-0',
                 ].join(' ')}
               />
-              <span className="font-mono text-[10px] uppercase tracking-widest">
-                {optLabel}
-              </span>
+              <span className="font-mono text-[10px] uppercase tracking-widest">{optLabel}</span>
             </button>
           );
         })}
@@ -85,7 +111,9 @@ function FilterGroup<T extends string>({
   );
 }
 
-function ProductCard({ product }: { product: ShopProduct }) {
+// ─── Product card ─────────────────────────────────────────────────────────────
+function ProductCard({ product, currency }: { product: ShopProduct; currency: CurrencyCode }) {
+  const price = formatPrice(product.price, product.currency, currency);
   return (
     <Link href={`/shop/${product.slug}`} className="group block">
       <article className="relative border border-zinc-200 dark:border-zinc-800 transition-[border-color] duration-150 group-hover:border-zinc-900 dark:group-hover:border-zinc-100">
@@ -127,16 +155,22 @@ function ProductCard({ product }: { product: ShopProduct }) {
           </p>
 
           <div className="mt-5 flex items-center justify-between">
-            <span className="font-mono text-base font-bold text-zinc-900 dark:text-zinc-50">
-              {product.priceLabel}
-            </span>
+            <motion.span
+              key={currency}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              className="font-mono text-base font-bold text-zinc-900 dark:text-zinc-50"
+            >
+              {price}
+            </motion.span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors duration-150 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
               View →
             </span>
           </div>
         </div>
 
-        {/* Left-edge lime accent */}
+        {/* Left-edge accent */}
         <span
           aria-hidden
           className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full"
@@ -146,7 +180,9 @@ function ProductCard({ product }: { product: ShopProduct }) {
   );
 }
 
-function ServiceRow({ product }: { product: ShopProduct }) {
+// ─── Service row ──────────────────────────────────────────────────────────────
+function ServiceRow({ product, currency }: { product: ShopProduct; currency: CurrencyCode }) {
+  const price = formatPrice(product.price, product.currency, currency);
   return (
     <div className="group">
       <Link href={`/shop/${product.slug}`}>
@@ -163,16 +199,21 @@ function ServiceRow({ product }: { product: ShopProduct }) {
             </p>
           </div>
           <div className="shrink-0 text-right">
-            <p className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-50">
-              {product.priceLabel}
-            </p>
+            <motion.p
+              key={currency}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-50"
+            >
+              {price}
+            </motion.p>
             <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors duration-150 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
               Learn more →
             </p>
           </div>
         </div>
 
-        {/* Feature preview on hover */}
         {product.features.length > 0 && (
           <div className="max-h-0 overflow-hidden transition-[max-height] duration-300 group-hover:max-h-16 px-1">
             <div className="border-t border-zinc-100 dark:border-zinc-900 py-3">
@@ -188,6 +229,7 @@ function ServiceRow({ product }: { product: ShopProduct }) {
   );
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
     <div className="border border-zinc-200 dark:border-zinc-800 animate-pulse">
@@ -201,10 +243,12 @@ function SkeletonCard() {
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ShopPage() {
   const [products, setProducts] = useState<ShopProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,  setLoading]  = useState(true);
   const [category, setCategory] = useState<CategoryFilter>('all');
+  const [currency, setCurrency] = useCurrency();
 
   useEffect(() => {
     fetch('/api/content')
@@ -219,11 +263,10 @@ export default function ShopPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(
+  const filtered  = useMemo(
     () => (category === 'all' ? products : products.filter(p => p.category === category)),
     [products, category],
   );
-
   const digital  = filtered.filter(p => p.category !== 'service');
   const services = filtered.filter(p => p.category === 'service');
   const total    = digital.length + services.length;
@@ -232,13 +275,17 @@ export default function ShopPage() {
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:pt-16">
       {/* Section header */}
       <Rule />
-      <div className="flex items-baseline justify-between py-4">
+      <div className="flex items-center justify-between py-4">
         <h1 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
           Shop
         </h1>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-          {loading ? '…' : `${total} item${total !== 1 ? 's' : ''}`}
-        </p>
+        <div className="flex items-center gap-3">
+          <CurrencyPicker value={currency} onChange={setCurrency} />
+          <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-700" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+            {loading ? '…' : `${total} item${total !== 1 ? 's' : ''}`}
+          </p>
+        </div>
       </div>
       <Rule />
 
@@ -286,14 +333,12 @@ export default function ShopPage() {
 
         {/* Main content */}
         <div className="space-y-14">
-          {/* Loading skeleton */}
           {loading && (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2].map(i => <SkeletonCard key={i} />)}
             </div>
           )}
 
-          {/* Digital products */}
           <AnimatePresence>
             {!loading && digital.length > 0 && (
               <motion.section
@@ -315,7 +360,7 @@ export default function ShopPage() {
                 <ul className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                   {digital.map(p => (
                     <li key={p.slug}>
-                      <ProductCard product={p} />
+                      <ProductCard product={p} currency={currency} />
                     </li>
                   ))}
                 </ul>
@@ -323,7 +368,6 @@ export default function ShopPage() {
             )}
           </AnimatePresence>
 
-          {/* Services */}
           <AnimatePresence>
             {!loading && services.length > 0 && (
               <motion.section
@@ -344,14 +388,13 @@ export default function ShopPage() {
                 <Rule />
                 <div>
                   {services.map(p => (
-                    <ServiceRow key={p.slug} product={p} />
+                    <ServiceRow key={p.slug} product={p} currency={currency} />
                   ))}
                 </div>
               </motion.section>
             )}
           </AnimatePresence>
 
-          {/* Empty state */}
           {!loading && total === 0 && (
             <div className="border border-dashed border-zinc-200 dark:border-zinc-800 py-16 text-center">
               <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">

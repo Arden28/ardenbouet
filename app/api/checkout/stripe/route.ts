@@ -3,7 +3,11 @@ import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import type { ContentBundle } from '@/app/admin/types';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2026-04-22.dahlia' as const });
+let _stripe: Stripe | null = null;
+function getStripeClient() {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' as const });
+  return _stripe;
+}
 
 export async function POST(req: NextRequest) {
   const { productId, productTitle, amount, currency, customerName, customerEmail } = await req.json();
@@ -16,7 +20,7 @@ export async function POST(req: NextRequest) {
   const amountCents = Math.round((amount ?? product.price) * 100);
   const curr = (currency ?? product.currency ?? 'usd').toLowerCase();
 
-  const intent = await stripe.paymentIntents.create({
+  const intent = await getStripeClient().paymentIntents.create({
     amount: amountCents,
     currency: curr,
     metadata: { productId, customerName, customerEmail },
