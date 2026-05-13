@@ -8,25 +8,23 @@ datasource db {
 }
 
 model Content {
-  id        Int      @id @default(1)
+  id        Int      @id
   data      Json
   updatedAt DateTime @updatedAt
 }
+
 model Message {
   id         Int      @id @default(autoincrement())
   createdAt  DateTime @default(now())
 
-  // sender
   name       String
   email      String
 
-  // project details
-  services   String?   // CSV
+  services   String[]
   timeframe  String?
-  budget     Int?      // 1..5
+  budget     Budget?
   body       String
 
-  // meta
   ip         String?
   userAgent  String?
   read       Boolean   @default(false)
@@ -34,5 +32,44 @@ model Message {
 
   @@index([email, createdAt])
   @@index([ip, createdAt])
+  @@index([read, createdAt])
 }
 
+enum Budget {
+  LOW
+  MEDIUM
+  HIGH
+  PREMIUM
+  ENTERPRISE
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  customerName  String
+  customerEmail String
+  productId     String
+  productTitle  String
+
+  status        OrderStatus @default(PENDING)
+  amount        Float
+  currency      String      @default("USD")
+
+  stripeId        String?
+  paymentRef      String?
+  paymentProvider String?
+  notes           String?
+
+  @@index([customerEmail, createdAt])
+  @@index([status, createdAt])
+  @@index([productId])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}

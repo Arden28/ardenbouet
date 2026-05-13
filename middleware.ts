@@ -32,6 +32,8 @@ export const config = {
     '/admin/login',
     '/api/admin/login',
     '/api/admin/logout',
-    '/api/admin/content', // <--- allow content endpoint
+    '/api/admin/content',
+    '/api/admin/orders',
+    '/api/admin/orders/:id*',
   ],
 };

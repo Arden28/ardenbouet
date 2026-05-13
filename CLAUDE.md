@@ -67,10 +67,40 @@ Notes and messages render markdown via `markdown-it` (with anchor, container, ta
 
 [app/i18n.tsx](app/i18n.tsx) configures react-i18next with EN/FR. Language preference is persisted in localStorage and auto-detected via `i18next-browser-languagedetector`. The `<LanguageSwitcher>` component in the header toggles it.
 
+### Shop & Checkout
+
+Products live inside `ContentBundle.products` (typed as `ShopProduct[]`). Each product has `id`, `slug`, `price`, `currency`, `priceLabel`, `category`, `features`, `media`, etc.
+
+Checkout page: `/checkout?product=<slug>`. Flow stays entirely on-site — no redirect:
+- **Stripe** — `CardElement` + `confirmCardPayment()` (on-page)
+- **Paystack** — `window.PaystackPop.openIframe()` (modal over page; script loaded via `<Script>`)
+- **M-Pesa** — Daraja STK Push → 3 s polling of `/api/checkout/mpesa/status`
+- **PayPal** — `<PayPalButtons>` from `@paypal/react-paypal-js` (popup, page stays)
+
+API routes: `app/api/checkout/{stripe,paystack/verify,mpesa/init,mpesa/status,paypal/create,paypal/capture}/route.ts`
+Webhook receivers: `app/api/webhooks/{stripe,paystack,mpesa,paypal}/route.ts`
+
+Order lifecycle: created as `PENDING` on checkout initiation, updated to `PAID` by webhook or verify call.
+
+`npm install` must use `--ignore-scripts` if the dev server is running (Prisma DLL lock on Windows).
+
 ### Environment variables
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Prisma DB connection (postgres in prod, SQLite path in dev) |
+| `DATABASE_URL` | Prisma DB connection |
+| `STRIPE_SECRET_KEY` | Stripe server key |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe browser key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook HMAC secret |
+| `PAYSTACK_SECRET_KEY` | Paystack server key |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Paystack browser key |
+| `NEXT_PUBLIC_PAYSTACK_USD_TO_NGN` | Exchange rate for Paystack display (default 1600) |
+| `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET` | Daraja API credentials |
+| `MPESA_SHORTCODE` / `MPESA_PASSKEY` | STK Push shortcode and passkey |
+| `MPESA_CALLBACK_URL` | Public URL for Safaricom STK callback |
+| `NEXT_PUBLIC_MPESA_USD_TO_KES` | Exchange rate for M-Pesa display (default 130) |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` | PayPal server credentials |
+| `PAYPAL_BASE` | PayPal API base (sandbox vs live) |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | PayPal browser client ID |
 
-Local dev uses `.env.development.local`; production uses `.env`.
+Local dev uses `.env.local`; production uses `.env`.

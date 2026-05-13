@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3000/api/admin/content -H \"Cookie: admin_session=1\")"
+    ]
+  }
+}

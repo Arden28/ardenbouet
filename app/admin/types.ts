@@ -22,12 +22,12 @@ export type Project = {
 
 export type Experience = {
   id: string;
-  title: string;                 // Company / Title
-  job: string;                   // Role
-  fromTo: string;                // "Apr 2023 ~ Oct 2023 · 7 months"
+  title: string;
+  job: string;
+  fromTo: string;
   bullets: string[];
   type: 'Freelance' | 'Contract' | 'Full-time' | 'Part-time' | 'Intern';
-  location?: 'On-site' | 'Hybrid' | 'Remote'
+  location?: 'On-site' | 'Hybrid' | 'Remote';
   logline?: string;
   outcomes?: string[];
   tags?: string[];
@@ -44,26 +44,6 @@ export type JourneyItem = {
   note?: string;
 };
 
-/** NEW: Inbox-style content (replaces Notes tab) */
-export type Message = {
-  id: string;
-  date: string;                 // ISO
-  fromName?: string;
-  fromEmail?: string;
-  subject: string;
-  tags: string[];               // e.g., ["lead","client","press"]
-  status: 'unread' | 'read' | 'archived';
-  bodyMd: string;               // markdown body
-};
-
-export type ContentBundle = {
-  projects: Project[];
-  experiences: Experience[];
-  journey: JourneyItem[];
-  notes: Note[]
-  // messages: Message[];          // NEW
-};
-
 export type Note = {
   id: string;
   slug: string;
@@ -74,4 +54,66 @@ export type Note = {
   reading: string;
   tags: string[];
   bodyMd?: string;
+};
+
+export type ProductMediaItem = {
+  url: string;
+  kind: 'image' | 'video';
+  label: string;
+  description?: string;
+};
+
+export type ShopProduct = {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  description: string;
+  category: 'platform' | 'app' | 'document' | 'service';
+  price: number;
+  currency: string;
+  priceLabel: string;
+  status: 'draft' | 'published' | 'archived';
+  features: string[];
+  tags: string[];
+  cover?: string;
+  demoUrl?: string;
+  buyUrl?: string;
+  media?: ProductMediaItem[];
+};
+
+export type OrderStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
+
+export type Order = {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  customerName: string;
+  customerEmail: string;
+  productId: string;
+  productTitle: string;
+  status: OrderStatus;
+  amount: number;
+  currency: string;
+  stripeId?: string | null;
+  notes?: string | null;
+};
+
+export type ContentBundle = {
+  projects: Project[];
+  experiences: Experience[];
+  journey: JourneyItem[];
+  notes: Note[];
+  products: ShopProduct[];
+};
+
+export type Message = {
+  id: string;
+  date: string;
+  fromName?: string;
+  fromEmail?: string;
+  subject: string;
+  tags: string[];
+  status: 'unread' | 'read' | 'archived';
+  bodyMd: string;
 };

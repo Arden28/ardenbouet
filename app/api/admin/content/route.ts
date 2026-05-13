@@ -1,33 +1,36 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { DEFAULT_CONTENT } from '@/lib/defaultContent';
+import { prisma } from '@/lib/prisma'; // 1. Use static import
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-// (optional extra belt+suspenders)
 export const fetchCache = 'force-no-store';
 
 const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 
-function isAuthed() {
-  // only call cookies() inside a request lifecycle
-  return cookies().get(COOKIE_NAME)?.value === '1';
+// 2. MUST be async in Next.js 15
+async function isAuthed() {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get(COOKIE_NAME)?.value === '1';
+  } catch (err) {
+    return false;
+  }
 }
 
 export async function GET() {
-  if (!isAuthed()) {
+  // 3. Await the auth check
+  if (!(await isAuthed())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // Lazy import Prisma at request time to avoid build-time evaluation
-    const { prisma } = await import('@/lib/prisma');
-
     let row = await prisma.content.findUnique({ where: { id: 1 } });
     if (!row) {
       row = await prisma.content.create({
-        data: { id: 1, data: DEFAULT_CONTENT }, // seed-on-first-read (safe for prod)
+        data: { id: 1, data: DEFAULT_CONTENT }, 
       });
     }
 
@@ -39,7 +42,8 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  if (!isAuthed()) {
+  // Await the auth check
+  if (!(await isAuthed())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -49,12 +53,14 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    const { projects, experiences, journey, notes } = body as Record<string, unknown>;
+    const { projects, experiences, journey, notes, products } = body as Record<string, unknown>;
     if (!projects || !experiences || !journey || !notes) {
       return NextResponse.json({ error: 'Missing sections' }, { status: 400 });
     }
-
-    const { prisma } = await import('@/lib/prisma');
+    // products is optional for backwards compat with old saved bundles
+    if (products !== undefined && !Array.isArray(products)) {
+      return NextResponse.json({ error: 'Invalid products' }, { status: 400 });
+    }
 
     await prisma.content.upsert({
       where: { id: 1 },

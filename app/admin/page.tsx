@@ -4,17 +4,19 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Download, Save, LogOut } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 
-import type { ContentBundle } from './types';
+import type { ContentBundle, Order } from './types';
 import ProjectsEditor   from './components/ProjectsEditor';
 import ExperienceEditor from './components/ExperienceEditor';
 import JourneyEditor    from './components/JourneyEditor';
 import NotesEditor      from './components/NotesEditor';
+import ShopEditor       from './components/ShopEditor';
+import OrdersEditor     from './components/OrdersEditor';
 import { Toggle, downloadJSON } from './components/atoms';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Tab    = 'projects' | 'experience' | 'journey' | 'notes';
+type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'shop' | 'orders';
 type Status = 'idle' | 'dirty' | 'saving' | 'error' | 'loaded' | 'loading';
 
 const STORAGE_KEY = 'arden_cms_v2';
@@ -53,11 +55,13 @@ function NavItem({
   count,
   active,
   onClick,
+  hint,
 }: {
   label: string;
   count: number;
   active: boolean;
   onClick: () => void;
+  hint?: string;
 }) {
   return (
     <button
@@ -66,12 +70,9 @@ function NavItem({
       className={[
         'group relative flex w-full items-center gap-3 px-4 py-2.5',
         'transition-colors duration-150 focus-visible:outline-none',
-        active
-          ? 'text-zinc-100'
-          : 'text-zinc-500 hover:text-zinc-300',
+        active ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
       ].join(' ')}
     >
-      {/* Active left-edge lime bar */}
       <span
         className={[
           'absolute left-0 h-full w-[2px] bg-[#2467AC]',
@@ -80,17 +81,15 @@ function NavItem({
         ].join(' ')}
         aria-hidden
       />
-      <span className="flex-1 text-left font-mono text-[10px] uppercase tracking-widest">
-        {label}
-      </span>
-      <span
-        className={[
-          'font-mono text-[9px] tabular-nums',
-          active ? 'text-zinc-400' : 'text-zinc-700',
-        ].join(' ')}
-      >
-        {count}
-      </span>
+      <span className="flex-1 text-left font-mono text-[10px] uppercase tracking-widest">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {hint && count > 0 && (
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" aria-label={`${count} ${hint}`} />
+        )}
+        <span className={['font-mono text-[9px] tabular-nums', active ? 'text-zinc-400' : 'text-zinc-700'].join(' ')}>
+          {count}
+        </span>
+      </div>
     </button>
   );
 }
@@ -152,14 +151,19 @@ function Skeleton() {
 export default function AdminPage() {
   const router = useRouter();
 
-  const [tab,      setTab]      = useState<Tab>('projects');
-  const [bundle,   setBundle]   = useState<ContentBundle | null>(null);
-  const [status,   setStatus]   = useState<Status>('loading');
-  const [autosave, setAutosave] = useState(false);
+  const [tab,        setTab]        = useState<Tab>('projects');
+  const [bundle,     setBundle]     = useState<ContentBundle | null>(null);
+  const [orders,     setOrders]     = useState<Order[]>([]);
+  const [status,     setStatus]     = useState<Status>('loading');
+  const [autosave,   setAutosave]   = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
+    setStatus('loading');
+    setLoadFailed(false);
     (async () => {
       try {
         const res = await fetch('/api/admin/content', {
@@ -168,34 +172,42 @@ export default function AdminPage() {
           cache: 'no-store',
         });
         if (res.status === 401) { router.push('/admin/login?next=/admin'); return; }
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
         const json = await res.json() as any;
         setBundle({
           projects:    json.projects    ?? [],
           experiences: json.experiences ?? [],
           journey:     json.journey     ?? [],
           notes:       json.notes       ?? [],
+          products:    json.products    ?? [],
         });
+        setLoadFailed(false);
         setStatus('loaded');
+        // Load orders in parallel (separate model, non-blocking)
+        fetch('/api/admin/orders', { credentials: 'same-origin', cache: 'no-store' })
+          .then(r => r.ok ? r.json() : [])
+          .then((data: Order[]) => setOrders(Array.isArray(data) ? data : []))
+          .catch(() => {});
       } catch {
-        setBundle({ projects: [], experiences: [], journey: [], notes: [] });
-        setStatus('idle');
+        setLoadFailed(true);
+        setStatus('error');
       }
     })();
-  }, [router]);
+  }, [router, retryCount]);
 
   // ── Autosave + localStorage ───────────────────────────────────────────────
   useEffect(() => {
-    if (!bundle) return;
+    if (!bundle || loadFailed) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(bundle));
-    setStatus(prev => prev === 'saving' ? prev : 'dirty');
+    setStatus(prev => prev === 'saving' || prev === 'loaded' ? prev : 'dirty');
     if (autosave) {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => { void saveServer(); }, 1500);
     }
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, autosave]);
+  }, [bundle, autosave, loadFailed]);
 
   // ── Server save ───────────────────────────────────────────────────────────
   async function saveServer() {
@@ -231,15 +243,37 @@ export default function AdminPage() {
     experience: bundle?.experiences.length ?? 0,
     journey:    bundle?.journey.length     ?? 0,
     notes:      bundle?.notes.length       ?? 0,
-  }), [bundle]);
+    shop:       bundle?.products.length    ?? 0,
+    orders:     orders.filter(o => o.status === 'PENDING').length, // show pending count
+  }), [bundle, orders]);
 
-  if (!bundle) return <Skeleton />;
+  if (!bundle && !loadFailed) return <Skeleton />;
+  if (loadFailed && !bundle) return (
+    <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+          Failed to load content
+        </p>
+        <button
+          type="button"
+          onClick={() => setRetryCount(c => c + 1)}
+          className="border border-zinc-900 dark:border-zinc-100 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-50 dark:hover:text-zinc-900 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+  if (!bundle) return null; // TypeScript narrowing: bundle is ContentBundle past this point
 
-  const NAV: { key: Tab; label: string; count: number }[] = [
+  const NAV: { key: Tab; label: string; count: number; hint?: string }[] = [
     { key: 'projects',   label: 'Projects',   count: counts.projects   },
     { key: 'experience', label: 'Experience', count: counts.experience },
     { key: 'journey',    label: 'Journey',    count: counts.journey    },
     { key: 'notes',      label: 'Notes',      count: counts.notes      },
+    { key: 'shop',       label: 'Shop',       count: counts.shop       },
+    { key: 'orders',     label: 'Orders',     count: counts.orders,    hint: counts.orders > 0 ? 'pending' : undefined },
   ];
 
   return (
@@ -315,11 +349,11 @@ export default function AdminPage() {
           <div className="h-px mx-4 bg-zinc-800 my-1" />
 
           {/* Save */}
-          <div className="px-3 py-2">
+          <div className="px-3 py-2 flex flex-col gap-2">
             <button
               type="button"
               onClick={saveServer}
-              disabled={status === 'saving' || status === 'loading'}
+              disabled={status === 'saving' || status === 'loading' || loadFailed}
               className={[
                 'w-full py-2',
                 'font-mono text-[10px] uppercase tracking-widest',
@@ -332,6 +366,15 @@ export default function AdminPage() {
             >
               {status === 'saving' ? 'Saving…' : 'Save Changes'}
             </button>
+            {loadFailed && (
+              <button
+                type="button"
+                onClick={() => setRetryCount(c => c + 1)}
+                className="w-full py-2 border border-red-500/40 bg-transparent font-mono text-[10px] uppercase tracking-widest text-red-400 hover:border-red-400 hover:text-red-300 transition-colors focus-visible:outline-none"
+              >
+                Retry Load
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -407,6 +450,19 @@ export default function AdminPage() {
                 <NotesEditor
                   value={bundle.notes}
                   onChange={v => setBundle(b => ({ ...b!, notes: v }))}
+                />
+              )}
+              {tab === 'shop'       && (
+                <ShopEditor
+                  value={bundle.products}
+                  onChange={v => setBundle(b => ({ ...b!, products: v }))}
+                />
+              )}
+              {tab === 'orders'     && (
+                <OrdersEditor
+                  orders={orders}
+                  products={bundle.products}
+                  onOrdersChange={setOrders}
                 />
               )}
             </motion.div>

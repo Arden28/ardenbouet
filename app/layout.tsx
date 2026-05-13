@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Arden BOUET · Portfolio",
@@ -19,13 +16,30 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-      <link rel="icon" href="/images/me.png" sizes="any" />
+        <link rel="icon" href="/images/me.png" sizes="any" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.addEventListener('error', function(e) {
+            var msg = e.message || '';
+            if (msg.includes('ChunkLoad') || msg.includes('Loading chunk')) {
+              if (!sessionStorage.getItem('_chunk_reload')) {
+                sessionStorage.setItem('_chunk_reload', '1');
+                window.location.reload();
+              }
+            }
+          });
+          window.addEventListener('load', function() {
+            sessionStorage.removeItem('_chunk_reload');
+          });
+        ` }} />
       </head>
-      <body className={inter.className}>
+      <body>
         <Header/>
         {children}
         <Footer/>
-        </body>
+      </body>
     </html>
   );
 }
