@@ -73,9 +73,11 @@ export function RichBody({ html }: { html: string }) {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-
-    /* 1) Syntax highlighting */
-    hljs.highlightAll();
+    try {
+    /* 1) Syntax highlighting — scoped to this article only, skip already-highlighted */
+    root.querySelectorAll<HTMLElement>('pre code:not(.hljs)').forEach(el => {
+      try { hljs.highlightElement(el); } catch {}
+    });
 
     /* 2) Headings → ids + copyable anchor */
     const headings = root.querySelectorAll<HTMLElement>('h2, h3');
@@ -172,12 +174,17 @@ export function RichBody({ html }: { html: string }) {
       div.appendChild(content);
       bq.replaceWith(div);
     });
+    } catch (e) {
+      console.error('[RichBody] Post-processing error:', e);
+    }
   }, [html]);
 
   return (
     <div
       ref={ref}
-      dangerouslySetInnerHTML={{ __html: html }} // already sanitized on server
+      // suppressHydrationWarning because we mutate this subtree in useEffect
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }
@@ -202,6 +209,7 @@ export function Toc() {
       level: h.tagName === 'H2' ? 2 : 3,
     })));
 
+    if (!('IntersectionObserver' in window)) return;
     const io = new IntersectionObserver(
       entries => {
         const top = entries

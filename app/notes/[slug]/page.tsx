@@ -2,17 +2,25 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import type { ContentBundle, Note } from '@/app/admin/types';
 import { mdToSafeHtml } from '@/lib/mardown';
-import {
-  ScrollProgress,
-  RichBody,
-  Toc,
-  ShareRow,
-  ArticleActions,
-  CommentSection,
-} from './NoteClient';
+import { RichBody, ShareRow, ArticleActions } from './NoteClient';
+
+// ssr: false prevents framer-motion v12 hydration mismatches and browser-API errors
+const ScrollProgress = nextDynamic(
+  () => import('./NoteClient').then(m => ({ default: m.ScrollProgress })),
+  { ssr: false }
+);
+const Toc = nextDynamic(
+  () => import('./NoteClient').then(m => ({ default: m.Toc })),
+  { ssr: false }
+);
+const CommentSection = nextDynamic(
+  () => import('./NoteClient').then(m => ({ default: m.CommentSection })),
+  { ssr: false }
+);
 
 export const dynamic = 'force-dynamic';
 
