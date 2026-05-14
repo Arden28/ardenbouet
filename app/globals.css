@@ -21,6 +21,152 @@ body {
   }
 }
 
+/* ── Tiptap prose editor ──────────────────────────────────────────────────── */
+.tiptap-prose .ProseMirror {
+  outline: none;
+  padding: 2rem 2.5rem;
+  min-height: 100%;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #18181b;
+}
+.dark .tiptap-prose .ProseMirror { color: #fafafa; }
+
+.tiptap-prose .ProseMirror > * + * { margin-top: 0.75em; }
+.tiptap-prose .ProseMirror p { margin: 0; }
+.tiptap-prose .ProseMirror h2 { font-size: 1.5em; font-weight: 700; margin-top: 1.5em; }
+.tiptap-prose .ProseMirror h3 { font-size: 1.2em; font-weight: 700; margin-top: 1.25em; }
+.tiptap-prose .ProseMirror ul { list-style: disc; padding-left: 1.5em; }
+.tiptap-prose .ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
+.tiptap-prose .ProseMirror li > p { margin: 0; }
+.tiptap-prose .ProseMirror blockquote {
+  border-left: 3px solid #d4d4d8;
+  padding-left: 1em;
+  color: #71717a;
+  font-style: italic;
+}
+.dark .tiptap-prose .ProseMirror blockquote { border-color: #3f3f46; color: #a1a1aa; }
+.tiptap-prose .ProseMirror code:not(pre code) {
+  font-family: monospace;
+  font-size: 0.85em;
+  background: #f4f4f5;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+.dark .tiptap-prose .ProseMirror code:not(pre code) { background: #27272a; }
+.tiptap-prose .ProseMirror pre {
+  background: #18181b;
+  color: #fafafa;
+  padding: 1em 1.25em;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+.tiptap-prose .ProseMirror pre code { background: none; padding: 0; font-size: 0.875em; }
+.tiptap-prose .ProseMirror hr { border: none; border-top: 1px solid #e4e4e7; }
+.dark .tiptap-prose .ProseMirror hr { border-color: #3f3f46; }
+.tiptap-prose .ProseMirror a { color: #2467AC; text-decoration: underline; text-underline-offset: 3px; }
+.tiptap-prose .ProseMirror strong { font-weight: 700; }
+.tiptap-prose .ProseMirror em { font-style: italic; }
+.tiptap-prose .ProseMirror s { text-decoration: line-through; }
+
+.tiptap-prose .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a1a1aa;
+  pointer-events: none;
+  height: 0;
+}
+.dark .tiptap-prose .ProseMirror p.is-editor-empty:first-child::before { color: #52525b; }
+
+/* ── Tiptap: code block (lowlight / atom-one-dark background) ─────────────── */
+.tiptap-prose .ProseMirror pre { background: #282c34 !important; color: #abb2bf; }
+
+/* ── Tiptap: tables ───────────────────────────────────────────────────────── */
+.tiptap-prose .ProseMirror table { border-collapse: collapse; width: 100%; margin: 1rem 0; table-layout: fixed; }
+.tiptap-prose .ProseMirror th,
+.tiptap-prose .ProseMirror td { border: 1px solid #e4e4e7; padding: 0.5rem 0.75rem; min-width: 80px; vertical-align: top; position: relative; }
+.dark .tiptap-prose .ProseMirror th,
+.dark .tiptap-prose .ProseMirror td { border-color: #3f3f46; }
+.tiptap-prose .ProseMirror th { background: #f4f4f5; font-weight: 600; font-size: 0.8rem; }
+.dark .tiptap-prose .ProseMirror th { background: #27272a; }
+.tiptap-prose .ProseMirror .selectedCell::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(36, 103, 172, 0.12); pointer-events: none; z-index: 1;
+}
+.tiptap-prose .ProseMirror .tableWrapper { overflow-x: auto; }
+.tiptap-prose .ProseMirror .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: #2467AC; cursor: col-resize; }
+
+/* ── Tiptap: images ───────────────────────────────────────────────────────── */
+.tiptap-prose .ProseMirror img { max-width: 100%; height: auto; display: block; margin: 1rem 0; border: 1px solid #e4e4e7; }
+.dark .tiptap-prose .ProseMirror img { border-color: #3f3f46; }
+.tiptap-prose .ProseMirror img.ProseMirror-selectednode { outline: 2px solid #2467AC; outline-offset: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Notes blog prose
+   Applied to the <article> wrapper in app/notes/[slug]/page.tsx
+   ══════════════════════════════════════════════════════════════════════════════ */
+.notes-prose { font-size: 1.0625rem; line-height: 1.8; color: #52525b; overflow-wrap: break-word; word-break: break-word; min-width: 0; }
+.dark .notes-prose { color: #a1a1aa; }
+
+.notes-prose > * + * { margin-top: 1.25rem; }
+
+.notes-prose h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.025em; margin-top: 3rem; margin-bottom: 0.75rem; color: #18181b; }
+.dark .notes-prose h2 { color: #fafafa; }
+.notes-prose h3 { font-size: 1.2rem; font-weight: 700; margin-top: 2.25rem; margin-bottom: 0.5rem; color: #18181b; }
+.dark .notes-prose h3 { color: #fafafa; }
+
+.notes-prose p { margin: 1.25rem 0; }
+.notes-prose ul { list-style: disc; padding-left: 1.6rem; margin: 1rem 0; }
+.notes-prose ol { list-style: decimal; padding-left: 1.6rem; margin: 1rem 0; }
+.notes-prose li { margin: 0.4rem 0; }
+.notes-prose li > p { margin: 0; }
+
+.notes-prose a { color: #2467AC; text-decoration: underline; text-underline-offset: 3px; }
+.notes-prose a:hover { text-decoration: none; }
+.notes-prose strong { font-weight: 700; color: #18181b; }
+.dark .notes-prose strong { color: #fafafa; }
+.notes-prose em { font-style: italic; }
+.notes-prose s { text-decoration: line-through; }
+
+.notes-prose blockquote { border-left: 3px solid #2467AC; padding: 0.25rem 0 0.25rem 1.25rem; margin: 1.5rem 0; color: #71717a; font-style: italic; }
+.dark .notes-prose blockquote { color: #a1a1aa; }
+
+.notes-prose hr { border: none; border-top: 1px solid #e4e4e7; margin: 2.5rem 0; }
+.dark .notes-prose hr { border-color: #3f3f46; }
+
+/* Inline code */
+.notes-prose code:not(pre code) { font-family: 'Fira Code', 'Cascadia Code', ui-monospace, monospace; font-size: 0.875em; background: #f4f4f5; padding: 0.15em 0.4em; border-radius: 3px; color: #c678dd; }
+.dark .notes-prose code:not(pre code) { background: #27272a; color: #c678dd; }
+
+/* Code blocks (atom-one-dark via hljs) */
+.notes-prose pre.hljs { border-radius: 0; overflow-x: auto; margin: 1.75rem 0; font-size: 0.875rem; line-height: 1.65; position: relative; }
+.notes-prose pre.hljs code { background: none; padding: 0; color: inherit; border-radius: 0; font-size: inherit; }
+
+/* Tables */
+.notes-prose .table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.875rem; display: block; overflow-x: auto; }
+.notes-prose .table th, .notes-prose .table td { border: 1px solid #e4e4e7; padding: 0.6rem 0.9rem; text-align: left; min-width: 100px; }
+.dark .notes-prose .table th, .dark .notes-prose .table td { border-color: #3f3f46; }
+.notes-prose .table th { background: #f4f4f5; font-weight: 700; font-family: ui-monospace, monospace; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.dark .notes-prose .table th { background: #27272a; color: #fafafa; }
+
+/* Images */
+.notes-prose img { max-width: 100%; height: auto; display: block; margin: 1.5rem auto; border: 1px solid #e4e4e7; }
+.dark .notes-prose img { border-color: #3f3f46; }
+
+/* Callouts */
+.notes-prose .callout { border: 1px solid #e4e4e7; border-left: 3px solid #71717a; background: #fafafa; padding: 0.875rem 1.25rem; margin: 1.5rem 0; }
+.dark .notes-prose .callout { background: #18181b; border-color: #3f3f46; border-left-color: #71717a; }
+.notes-prose .callout-note { border-left-color: #3b82f6; }
+.notes-prose .callout-tip  { border-left-color: #22c55e; }
+.notes-prose .callout-warning { border-left-color: #f59e0b; }
+.notes-prose .callout-danger  { border-left-color: #ef4444; }
+
+/* Anchor buttons added by RichBody */
+.notes-prose h2 .heading-anchor-btn,
+.notes-prose h3 .heading-anchor-btn { opacity: 0; transition: opacity 0.15s; }
+.notes-prose h2:hover .heading-anchor-btn,
+.notes-prose h3:hover .heading-anchor-btn { opacity: 1; }
+
 @layer base {
   :root {
     --background: 233 64% 98%;

@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Package, FileText, Wrench, Layers, Search, X, Globe, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ShopProduct, ProductMediaItem } from '../types';
+import type { ShopProduct, ProductMediaItem, DiscountCode } from '../types';
 import { TextField, SelectField, uid, Button, Rule, cn, LanguageField } from './atoms';
 import { ArrayField } from './ArrayField';
 
@@ -48,6 +48,10 @@ function blankProduct(): ShopProduct {
 
 function blankMediaItem(): ProductMediaItem {
   return { url: '', kind: 'image', label: '', description: '' };
+}
+
+function blankDiscount(): DiscountCode {
+  return { code: '', type: 'percent', value: 10, label: '' };
 }
 
 // ─── Media editor ─────────────────────────────────────────────────────────────
@@ -145,6 +149,102 @@ function MediaEditor({ items, onChange }: { items: ProductMediaItem[]; onChange:
               <img src={item.url} alt="" className="h-full w-full object-cover" />
             </div>
           )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Discount codes editor ────────────────────────────────────────────────────
+function DiscountCodesEditor({ items, onChange }: { items: DiscountCode[]; onChange: (items: DiscountCode[]) => void }) {
+  const update = (i: number, patch: Partial<DiscountCode>) => {
+    const next = [...items];
+    next[i] = { ...next[i], ...patch };
+    onChange(next);
+  };
+  const remove = (i: number) => {
+    const next = [...items];
+    next.splice(i, 1);
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+          Discount codes · Affiliations ({items.length})
+        </p>
+        <button
+          type="button"
+          onClick={() => onChange([...items, blankDiscount()])}
+          className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        >
+          + Add code
+        </button>
+      </div>
+
+      {items.length === 0 && (
+        <div className="border border-dashed border-zinc-200 dark:border-zinc-800 py-6 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+            No codes — add promo or affiliate codes
+          </p>
+        </div>
+      )}
+
+      {items.map((item, i) => (
+        <div key={i} className="border border-zinc-200 dark:border-zinc-800 p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            {/* Type toggle */}
+            <div className="flex border border-zinc-200 dark:border-zinc-800">
+              {(['percent', 'fixed'] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => update(i, { type: t })}
+                  className={cn(
+                    'px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest transition-colors',
+                    item.type === t
+                      ? 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
+                      : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300',
+                  )}
+                >
+                  {t === 'percent' ? '% off' : '$ off'}
+                </button>
+              ))}
+            </div>
+            <span className="flex-1 truncate font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
+              {item.code || `code ${i + 1}`}
+              {item.code && item.value ? ` — ${item.type === 'percent' ? `${item.value}%` : `${item.value} off`}` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="font-mono text-[9px] uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <TextField
+              label="Code"
+              value={item.code}
+              onChange={v => update(i, { code: v.toUpperCase().replace(/\s/g, '') })}
+              placeholder="SUMMER20"
+            />
+            <TextField
+              label={item.type === 'percent' ? 'Value (%)' : 'Value (fixed)'}
+              value={String(item.value)}
+              onChange={v => update(i, { value: parseFloat(v) || 0 })}
+              placeholder={item.type === 'percent' ? '20' : '10'}
+            />
+          </div>
+          <TextField
+            label="Internal label (optional)"
+            value={item.label ?? ''}
+            onChange={v => update(i, { label: v || undefined })}
+            placeholder="e.g. Affiliate – John, Summer sale"
+          />
         </div>
       ))}
     </div>
@@ -283,6 +383,12 @@ function ProductEditorOverlay({
           <MediaEditor
             items={draft.media ?? []}
             onChange={items => set({ media: items })}
+          />
+
+          {/* ── Discount codes ──────────────────────────────────────────── */}
+          <DiscountCodesEditor
+            items={draft.discountCodes ?? []}
+            onChange={items => set({ discountCodes: items })}
           />
         </div>
       </div>

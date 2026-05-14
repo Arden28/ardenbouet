@@ -1,17 +1,17 @@
 'use client';
 // app/checkout/CheckoutClient.tsx
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Lock, ChevronLeft, AlertCircle, CreditCard } from 'lucide-react';
+import { Check, Lock, ChevronLeft, AlertCircle, CreditCard, Tag, X } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import type { ShopProduct } from '@/app/admin/types';
+import type { ShopProduct, DiscountCode } from '@/app/admin/types';
 import { formatPrice, CURRENCIES, LS_KEY } from '@/lib/currency';
 import type { CurrencyCode } from '@/lib/currency';
 
@@ -172,8 +172,9 @@ function MethodCard({ m, selected, onClick }: { m: typeof METHODS[0]; selected: 
 }
 
 // ─── Stripe form ───────────────────────────────────────────────────────────────
-function StripeCardForm({ product, name, email, currency, onSuccess }: {
-  product: ShopProduct; name: string; email: string; currency: CurrencyCode; onSuccess: (ref: string) => void;
+function StripeCardForm({ product, name, email, currency, finalPrice, onSuccess }: {
+  product: ShopProduct; name: string; email: string; currency: CurrencyCode;
+  finalPrice: number; onSuccess: (ref: string) => void;
 }) {
   const stripe   = useStripe();
   const elements = useElements();
@@ -190,7 +191,7 @@ function StripeCardForm({ product, name, email, currency, onSuccess }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: product.id, productTitle: product.title,
-          amount: product.price, currency: product.currency,
+          amount: finalPrice, currency: product.currency,
           customerName: name, customerEmail: email,
         }),
       });
@@ -222,7 +223,7 @@ function StripeCardForm({ product, name, email, currency, onSuccess }: {
       </div>
       {error && <ErrMsg msg={error} />}
       <PayBtn onClick={handlePay} loading={loading} disabled={!stripe}>
-        Pay {formatPrice(product.price, product.currency, currency)} →
+        Pay {formatPrice(finalPrice, product.currency, currency)} →
       </PayBtn>
     </div>
   );
@@ -254,15 +255,15 @@ function waitForPaystack(maxMs = 6000): Promise<PaystackPopType | null> {
   });
 }
 
-function PaystackForm({ product, name, email, onSuccess }: {
-  product: ShopProduct; name: string; email: string; onSuccess: (ref: string) => void;
+function PaystackForm({ product, name, email, finalPrice, onSuccess }: {
+  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
 }) {
   const [loading,   setLoading]   = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error,     setError]     = useState<string | null>(null);
   const rate        = PAYSTACK_RATES[PAYSTACK_CURRENCY] ?? 1;
   const symbol      = PAYSTACK_SYMBOLS[PAYSTACK_CURRENCY] ?? PAYSTACK_CURRENCY;
-  const amountLocal = Math.round(product.price * rate);
+  const amountLocal = Math.round(finalPrice * rate);
 
   const handlePay = async () => {
     setLoading(true);
@@ -346,8 +347,8 @@ function PaystackForm({ product, name, email, onSuccess }: {
 }
 
 // ─── M-Pesa form ───────────────────────────────────────────────────────────────
-function MpesaForm({ product, name, email, onSuccess }: {
-  product: ShopProduct; name: string; email: string; onSuccess: (ref: string) => void;
+function MpesaForm({ product, name, email, finalPrice, onSuccess }: {
+  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
 }) {
   const [phone,   setPhone]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -355,7 +356,7 @@ function MpesaForm({ product, name, email, onSuccess }: {
   const [error,   setError]   = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rate      = Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES) || 130;
-  const amountKes = Math.ceil(product.price * rate);
+  const amountKes = Math.ceil(finalPrice * rate);
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
@@ -444,8 +445,8 @@ function MpesaForm({ product, name, email, onSuccess }: {
 }
 
 // ─── PayPal section ────────────────────────────────────────────────────────────
-function PayPalSection({ product, name, email, onSuccess }: {
-  product: ShopProduct; name: string; email: string; onSuccess: (ref: string) => void;
+function PayPalSection({ product, name, email, finalPrice, onSuccess }: {
+  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -460,7 +461,7 @@ function PayPalSection({ product, name, email, onSuccess }: {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                amount: product.price,
+                amount: finalPrice,
                 currency: product.currency,
                 productTitle: product.title,
                 productId: product.id,
@@ -565,6 +566,38 @@ export default function CheckoutClient() {
     if (saved && CURRENCIES.some(c => c.code === saved)) setCurrency(saved);
   }, []);
 
+  // ── Discount state ──────────────────────────────────────────────────────────
+  const [discountInput,    setDiscountInput]    = useState('');
+  const [appliedDiscount,  setAppliedDiscount]  = useState<DiscountCode | null>(null);
+  const [discountError,    setDiscountError]    = useState<string | null>(null);
+
+  const applyDiscount = () => {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    const match = product?.discountCodes?.find(d => d.code.toUpperCase() === code);
+    if (match) {
+      setAppliedDiscount(match);
+      setDiscountError(null);
+    } else {
+      setAppliedDiscount(null);
+      setDiscountError('Invalid code — please check and try again.');
+    }
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountInput('');
+    setDiscountError(null);
+  };
+
+  const finalPrice = useMemo(() => {
+    if (!product || !appliedDiscount) return product?.price ?? 0;
+    if (appliedDiscount.type === 'percent') {
+      return +(product.price * (1 - appliedDiscount.value / 100)).toFixed(2);
+    }
+    return +Math.max(0, product.price - appliedDiscount.value).toFixed(2);
+  }, [product, appliedDiscount]);
+
   useEffect(() => {
     if (!slug) { setNotFound(true); setFetching(false); return; }
     fetch('/api/content')
@@ -573,11 +606,21 @@ export default function CheckoutClient() {
         const p = (data.products ?? []).find(
           (p: ShopProduct) => p.slug === slug && p.status === 'published',
         );
-        if (p) setProduct(p); else setNotFound(true);
+        if (p) {
+          setProduct(p);
+          // Auto-apply affiliate/promo code from URL (?ref=CODE or ?code=CODE)
+          const refCode = (params.get('ref') ?? params.get('code') ?? '').toUpperCase();
+          if (refCode) {
+            const match = p.discountCodes?.find((d: DiscountCode) => d.code.toUpperCase() === refCode);
+            if (match) { setAppliedDiscount(match); setDiscountInput(match.code); }
+          }
+        } else {
+          setNotFound(true);
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setFetching(false));
-  }, [slug]);
+  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSuccess = (ref: string) => { setPaymentRef(ref); setSuccess(true); };
   const isValid = name.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
@@ -671,16 +714,16 @@ export default function CheckoutClient() {
 
                       {method === 'stripe' && (
                         <Elements stripe={getStripe()}>
-                          <StripeCardForm product={product} name={name} email={email} currency={currency} onSuccess={handleSuccess} />
+                          <StripeCardForm product={product} name={name} email={email} currency={currency} finalPrice={finalPrice} onSuccess={handleSuccess} />
                         </Elements>
                       )}
 
                       {method === 'paystack' && (
-                        <PaystackForm product={product} name={name} email={email} onSuccess={handleSuccess} />
+                        <PaystackForm product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
                       )}
 
                       {method === 'mpesa' && (
-                        <MpesaForm product={product} name={name} email={email} onSuccess={handleSuccess} />
+                        <MpesaForm product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
                       )}
 
                       {method === 'paypal' && (
@@ -691,7 +734,7 @@ export default function CheckoutClient() {
                             intent: 'capture',
                           }}
                         >
-                          <PayPalSection product={product} name={name} email={email} onSuccess={handleSuccess} />
+                          <PayPalSection product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
                         </PayPalScriptProvider>
                       )}
                     </div>
@@ -716,53 +759,131 @@ export default function CheckoutClient() {
             </div>
 
             {/* ── Right: order summary ────────────────────────────────────── */}
-            <aside className="self-start lg:sticky lg:top-8">
-              <div className="overflow-hidden bg-zinc-950 text-white">
-                {product.cover && (
-                  <div className="relative aspect-[16/9] overflow-hidden">
-                    <Image src={product.cover} alt={product.title} fill
-                      className="object-cover opacity-70" sizes="340px" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 to-transparent" />
+            <aside className="self-start lg:sticky lg:top-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+
+              {/* Cover */}
+              {product.cover && (
+                <div className="relative aspect-[16/9] overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
+                  <Image src={product.cover} alt={product.title} fill
+                    className="object-cover" sizes="340px" />
+                </div>
+              )}
+
+              {/* Product info */}
+              <div className={product.cover ? 'px-5 pt-4 pb-4' : 'px-5 pt-5 pb-4'}>
+                <span className="border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-400">
+                  {product.category}
+                </span>
+                <h2 className="mt-2 font-heading text-base font-black tracking-tight text-zinc-900 dark:text-zinc-50 leading-snug">
+                  {product.title}
+                </h2>
+                <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  {product.tagline}
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
+
+              {/* Promo / affiliate code */}
+              <div className="px-5 py-4">
+                <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                  Promo or affiliate code
+                </p>
+                {appliedDiscount ? (
+                  <div className="flex items-center gap-2 border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span className="flex-1 font-mono text-[10px] uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                      <strong>{appliedDiscount.code}</strong>
+                      {appliedDiscount.type === 'percent'
+                        ? ` — ${appliedDiscount.value}% off`
+                        : ` — ${appliedDiscount.value} ${product.currency} off`}
+                    </span>
+                    <button type="button" onClick={removeDiscount}
+                      className="text-emerald-500 hover:text-emerald-700 transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={discountInput}
+                        onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(null); }}
+                        onKeyDown={e => e.key === 'Enter' && applyDiscount()}
+                        placeholder="SUMMER20"
+                        className="flex-1 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-[#2467AC] focus:outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyDiscount}
+                        className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-[#2467AC] hover:text-[#2467AC] transition-colors"
+                      >
+                        <Tag className="h-3 w-3" />
+                        Apply
+                      </button>
+                    </div>
+                    {discountError && (
+                      <p className="mt-1.5 font-mono text-[10px] text-red-500">{discountError}</p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
+
+              {/* Price breakdown */}
+              <div className="px-5 py-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                    Subtotal
+                  </span>
+                  <span className={[
+                    'font-mono text-sm',
+                    appliedDiscount
+                      ? 'text-zinc-400 dark:text-zinc-600 line-through'
+                      : 'text-zinc-900 dark:text-zinc-100',
+                  ].join(' ')}>
+                    {formatPrice(product.price, product.currency, currency)}
+                  </span>
+                </div>
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                      Discount
+                    </span>
+                    <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400">
+                      −{formatPrice(product.price - finalPrice, product.currency, currency)}
+                    </span>
                   </div>
                 )}
-
-                <div className={product.cover ? 'px-6 pb-4 pt-2' : 'px-6 pt-6 pb-4'}>
-                  <span className="border border-white/20 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-500">
-                    {product.category}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                    Tax / Fees
                   </span>
-                  <h2 className="mt-2 font-heading text-lg font-black tracking-tight text-white leading-snug">
-                    {product.title}
-                  </h2>
-                  <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-zinc-400">
-                    {product.tagline}
-                  </p>
+                  <span className="font-mono text-sm text-zinc-400 dark:text-zinc-600">Included</span>
                 </div>
+              </div>
 
-                <div className="border-t border-white/10 px-6 py-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-500">Subtotal</span>
-                    <span className="font-mono text-sm text-white">{formatPrice(product.price, product.currency, currency)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-500">Tax / Fees</span>
-                    <span className="font-mono text-sm text-zinc-600">Included</span>
-                  </div>
+              {/* Total */}
+              <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />
+              <div className="px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total</span>
+                  <span className="font-mono text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                    {formatPrice(finalPrice, product.currency, currency)}
+                  </span>
                 </div>
+              </div>
 
-                <div className="border-t border-white/10 px-6 py-5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-white">Total</span>
-                    <span className="font-mono text-2xl font-bold text-white">{formatPrice(product.price, product.currency, currency)}</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-white/10 px-6 py-4">
-                  <div className="flex items-center gap-2 text-zinc-600">
-                    <Lock className="h-3 w-3 shrink-0" />
-                    <p className="font-mono text-[9px] uppercase tracking-widest">
-                      End-to-end encrypted
-                    </p>
-                  </div>
+              {/* Security */}
+              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
+              <div className="px-5 py-3">
+                <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-600">
+                  <Lock className="h-3 w-3 shrink-0" />
+                  <p className="font-mono text-[9px] uppercase tracking-widest">End-to-end encrypted</p>
                 </div>
               </div>
             </aside>

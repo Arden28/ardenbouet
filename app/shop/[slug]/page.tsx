@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import type { ContentBundle, ShopProduct, ProductMediaItem } from '@/app/admin/types';
+import type { ContentBundle, ShopProduct } from '@/app/admin/types';
 import PriceTag from './PriceTag';
+import MediaViewer from './MediaViewer';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,57 +33,6 @@ function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
 }
 
-function MediaCard({ item }: { item: ProductMediaItem }) {
-  return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group block border border-zinc-200 dark:border-zinc-800 transition-colors duration-150 hover:border-zinc-900 dark:hover:border-zinc-100"
-    >
-      {item.kind === 'image' ? (
-        <div className="aspect-[16/9] overflow-hidden bg-zinc-50 dark:bg-zinc-900">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.url}
-            alt={item.label}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-          />
-        </div>
-      ) : (
-        <div className="relative aspect-[16/9] overflow-hidden bg-zinc-950 flex items-center justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 transition-colors duration-150 group-hover:border-white/60 group-hover:bg-white/10">
-            {/* Play icon */}
-            <svg className="ml-0.5 h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-          <span className="absolute bottom-2 right-2 border border-white/20 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-white/50">
-            video
-          </span>
-        </div>
-      )}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-mono text-xs font-medium text-zinc-900 dark:text-zinc-50">
-            {item.label}
-          </p>
-          <span className="shrink-0 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-400">
-            {item.kind}
-          </span>
-        </div>
-        {item.description && (
-          <p className="mt-1 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-            {item.description}
-          </p>
-        )}
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors duration-150 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-          {item.kind === 'video' ? 'Watch →' : 'View →'}
-        </p>
-      </div>
-    </a>
-  );
-}
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = await getProduct(params.slug);
@@ -229,11 +179,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 <p className="mb-6 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
                   Media
                 </p>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {product.media.map((item, i) => (
-                    <MediaCard key={i} item={item} />
-                  ))}
-                </div>
+                <MediaViewer items={product.media} />
               </div>
             )}
 

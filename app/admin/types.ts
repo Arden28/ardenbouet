@@ -67,6 +67,13 @@ export type ProductMediaItem = {
   description?: string;
 };
 
+export type DiscountCode = {
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  label?: string;
+};
+
 export type ShopProduct = {
   id: string;
   slug: string;
@@ -85,6 +92,7 @@ export type ShopProduct = {
   demoUrl?: string;
   buyUrl?: string;
   media?: ProductMediaItem[];
+  discountCodes?: DiscountCode[];
 };
 
 export type OrderStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
