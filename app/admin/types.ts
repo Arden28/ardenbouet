@@ -17,6 +17,7 @@ export type Project = {
   tags: Array<'saas' | 'client' | 'open-source'>;
   tech?: string[];
   metric?: string;
+  language?: 'en' | 'fr' | 'both';
   caseFile?: CaseFile;
 };
 
@@ -32,6 +33,7 @@ export type Experience = {
   outcomes?: string[];
   tags?: string[];
   poster?: string;
+  language?: 'en' | 'fr' | 'both';
 };
 
 export type JourneyItem = {
@@ -42,6 +44,7 @@ export type JourneyItem = {
   org?: string;
   url?: string;
   note?: string;
+  language?: 'en' | 'fr' | 'both';
 };
 
 export type Note = {
@@ -54,6 +57,7 @@ export type Note = {
   reading: string;
   tags: string[];
   bodyMd?: string;
+  language?: 'en' | 'fr' | 'both';
 };
 
 export type ProductMediaItem = {
@@ -70,6 +74,7 @@ export type ShopProduct = {
   tagline: string;
   description: string;
   category: 'platform' | 'app' | 'document' | 'service';
+  language?: 'en' | 'fr' | 'both';
   price: number;
   currency: string;
   priceLabel: string;

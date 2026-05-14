@@ -409,6 +409,48 @@ export function Chip({
   );
 }
 
+/* ===================== LanguageField ===================== */
+const LANG_OPTS = [
+  { key: 'en'   as const, flag: '🇬🇧', label: 'EN'    },
+  { key: 'fr'   as const, flag: '🇫🇷', label: 'FR'    },
+  { key: 'both' as const, flag: '🌐',  label: 'EN+FR' },
+];
+
+export function LanguageField({
+  value = 'en',
+  onChange,
+}: {
+  value?: 'en' | 'fr' | 'both';
+  onChange: (v: 'en' | 'fr' | 'both') => void;
+}) {
+  return (
+    <div>
+      <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
+        Language
+      </span>
+      <div className="flex border border-zinc-200 dark:border-zinc-800">
+        {LANG_OPTS.map(o => (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            title={o.label}
+            className={cn(
+              'flex flex-1 items-center justify-center gap-1.5 py-2 font-mono text-[9px] uppercase tracking-widest transition-colors border-r border-zinc-200 dark:border-zinc-800 last:border-0',
+              value === o.key
+                ? 'bg-[#2467AC] text-white'
+                : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300',
+            )}
+          >
+            <span aria-hidden>{o.flag}</span>
+            <span>{o.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ===================== InlineRule ===================== */
 export function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;

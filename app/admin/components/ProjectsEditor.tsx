@@ -6,7 +6,7 @@ import { Plus, Trash2, MoveUp, MoveDown, Hash, ExternalLink } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Project, CaseImage } from '../types';
 import {
-  TextField, uid, EditorDrawer, Button, Chip, Rule, cn,
+  TextField, uid, EditorDrawer, Button, Chip, Rule, cn, LanguageField,
 } from './atoms';
 import { ArrayField } from './ArrayField';
 
@@ -139,7 +139,7 @@ export default function ProjectsEditor({
   const [draft, setDraft] = useState<Project | null>(null);
 
   const newProject = () =>
-    setDraft({ id: uid(), title: '', description: '', logoUrl: '', url: '', tags: [], tech: [] });
+    setDraft({ id: uid(), title: '', description: '', logoUrl: '', url: '', tags: [], tech: [], language: 'en' });
 
   const save = () => {
     if (!draft || !draft.title.trim()) return;
@@ -355,6 +355,11 @@ export default function ProjectsEditor({
                 placeholder="Optional"
               />
             </div>
+
+            <LanguageField
+              value={draft.language ?? 'en'}
+              onChange={v => setDraft({ ...draft, language: v })}
+            />
 
             <Rule />
 

@@ -115,6 +115,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
             <span className="border border-[#2467AC]/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[#2467AC]">
               {product.category}
             </span>
+            {product.language && (
+              <span className="border border-white/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-500">
+                {product.language === 'fr' ? '🇫🇷 fr' : product.language === 'both' ? '🌐 en+fr' : '🇬🇧 en'}
+              </span>
+            )}
             {product.tags.slice(0, 4).map(tag => (
               <span
                 key={tag}

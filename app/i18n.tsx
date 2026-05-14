@@ -1,9 +1,10 @@
 import i18n from 'i18next';
-import { title } from 'process';
 import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
 i18n
-  .use(initReactI18next) // Connects i18n to React
+  .use(LanguageDetector)
+  .use(initReactI18next)
   .init({
     resources: {
       en: {
@@ -232,11 +233,16 @@ i18n
         }
       },
     },
-    lng: 'en', // Default language
-    fallbackLng: 'en', // Fallback language if translation not found
+    fallbackLng: 'en',
+    supportedLngs: ['en', 'fr'],
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'arden_lang',
+    },
     interpolation: {
-      escapeValue: false, // React already handles escaping
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;

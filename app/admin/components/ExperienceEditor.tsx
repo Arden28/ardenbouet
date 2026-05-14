@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Experience } from '../types';
 import {
   TextField, SelectField, uid,
-  EditorDrawer, Button, Rule,
+  EditorDrawer, Button, Rule, LanguageField,
 } from './atoms';
 import { ArrayField } from './ArrayField';
 
@@ -57,7 +57,7 @@ export default function ExperienceEditor({
   const newExperience = () =>
     setDraft({
       id: uid(), title: '', job: '', fromTo: '',
-      bullets: [], type: 'Freelance', tags: [],
+      bullets: [], type: 'Freelance', tags: [], language: 'en',
     });
 
   const save = () => {
@@ -242,6 +242,11 @@ export default function ExperienceEditor({
               label="Company logo URL"
               value={draft.poster ?? ''}
               onChange={v => setDraft({ ...draft, poster: v })}
+            />
+
+            <LanguageField
+              value={draft.language ?? 'en'}
+              onChange={v => setDraft({ ...draft, language: v })}
             />
           </div>
         )}

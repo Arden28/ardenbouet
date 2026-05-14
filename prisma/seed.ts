@@ -9,6 +9,7 @@ const SEED = {
   projects: [
     {
       id: uid(),
+      language: 'en',
       title: 'Auprea — Heritage for everyone',
       description: 'Wealth manager with secure vault, PDF declarations, and an optional notary flow.',
       logoUrl: '/images/auprea.ico',
@@ -36,6 +37,7 @@ const SEED = {
   experiences: [
     {
       id: uid(),
+      language: 'en',
       title: 'Banking API Integration',
       job: 'Financial Software Engineer',
       fromTo: 'Sept. 2024 ~ Mar 2025 · 7 months',
@@ -52,6 +54,7 @@ const SEED = {
   journey: [
     {
       id: uid(),
+      language: 'en',
       kind: 'education',
       year: '2024 ~ Present',
       title: 'Bachelor’s – Software Engineering / Computer Science (Ongoing)',
@@ -61,6 +64,7 @@ const SEED = {
     },
     {
       id: uid(),
+      language: 'en',
       kind: 'cert',
       year: '2024',
       title: 'Hosting & Server Management (cPanel Certified)',
@@ -71,6 +75,7 @@ const SEED = {
   notes: [
     {
       id: uid(),
+      language: 'en',
       slug: 'shipping-saas-like-an-ops-team',
       title: 'Shipping SaaS like an ops team',
       excerpt: 'Treat features like on-call: runbooks, budgets, dashboards first—then UI.',
@@ -84,6 +89,7 @@ const SEED = {
     // ── Digital platforms ──────────────────────────────────────────────────────
     {
       id: 'prod_saas_01',
+      language: 'en',
       slug: 'saas-starter-kit',
       title: 'SaaS Starter Kit',
       tagline: 'Full-stack Next.js 14 boilerplate with auth, billing, and dashboard.',
@@ -131,6 +137,7 @@ const SEED = {
     // ── Apps ──────────────────────────────────────────────────────────────────
     {
       id: 'prod_iot_01',
+      language: 'en',
       slug: 'iot-dashboard-template',
       title: 'IoT Dashboard Template',
       tagline: 'Real-time telemetry UI for device fleets.',
@@ -170,6 +177,7 @@ const SEED = {
     },
     {
       id: 'prod_finance_01',
+      language: 'en',
       slug: 'finance-dashboard-template',
       title: 'Finance Dashboard',
       tagline: 'Beautiful financial reporting UI for SaaS and fintech apps.',
@@ -196,6 +204,7 @@ const SEED = {
     // ── Documents ─────────────────────────────────────────────────────────────
     {
       id: 'prod_api_guide_01',
+      language: 'en',
       slug: 'api-integration-guide',
       title: 'API Integration Playbook',
       tagline: 'Patterns and recipes for robust third-party API integrations.',
@@ -221,6 +230,7 @@ const SEED = {
     // ── Services ──────────────────────────────────────────────────────────────
     {
       id: 'svc_deployment_01',
+      language: 'en',
       slug: 'production-deployment',
       title: 'Production Deployment',
       tagline: 'From local to live — properly, securely, and fast.',
@@ -244,6 +254,7 @@ const SEED = {
     },
     {
       id: 'svc_audit_01',
+      language: 'en',
       slug: 'performance-audit',
       title: 'Performance Audit',
       tagline: 'Find exactly what is making your app slow — with a clear fix plan.',
@@ -275,6 +286,7 @@ const SEED = {
     },
     {
       id: 'svc_arch_01',
+      language: 'en',
       slug: 'architecture-consultation',
       title: 'Architecture Consultation',
       tagline: 'One focused session to get your technical decisions right.',
@@ -297,6 +309,7 @@ const SEED = {
     },
     {
       id: 'svc_mvp_01',
+      language: 'en',
       slug: 'saas-mvp-build',
       title: 'SaaS MVP Build',
       tagline: 'Validate your idea with a production-grade MVP — in 4 weeks.',

@@ -140,6 +140,11 @@ function ProductCard({ product, currency }: { product: ShopProduct; currency: Cu
             <span className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
               {product.category}
             </span>
+            {product.language && (
+              <span className="border border-zinc-100 dark:border-zinc-900 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                {product.language === 'fr' ? '🇫🇷 fr' : product.language === 'both' ? '🌐 en+fr' : '🇬🇧 en'}
+              </span>
+            )}
             {product.tags.slice(0, 3).map(tag => (
               <span key={tag} className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
                 {tag}

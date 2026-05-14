@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Package, FileText, Wrench, Layers, Search, X, Globe, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ShopProduct, ProductMediaItem } from '../types';
-import { TextField, SelectField, uid, Button, Rule, cn } from './atoms';
+import { TextField, SelectField, uid, Button, Rule, cn, LanguageField } from './atoms';
 import { ArrayField } from './ArrayField';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ function formatPrice(price: number, currency: string, label: string): string {
 function blankProduct(): ShopProduct {
   return {
     id: uid(), slug: '', title: '', tagline: '', description: '',
-    category: 'platform', price: 0, currency: 'USD', priceLabel: 'one-time',
+    category: 'platform', language: 'en', price: 0, currency: 'USD', priceLabel: 'one-time',
     status: 'draft', features: [], tags: [], media: [],
     cover: '', demoUrl: '', buyUrl: '',
   };
@@ -229,6 +229,11 @@ function ProductEditorOverlay({
             options={['platform', 'app', 'document', 'service']}
           />
 
+          <LanguageField
+            value={draft.language ?? 'en'}
+            onChange={v => set({ language: v })}
+          />
+
           {/* Pricing */}
           <div className="flex gap-2">
             <TextField label="Price" value={String(draft.price)} onChange={v => set({ price: parseFloat(v) || 0 })} className="flex-1" />
@@ -314,9 +319,18 @@ function ProductCard({ product, onEdit, onDelete }: { product: ShopProduct; onEd
           <span className={cn('h-1.5 w-1.5 rounded-full', status.dot)} />
           <span className={cn('font-mono text-[8px] uppercase tracking-widest', status.text)}>{status.label}</span>
         </div>
-        {/* Category */}
-        <div className="absolute right-2 top-2 border border-zinc-200/80 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 px-1.5 py-0.5">
-          <span className={cn('font-mono text-[8px] uppercase tracking-widest', cat.color)}>{cat.label}</span>
+        {/* Category + language */}
+        <div className="absolute right-2 top-2 flex items-center gap-1">
+          {product.language && product.language !== 'en' && (
+            <div className="border border-zinc-200/80 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 px-1.5 py-0.5">
+              <span className="font-mono text-[8px] uppercase tracking-widest text-zinc-500">
+                {product.language === 'fr' ? '🇫🇷 fr' : '🌐 en+fr'}
+              </span>
+            </div>
+          )}
+          <div className="border border-zinc-200/80 dark:border-zinc-700 bg-white/90 dark:bg-zinc-900/90 px-1.5 py-0.5">
+            <span className={cn('font-mono text-[8px] uppercase tracking-widest', cat.color)}>{cat.label}</span>
+          </div>
         </div>
       </div>
 

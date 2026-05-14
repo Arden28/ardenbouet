@@ -6,7 +6,7 @@ import { Plus, MoveUp, MoveDown, GraduationCap, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { JourneyItem } from '../types';
 import {
-  TextField, SelectField, uid, EditorDrawer, Button, Rule,
+  TextField, SelectField, uid, EditorDrawer, Button, Rule, LanguageField,
 } from './atoms';
 
 const EXPO = [0.16, 1, 0.3, 1] as const;
@@ -21,7 +21,7 @@ export default function JourneyEditor({
   const [draft, setDraft] = useState<JourneyItem | null>(null);
 
   const newItem = () =>
-    setDraft({ id: uid(), kind: 'education', year: '', title: '', org: '', url: '', note: '' });
+    setDraft({ id: uid(), kind: 'education', year: '', title: '', org: '', url: '', note: '', language: 'en' });
 
   const save = () => {
     if (!draft || !draft.title.trim()) return;
@@ -191,6 +191,11 @@ export default function JourneyEditor({
               onChange={v => setDraft({ ...draft, note: v })}
               textarea
               rows={3}
+            />
+
+            <LanguageField
+              value={draft.language ?? 'en'}
+              onChange={v => setDraft({ ...draft, language: v })}
             />
           </div>
         )}

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Note } from '../types';
-import { TextField, uid, Button, Rule, useIsDark } from './atoms';
+import { TextField, uid, Button, Rule, useIsDark, LanguageField } from './atoms';
 import { ArrayField } from './ArrayField';
 
 // @ts-ignore — no type declarations shipped for these CSS side-effect imports
@@ -199,6 +199,10 @@ function NoteEditorOverlay({
             separator="comma"
             placeholder="engineering, saas, iot"
           />
+          <LanguageField
+            value={draft.language ?? 'en'}
+            onChange={v => onDraftChange({ ...draft, language: v })}
+          />
         </aside>
 
         {/* ── EDITOR AREA ─────────────────────────────────────────────── */}
@@ -363,7 +367,7 @@ export default function NotesEditor({
     setDraft({
       id: uid(), slug: '', title: '', excerpt: '', cover: '',
       date: new Date().toISOString().split('T')[0],
-      reading: '', tags: [], bodyMd: '',
+      reading: '', tags: [], bodyMd: '', language: 'en',
     });
 
   const save = () => {
