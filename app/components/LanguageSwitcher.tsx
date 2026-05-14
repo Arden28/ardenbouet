@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Languages } from 'lucide-react';
 
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
@@ -31,7 +31,8 @@ export function LanguageSwitcher() {
             : 'border-zinc-200 text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-200 dark:hover:text-zinc-100',
         ].join(' ')}
       >
-        <Globe className="h-3.5 w-3.5" />
+        <Languages className="h-3.5 w-3.5" />
+        
         {current}
       </button>
 
@@ -50,7 +51,7 @@ export function LanguageSwitcher() {
                     'flex w-full items-center gap-2.5 px-3 py-2.5',
                     'font-mono text-[11px] uppercase tracking-widest transition-colors',
                     active
-                      ? 'bg-[#2467AC] text-white'
+                      ? ' hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'
                       : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100',
                   ].join(' ')}
                 >
