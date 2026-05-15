@@ -26,9 +26,9 @@ function getStripe() {
 type MethodId = 'stripe' | 'paystack' | 'mpesa' | 'paypal';
 
 const METHODS: { id: MethodId; name: string; detail: string; reach: string }[] = [
-  { id: 'stripe',   name: 'Card',     detail: 'Visa · Mastercard · Amex',      reach: 'Worldwide' },
+  // { id: 'stripe',   name: 'Card',     detail: 'Visa · Mastercard · Amex',      reach: 'Worldwide' },
   { id: 'paystack', name: 'Paystack', detail: 'Card · Bank Transfer · USSD',   reach: 'Africa'    },
-  { id: 'mpesa',    name: 'M-Pesa',   detail: 'STK Push · Lipa na M-Pesa',    reach: 'Kenya'     },
+  // { id: 'mpesa',    name: 'M-Pesa',   detail: 'STK Push · Lipa na M-Pesa',    reach: 'Kenya'     },
   { id: 'paypal',   name: 'PayPal',   detail: 'PayPal Balance · Bank · Card',  reach: 'Worldwide' },
 ];
 
