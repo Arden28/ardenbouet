@@ -89,6 +89,7 @@ export type ShopProduct = {
   features: string[];
   tags: string[];
   cover?: string;
+  fileUrl?: string;
   demoUrl?: string;
   buyUrl?: string;
   media?: ProductMediaItem[];

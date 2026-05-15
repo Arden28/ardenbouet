@@ -73,3 +73,19 @@ enum OrderStatus {
   CANCELLED
   REFUNDED
 }
+
+model DownloadToken {
+  id            String   @id @default(cuid())
+  orderId       String
+  productId     String
+  productTitle  String
+  customerEmail String
+  customerName  String
+  fileUrl       String
+  expiresAt     DateTime
+  downloadCount Int      @default(0)
+  maxDownloads  Int      @default(3)
+  createdAt     DateTime @default(now())
+
+  @@index([orderId])
+}

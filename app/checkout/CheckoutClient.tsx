@@ -496,7 +496,13 @@ function PayPalSection({ product, name, email, finalPrice, onSuccess }: {
 }
 
 // ─── Success state ─────────────────────────────────────────────────────────────
-function SuccessState({ product, email, paymentRef }: { product: ShopProduct; email: string; paymentRef: string }) {
+function SuccessState({
+  product, email, paymentRef, downloadToken,
+}: {
+  product: ShopProduct; email: string; paymentRef: string; downloadToken: string | null;
+}) {
+  const isService = product.category === 'service';
+
   return (
     <main className="flex min-h-[65vh] flex-col items-center justify-center px-4 py-24 text-center">
       <motion.div
@@ -512,20 +518,42 @@ function SuccessState({ product, email, paymentRef }: { product: ShopProduct; em
         initial={{ y: 16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-8"
+        className="mt-8 max-w-sm mx-auto"
       >
         <h2 className="font-heading text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">
           Payment confirmed
         </h2>
-        <p className="mt-3 text-zinc-500 dark:text-zinc-400">
-          {product.category === 'service'
-            ? `We'll reach out to ${email} within 24 hours to schedule your session.`
-            : `A confirmation and download link are on their way to ${email}.`}
-        </p>
-        <p className="mt-2 font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
+
+        {isService ? (
+          <p className="mt-3 text-zinc-500 dark:text-zinc-400">
+            We&apos;ll reach out to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong> within 24 hours to schedule your session.
+          </p>
+        ) : downloadToken ? (
+          <>
+            <p className="mt-3 text-zinc-500 dark:text-zinc-400">
+              Your file is ready. A copy has also been sent to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong>.
+            </p>
+            <Link
+              href={`/download/${downloadToken}`}
+              className="mt-6 flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-50 px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
+            >
+              Download now →
+            </Link>
+            <p className="mt-2 font-mono text-[9px] text-zinc-400 dark:text-zinc-600">
+              Link valid 48 h · 3 downloads max
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 text-zinc-500 dark:text-zinc-400">
+            A confirmation and download link are on their way to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong>.
+          </p>
+        )}
+
+        <p className="mt-4 font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
           Ref: {paymentRef}
         </p>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/shop"
             className="border border-zinc-200 dark:border-zinc-800 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-zinc-900 dark:hover:border-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
@@ -557,8 +585,9 @@ export default function CheckoutClient() {
   const [email,  setEmail]  = useState('');
   const [method, setMethod] = useState<MethodId>('stripe');
 
-  const [success,    setSuccess]    = useState(false);
-  const [paymentRef, setPaymentRef] = useState('');
+  const [success,       setSuccess]       = useState(false);
+  const [paymentRef,    setPaymentRef]    = useState('');
+  const [downloadToken, setDownloadToken] = useState<string | null>(null);
 
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
   useEffect(() => {
@@ -622,7 +651,26 @@ export default function CheckoutClient() {
       .finally(() => setFetching(false));
   }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSuccess = (ref: string) => { setPaymentRef(ref); setSuccess(true); };
+  const handleSuccess = (ref: string) => {
+    setPaymentRef(ref);
+    setSuccess(true);
+    fetch('/api/checkout/fulfill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paymentRef: ref,
+        productId: product!.id,
+        productTitle: product!.title,
+        customerName: name,
+        customerEmail: email,
+        amount: finalPrice,
+        currency: product!.currency,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => { if (data.downloadToken) setDownloadToken(data.downloadToken); })
+      .catch(() => {});
+  };
   const isValid = name.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
 
   if (fetching) {
@@ -644,7 +692,7 @@ export default function CheckoutClient() {
     );
   }
 
-  if (success) return <SuccessState product={product} email={email} paymentRef={paymentRef} />;
+  if (success) return <SuccessState product={product} email={email} paymentRef={paymentRef} downloadToken={downloadToken} />;
 
   return (
     <>
