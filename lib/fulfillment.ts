@@ -63,16 +63,20 @@ export async function fulfillOrder(params: FulfillParams): Promise<{ downloadTok
     downloadTokenId = token.id;
   }
 
-  await sendPurchaseEmail({
-    customerName,
-    customerEmail,
-    productTitle,
-    amount,
-    currency,
-    paymentRef,
-    isService,
-    downloadToken: downloadTokenId,
-  });
+  try {
+    await sendPurchaseEmail({
+      customerName,
+      customerEmail,
+      productTitle,
+      amount,
+      currency,
+      paymentRef,
+      isService,
+      downloadToken: downloadTokenId,
+    });
+  } catch (err) {
+    console.error('[fulfillment] email failed (non-fatal):', err);
+  }
 
   return { downloadToken: downloadTokenId };
 }

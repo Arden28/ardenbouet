@@ -9,15 +9,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  const { downloadToken } = await fulfillOrder({
-    paymentRef,
-    productId,
-    productTitle: productTitle ?? '',
-    customerName: customerName ?? '',
-    customerEmail,
-    amount: Number(amount) || 0,
-    currency: currency ?? 'USD',
-  });
-
-  return NextResponse.json({ ok: true, downloadToken });
+  try {
+    const { downloadToken } = await fulfillOrder({
+      paymentRef,
+      productId,
+      productTitle: productTitle ?? '',
+      customerName: customerName ?? '',
+      customerEmail,
+      amount: Number(amount) || 0,
+      currency: currency ?? 'USD',
+    });
+    return NextResponse.json({ ok: true, downloadToken });
+  } catch (err) {
+    console.error('[fulfill] unhandled error:', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Internal error' },
+      { status: 500 },
+    );
+  }
 }
