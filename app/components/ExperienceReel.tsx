@@ -1,7 +1,9 @@
 'use client';
+import '../i18n';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types (unchanged) ───────────────────────────────────────────────────────
 type ExperienceRow = {
@@ -45,6 +47,11 @@ const EXPO = [0.16, 1, 0.3, 1] as const;
 // ─── Design primitives ───────────────────────────────────────────────────────
 function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+function OutcomesLabel() {
+  const { t } = useTranslation();
+  return <>{t('experience.outcomes')}</>;
 }
 
 // ─── Single "scene" entry ─────────────────────────────────────────────────────
@@ -149,7 +156,7 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
         {s.outcomes && s.outcomes.length > 0 && (
           <div className="mt-5 pl-14">
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-              Outcomes
+              <OutcomesLabel />
             </p>
             <ul className="space-y-1.5">
               {s.outcomes.map((o, i) => (
@@ -180,6 +187,7 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
   Buttons match Hero's CTA style: uppercase tracking-widest, square edges.
 */
 function ResumeCta() {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -191,65 +199,38 @@ function ResumeCta() {
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-            Résumé
+            {t('experience.resume.label')}
           </p>
           <h4 className="font-heading text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Want the concise version?
+            {t('experience.resume.title')}
           </h4>
           <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
-            Projects, stack, and impact compacted into 1 page. Updated regularly.
+            {t('experience.resume.desc')}
           </p>
           <div className="mt-3 flex gap-2">
-            <span
-              className={[
-                'border border-zinc-200 dark:border-zinc-800',
-                'px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest',
-                'text-zinc-400 dark:text-zinc-600',
-              ].join(' ')}
-            >
+            <span className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
               PDF · 1 page
             </span>
-            <span
-              className={[
-                'border border-zinc-200 dark:border-zinc-800',
-                'px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest',
-                'text-zinc-400 dark:text-zinc-600',
-              ].join(' ')}
-            >
-              Updated {new Date().getFullYear()}
+            <span className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+              {new Date().getFullYear()}
             </span>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
           <a
-            href="/files/cv-v5.pdf"
+            href="/files/cv-v6.pdf"
             target="_blank"
             rel="noopener noreferrer"
-            className={[
-              'inline-flex items-center justify-center',
-              'bg-zinc-900 dark:bg-zinc-50',
-              'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest',
-              'text-white dark:text-zinc-900',
-              'hover:bg-zinc-700 dark:hover:bg-zinc-200',
-              'transition-colors duration-150',
-            ].join(' ')}
+            className="inline-flex items-center justify-center bg-zinc-900 dark:bg-zinc-50 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors duration-150"
           >
-            View Résumé (PDF)
+            {t('experience.resume.view')}
           </a>
           <a
             href="/#contact"
-            className={[
-              'inline-flex items-center justify-center',
-              'border border-zinc-300 dark:border-zinc-700',
-              'px-5 py-2.5 text-[11px] font-medium uppercase tracking-widest',
-              'text-zinc-700 dark:text-zinc-300',
-              'hover:border-zinc-900 hover:text-zinc-900',
-              'dark:hover:border-zinc-200 dark:hover:text-zinc-100',
-              'transition-colors duration-150',
-            ].join(' ')}
+            className="inline-flex items-center justify-center border border-zinc-300 dark:border-zinc-700 px-5 py-2.5 text-[11px] font-medium uppercase tracking-widest text-zinc-700 dark:text-zinc-300 hover:border-zinc-900 hover:text-zinc-900 dark:hover:border-zinc-200 dark:hover:text-zinc-100 transition-colors duration-150"
           >
-            Discuss opportunities
+            {t('experience.resume.discuss')}
           </a>
         </div>
       </div>
@@ -259,6 +240,7 @@ function ResumeCta() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ExperienceTimeline() {
+  const { t } = useTranslation();
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -308,11 +290,11 @@ export default function ExperienceTimeline() {
       <Rule />
       <div className="flex items-baseline justify-between py-4">
         <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Professional Experience
+          {t('experience.title')}
         </h2>
         {!loading && scenes.length > 0 && (
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
-            {scenes.length} role{scenes.length !== 1 ? 's' : ''}
+            {scenes.length} {scenes.length !== 1 ? t('experience.roles') : t('experience.role')}
           </span>
         )}
       </div>
@@ -340,7 +322,7 @@ export default function ExperienceTimeline() {
       {!!err && !loading && (
         <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-center">
           <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-            Could not load experience: {err}
+            {t('experience.error')}: {err}
           </p>
         </div>
       )}

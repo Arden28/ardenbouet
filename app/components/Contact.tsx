@@ -1,6 +1,7 @@
 'use client';
-
+import '../i18n';
 import { useRef, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { Mail, Phone, Github, Linkedin, Copy, Check, Loader2, Clock, DollarSign } from 'lucide-react';
@@ -161,7 +162,9 @@ const lineInputError   = 'border-red-400 dark:border-red-500';
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export const Contact = () => {
-  // ── Form state (unchanged) ─────────────────────────────────────────────────
+  const { t } = useTranslation();
+
+  // ── Form state ─────────────────────────────────────────────────────────────
   const [name, setName]           = useState('');
   const [email, setEmail]         = useState('');
   const [message, setMessage]     = useState('');
@@ -255,7 +258,7 @@ DETAILS
               'text-zinc-900 dark:text-zinc-50',
             ].join(' ')}
           >
-            Let&apos;s Build
+            {t('contact.headline1')}
           </motion.p>
         </div>
         <div className="overflow-hidden">
@@ -268,7 +271,7 @@ DETAILS
               'text-zinc-900 dark:text-zinc-50',
             ].join(' ')}
           >
-            Something Reliable.
+            {t('contact.headline2')}
           </motion.p>
         </div>
       </motion.div>
@@ -294,7 +297,7 @@ DETAILS
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2467AC]" />
             </span>
             <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-              Available for new projects
+              {t('contact.available')}
             </p>
           </div>
 
@@ -303,7 +306,7 @@ DETAILS
             {/* Email */}
             <div>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-                Email
+                {t('contact.emailLabel')}
               </p>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden />
@@ -317,7 +320,7 @@ DETAILS
             {/* Phone */}
             <div>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-                Phone
+                {t('contact.phoneLabel')}
               </p>
               <div className="flex items-center gap-2.5">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden />
@@ -334,7 +337,7 @@ DETAILS
           {/* Social links — magnetic */}
           <div>
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-              Find me on
+              {t('contact.findMe')}
             </p>
             <div className="flex items-center gap-2">
               <MagneticLink href="https://github.com/arden28" label="GitHub">
@@ -354,14 +357,14 @@ DETAILS
           {/* Specialisms — dash prefixed, lime accent */}
           <div>
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-              I specialize in
+              {t('contact.iSpecialize')}
             </p>
             <ul className="space-y-2">
               {[
-                'Production-grade Web Apps',
-                'Complex API Integrations',
-                'IoT & Real-time Systems',
-                'SaaS MVP Development',
+                t('contact.specialisms.0'),
+                t('contact.specialisms.1'),
+                t('contact.specialisms.2'),
+                t('contact.specialisms.3'),
               ].map(item => (
                 <li key={item} className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                   <span className="text-[#2467AC] leading-none">—</span>
@@ -391,14 +394,14 @@ DETAILS
                 htmlFor="contact-name"
                 className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
               >
-                Name
+                {t('contact.form.name')}
               </label>
               <input
                 id="contact-name"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 onBlur={() => setTouched(s => ({ ...s, name: true }))}
-                placeholder="Brian Mwangi"
+                placeholder={t('contact.form.namePlaceholder')}
                 className={cn(
                   lineInputBase,
                   touched.name && !name.trim() ? lineInputError : lineInputNormal
@@ -410,7 +413,7 @@ DETAILS
                 htmlFor="contact-email"
                 className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
               >
-                Email
+                {t('contact.form.email')}
               </label>
               <input
                 id="contact-email"
@@ -418,7 +421,7 @@ DETAILS
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onBlur={() => setTouched(s => ({ ...s, email: true }))}
-                placeholder="brian@company.com"
+                placeholder={t('contact.form.emailPlaceholder')}
                 className={cn(
                   lineInputBase,
                   email && !isEmailValid ? lineInputError : lineInputNormal
@@ -430,12 +433,18 @@ DETAILS
           {/* 2. Services — sharp bordered chips, lime fill when active */}
           <div>
             <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-3">
-              I need help with
+              {t('contact.form.needHelp')}
             </p>
             <div className="flex flex-wrap gap-2">
               {(
-                ['SaaS build', 'API integration', 'IoT/Telemetry', 'UI/Frontend', 'Consultation'] as Chip[]
-              ).map(c => {
+                [
+                  ['SaaS build',      t('contact.chips.saas')],
+                  ['API integration', t('contact.chips.api')],
+                  ['IoT/Telemetry',   t('contact.chips.iot')],
+                  ['UI/Frontend',     t('contact.chips.ui')],
+                  ['Consultation',    t('contact.chips.consult')],
+                ] as [Chip, string][]
+              ).map(([c, label]) => {
                 const active = chips.includes(c);
                 return (
                   <button
@@ -451,7 +460,7 @@ DETAILS
                         : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-500 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                     )}
                   >
-                    {c}
+                    {label}
                   </button>
                 );
               })}
@@ -463,10 +472,14 @@ DETAILS
             {/* Timeframe — text toggles, no box */}
             <div>
               <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-3">
-                <Clock className="h-3 w-3" aria-hidden /> Timeframe
+                <Clock className="h-3 w-3" aria-hidden /> {t('contact.form.timeframe')}
               </p>
               <div className="flex items-center gap-5">
-                {(['soon', 'this quarter', 'flexible'] as const).map(opt => (
+                {([
+                  ['soon',         t('contact.form.soon')],
+                  ['this quarter', t('contact.form.quarter')],
+                  ['flexible',     t('contact.form.flexible')],
+                ] as const).map(([opt, label]) => (
                   <button
                     key={opt}
                     type="button"
@@ -479,7 +492,7 @@ DETAILS
                         : 'text-zinc-400 dark:text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300'
                     )}
                   >
-                    {opt}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -489,7 +502,7 @@ DETAILS
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-                  <DollarSign className="h-3 w-3" aria-hidden /> Budget
+                  <DollarSign className="h-3 w-3" aria-hidden /> {t('contact.form.budget')}
                 </p>
                 <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
                   {budgetLabel}
@@ -506,8 +519,8 @@ DETAILS
                 aria-label={`Budget: ${budgetLabel}`}
               />
               <div className="mt-1.5 flex justify-between font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                <span>Min</span>
-                <span>Max</span>
+                <span>{t('contact.form.min')}</span>
+                <span>{t('contact.form.max')}</span>
               </div>
             </div>
           </div>
@@ -518,7 +531,7 @@ DETAILS
               htmlFor="contact-message"
               className="block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 mb-1"
             >
-              Project Details
+              {t('contact.form.details')}
             </label>
             <textarea
               id="contact-message"
@@ -526,7 +539,7 @@ DETAILS
               onChange={e => setMessage(e.target.value.slice(0, messageLimit))}
               onBlur={() => setTouched(s => ({ ...s, message: true }))}
               rows={5}
-              placeholder="Tell me about the problem you're trying to solve…"
+              placeholder={t('contact.form.detailsPlaceholder')}
               className={cn(
                 lineInputBase,
                 'resize-none',
@@ -565,14 +578,14 @@ DETAILS
               {submitting ? (
                 <span className="inline-flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending…
+                  {t('contact.form.sending')}
                 </span>
               ) : (
-                'Send Inquiry →'
+                t('contact.form.send')
               )}
             </button>
             <p className="mt-3 text-center font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-              Opens your default email client
+              {t('contact.form.emailClient')}
             </p>
           </div>
         </motion.form>

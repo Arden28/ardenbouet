@@ -254,7 +254,7 @@ export const Header = () => {
               Sharp rectangular border + uppercase tracking mirrors Hero's CTA buttons.
             */}
             <a
-              href="/files/cv-v5.pdf"
+              href="/files/cv-v6.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className={[
@@ -386,7 +386,7 @@ export const Header = () => {
           {/* Secondary actions — same sharp rectangular style as Hero CTAs */}
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <a
-              href="/files/cv-v5.pdf"
+              href="/files/cv-v6.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className={[

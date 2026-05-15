@@ -6,6 +6,7 @@ import nextDynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import type { ContentBundle, Note } from '@/app/admin/types';
 import { mdToSafeHtml } from '@/lib/mardown';
+import { getLocale, makeT } from '@/lib/serverT';
 import { RichBody, ShareRow, ArticleActions } from './NoteClient';
 
 // ssr: false prevents framer-motion v12 hydration mismatches and browser-API errors
@@ -57,7 +58,8 @@ export default async function NotePage({ params }: { params: { slug: string } })
   if (!note) notFound();
 
   const html = mdToSafeHtml(note.bodyMd ?? '');
-  const permalink = `https://ardenbouet.com/notes/${note.slug}`;
+  const permalink = `https://ardenbouet.me/notes/${note.slug}`;
+  const t = makeT(getLocale());
 
   return (
     <>
@@ -118,7 +120,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
             )}
             {note.reading && (
               <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
-                {note.reading} read
+                {note.reading} {t('noteDetail.readSuffix')}
               </span>
             )}
           </div>
@@ -172,7 +174,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
               {/* TOC */}
               <div>
                 <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  Contents
+                  {t('noteDetail.contents')}
                 </p>
                 <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800 mb-3" />
                 <Toc />
@@ -181,7 +183,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
               {/* Actions */}
               <div>
                 <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  Actions
+                  {t('noteDetail.actions')}
                 </p>
                 <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800 mb-3" />
                 <ArticleActions
@@ -196,7 +198,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
                 href="/notes"
                 className="block font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                ← All notes
+                {t('noteDetail.back')}
               </Link>
             </div>
           </aside>
@@ -208,7 +210,7 @@ export default async function NotePage({ params }: { params: { slug: string } })
             href="/notes"
             className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
           >
-            ← All notes
+            {t('noteDetail.back')}
           </Link>
         </div>
       </main>

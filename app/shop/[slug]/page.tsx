@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import type { ContentBundle, ShopProduct } from '@/app/admin/types';
+import { getLocale, makeT } from '@/lib/serverT';
 import PriceTag from './PriceTag';
 import MediaViewer from './MediaViewer';
 
@@ -39,6 +40,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   if (!product) notFound();
 
   const isService = product.category === 'service';
+  const t = makeT(getLocale());
 
   return (
     <>
@@ -103,7 +105,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               href={`/checkout?product=${product.slug}`}
               className="inline-flex items-center bg-[#2467AC] px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-950 transition-colors duration-150 hover:bg-white"
             >
-              {isService ? 'Book now →' : 'Buy now →'}
+              {isService ? t('shopDetail.bookNow') : t('shopDetail.buyNow')}
             </Link>
 
             {product.demoUrl && (
@@ -113,7 +115,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 rel="noopener noreferrer"
                 className="font-mono text-[11px] uppercase tracking-widest text-zinc-500 transition-colors duration-150 hover:text-zinc-200"
               >
-                View demo →
+                {t('shopDetail.viewDemo')}
               </a>
             )}
           </div>
@@ -143,7 +145,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           {/* Left: description + features */}
           <div>
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-              About
+              {t('shopDetail.about')}
             </p>
             <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-300">
               {product.description}
@@ -152,7 +154,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             {product.features.length > 0 && (
               <div className="mt-12">
                 <p className="mb-6 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  What&apos;s included
+                  {t('shopDetail.included')}
                 </p>
                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {product.features.map(f => (
@@ -177,7 +179,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             {product.media && product.media.length > 0 && (
               <div className="mt-14">
                 <p className="mb-6 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  Media
+                  {t('shopDetail.media')}
                 </p>
                 <MediaViewer items={product.media} />
               </div>
@@ -189,7 +191,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 href="/shop"
                 className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                ← Back to shop
+                {t('shopDetail.back')}
               </Link>
             </div>
           </div>
@@ -200,7 +202,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               {/* Price */}
               <div className="p-6">
                 <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                  Price
+                  {t('shopDetail.price')}
                 </p>
                 <PriceTag
                   price={product.price}
@@ -216,7 +218,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                   href={`/checkout?product=${product.slug}`}
                   className="flex w-full items-center justify-center bg-zinc-900 px-5 py-3 font-mono text-[11px] uppercase tracking-widest text-white transition-colors duration-150 hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
                 >
-                  {isService ? 'Book now →' : 'Buy now →'}
+                  {isService ? t('shopDetail.bookNow') : t('shopDetail.buyNow')}
                 </Link>
 
                 {product.demoUrl && (
@@ -226,7 +228,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                     rel="noopener noreferrer"
                     className="flex w-full items-center justify-center border border-zinc-200 px-5 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-600 transition-colors duration-150 hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
                   >
-                    View demo →
+                    {t('shopDetail.viewDemo')}
                   </a>
                 )}
               </div>
@@ -251,7 +253,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             {/* Questions */}
             <div className="border border-dashed border-zinc-200 p-4 dark:border-zinc-800">
               <p className="mb-1 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                Have questions?
+                {t('shopDetail.questions')}
               </p>
               <a
                 href="mailto:laudbouetoumoussa@gmail.com"
@@ -266,7 +268,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
               href="/shop"
               className="hidden font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100 lg:block"
             >
-              ← Back to shop
+              {t('shopDetail.back')}
             </Link>
           </div>
         </div>

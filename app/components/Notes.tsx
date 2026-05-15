@@ -1,5 +1,7 @@
 'use client';
+import '../i18n';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +45,7 @@ const fmtDate = (d: string) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Notes() {
+  const { t } = useTranslation();
   const [query, setQuery]       = useState('');
   const [filter, setFilter]     = useState<Filter>('all');
   const [peekSlug, setPeekSlug] = useState<string | null>(null);
@@ -78,7 +81,7 @@ export default function Notes() {
   // ── Derived ───────────────────────────────────────────────────────────────
   const tags = useMemo(() => {
     const set = new Set<string>();
-    notes.forEach(p => p.tags?.forEach(t => t && set.add(t)));
+    notes.forEach(p => p.tags?.forEach(tag => tag && set.add(tag)));
     return ['all', ...Array.from(set)];
   }, [notes]);
 
@@ -114,14 +117,14 @@ export default function Notes() {
       <Rule />
       <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Thoughts &amp; Field Notes
+          {t('notes.title')}
         </h2>
 
         {/* Search + RSS — flat, no rounded corners */}
         <div className="flex items-center gap-2 shrink-0">
           <input
             type="search"
-            placeholder="Search notes…"
+            placeholder={t('notes.search')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             aria-label="Search notes"
@@ -154,13 +157,13 @@ export default function Notes() {
 
       {/* ── Tag filters — bordered chips (no pill/rounded shape) ─────── */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {tags.map(t => {
-          const isActive = filter.toLowerCase() === t.toLowerCase();
+        {tags.map(tag => {
+          const isActive = filter.toLowerCase() === tag.toLowerCase();
           return (
             <button
-              key={t}
+              key={tag}
               type="button"
-              onClick={() => setFilter(t)}
+              onClick={() => setFilter(tag)}
               aria-pressed={isActive}
               className={[
                 'border px-3 py-1',
@@ -171,7 +174,7 @@ export default function Notes() {
                   : 'border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300',
               ].join(' ')}
             >
-              {t === 'all' ? 'All' : t}
+              {tag === 'all' ? t('notes.all') : tag}
             </button>
           );
         })}
@@ -198,7 +201,7 @@ export default function Notes() {
       {!!err && !loading && (
         <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-center">
           <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-            Could not load notes: {err}
+            {t('notes.error')}: {err}
           </p>
         </div>
       )}
@@ -251,7 +254,7 @@ export default function Notes() {
                       'text-zinc-400 dark:text-zinc-500',
                     ].join(' ')}
                   >
-                    Featured
+                    {t('notes.featured')}
                   </span>
                   <time className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
                     {fmtDate(featured.date)}
@@ -287,14 +290,14 @@ export default function Notes() {
                       'transition-colors duration-150',
                     ].join(' ')}
                   >
-                    Read note →
+                    {t('notes.read')}
                   </Link>
                   <button
                     type="button"
                     onClick={() => setPeekSlug(featured.slug)}
                     className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                   >
-                    Quick peek
+                    {t('notes.peek')}
                   </button>
                 </div>
               </div>
@@ -367,14 +370,14 @@ export default function Notes() {
                           href={`/notes/${p.slug}`}
                           className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                         >
-                          Read →
+                          {t('notes.readShort')}
                         </Link>
                         <button
                           type="button"
                           onClick={() => setPeekSlug(p.slug)}
                           className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                         >
-                          Peek
+                          {t('notes.peekShort')}
                         </button>
                       </div>
 
@@ -394,7 +397,7 @@ export default function Notes() {
           {gridPosts.length === 0 && (
             <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 py-12 text-center">
               <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                No notes match that filter… yet.
+                {t('notes.empty')}
               </p>
             </div>
           )}

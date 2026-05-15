@@ -10,239 +10,355 @@ i18n
       en: {
         translation: {
           menu: {
-            about: "About",
-            journey: "Journey",
-            projects: "Projects",
-            contact: "Contact",
-            cv: "CV",
-            mail: "Mail"
+            about: 'About',
+            journey: 'Journey',
+            projects: 'Projects',
+            contact: 'Contact',
+            cv: 'CV',
+            mail: 'Mail',
           },
+
           hero: {
+            aria: 'About Arden',
+            role: 'Software Engineer',
             title: {
-              fullstack: "Fullstack Developer",
-              engineer: "Software Engineer",
-              openSource: "and open-source contributor"
+              fullstack: 'Fullstack Developer',
+              engineer: 'Software Engineer',
+              openSource: 'and open-source contributor',
             },
             description: {
-              phrase1: "I’m <strong>Arden BOUET</strong>, a full-stack developer focused on clean code and smooth UX. I craft modern web applications, SaaS platforms, and smart automations that streamline workflows and enhance everyday efficiency. I collaborate with startups, SMEs, and established businesses to design and launch reliable, future-proof solutions that scale seamlessly as they grow.",
-              phrase2: "I collaborate with startups, SMEs, and established businesses to design and launch reliable, future-proof solutions that scale seamlessly as they grow.",
-              phrase3: "Whether it’s streamlining workflows or bringing new ideas to life, I’m all about building smart, scalable solutions with a practical edge. Always open to fun challenges, fresh ideas, and meaningful collaborations."
-            }, 
-            stack: "Technologies I love working with"
+              phrase1: "I'm <strong>Arden BOUET</strong>, a full-stack developer focused on clean code and smooth UX. I craft modern web applications, SaaS platforms, and smart automations that streamline workflows and enhance everyday efficiency.",
+              phrase2: 'I collaborate with startups, SMEs, and established businesses to design and launch reliable, future-proof solutions that scale seamlessly as they grow.',
+              phrase3: "Whether it's streamlining workflows or bringing new ideas to life, I'm all about building smart, scalable solutions with a practical edge.",
+            },
+            alt: { profile: 'Arden BOUET' },
+            cta: { primary: 'See my projects', secondary: "Let's talk" },
+            stack: 'Technologies I love working with',
+            hoverToPause: 'Hover to pause',
+            specialism0: 'Realtime systems',
+            specialism1: 'Cloud architecture',
+            specialism2: 'Embedded & IoT',
+            specialism3: 'Multi-tenant SaaS',
+            stats: {
+              projects: 'Shipped Projects',
+              years: 'Years Active',
+              continents: 'Continents Served',
+            },
           },
 
-          experiences: {
-            title: "PROFESSIONAL EXPERIENCES",
-            cardTitlte: "Professional Experiences",
-            projects: {
-              title: "Works",
-              see: "See the project"
+          projects: {
+            title: 'Builds & Case Files',
+            filter: 'Filter',
+            filters: {
+              all: 'All',
+              client: 'Client',
+              openSource: 'Open Source',
             },
-            jobs: {
-            
-              petroleumProductionIntern: {
-                title: "Petroleum Production Intern",
-                where: "China National Petroleum Corporation International Tchad (CNPCIC) - Rônier / Mimosa / Baobab, Chad",
-                when: "12/2012 ~ 10/2013",
-                point1: "Conducted inspections and verification of oil and water production wells, ensuring operational efficiency and compliance with safety standards.",
-                point2: "Collaborated on data input into the CNPCIC oilfield production database, enhancing system optimization while developing strong problem-solving and teamwork skills.",
-                skills: "<b>Skills:</b> Natural Resources, Data Analysis, Oil Production, Problem-Solving, Communication, Technical Support, Team Collaboration, Operational Efficiency, Energy Systems."
-              }
-
-            },
-            download: "Download my resume"
+            contact: 'Need a build?',
+            cta: "Let's talk",
+            error: 'Failed to load projects.',
+            caseStudy: 'Case study →',
+            visit: 'Visit →',
           },
 
-          educations: {
-            title: "EDUCATION AND TRAINING",
-            schools: {
-              school1: {
-                title: "University of Nairobi",
-                when: "11/2021 – 09/2025",
-                where: "Kenya",
-                detail: "PhD in Physics (Energy Specialization, including Renewable Energy)"
-              },
-            }, 
-
+          experience: {
+            title: 'Professional Experience',
+            role: 'role',
+            roles: 'roles',
+            outcomes: 'Outcomes',
+            error: 'Could not load experience',
+            resume: {
+              label: 'Résumé',
+              title: 'Want the concise version?',
+              desc: 'Projects, stack, and impact compacted into 1 page. Updated regularly.',
+              view: 'View Résumé (PDF)',
+              discuss: 'Discuss opportunities',
+            },
           },
 
-          publications: {
-            title: "PUBLICATIONS",
-            posts: {
-              post1: {
-                author: 'Phd. MAHAMAT ADOUM ABDOULAYE',
-                title: "Optimal Sizing of a Hybrid Solar-Wind System",
-                date: "1 July 2024",
-                desc: "Addressing Africa's electricity access challenges, particularly in Sub-Saharan Africa and Chad, through the adoption of hybrid solar-wind systems with energy storage to provide sustainable, affordable, and reliable power for rural electrification."
-              },
-              post2: {
-                author: 'Phd. MAHAMAT ADOUM ABDOULAYE',
-                title: "Optimal sizing of hybrid energy systems for rural electrification in Chad",
-                date: "27 Feb 2024",
-                desc: "Techno-economic and environmental optimization of a hybrid PV/Wind/Battery/Fuel Cell system for rural electrification in Chad."
-              },
-              post3: {
-                author: 'Phd. MAHAMAT ADOUM ABDOULAYE',
-                title: "PV intermittency impact on Senegal's grid frequency",
-                date: "July 2020",
-                desc: "Analyzing the impact of photovoltaic (PV) intermittency on frequency management in the Senegalese electricity grid."
-              },
-            },
+          journey: {
+            title: 'Education & Certifications',
+            education: 'Education',
+            certifications: 'Certifications',
+            viewCredential: 'View Credential →',
+            credential: 'Credential →',
+            showAll: 'Show all {{count}} ↓',
+            showFewer: 'Show fewer ↑',
+            noEducation: 'No education entries yet.',
+            noCerts: 'No certifications yet.',
+            error: 'Could not load journey',
           },
 
           contact: {
-            title: "Do not hesitate to get in touch",
-          }
+            title: 'Do not hesitate to get in touch',
+            headline1: "Let's Build",
+            headline2: 'Something Reliable.',
+            available: 'Available for new projects',
+            emailLabel: 'Email',
+            phoneLabel: 'Phone',
+            findMe: 'Find me on',
+            iSpecialize: 'I specialize in',
+            specialisms: {
+              '0': 'Production-grade Web Apps',
+              '1': 'Complex API Integrations',
+              '2': 'IoT & Real-time Systems',
+              '3': 'SaaS MVP Development',
+            },
+            chips: {
+              saas: 'SaaS build',
+              api: 'API integration',
+              iot: 'IoT/Telemetry',
+              ui: 'UI/Frontend',
+              consult: 'Consultation',
+            },
+            form: {
+              name: 'Name',
+              email: 'Email',
+              needHelp: 'I need help with',
+              timeframe: 'Timeframe',
+              budget: 'Budget',
+              details: 'Project Details',
+              namePlaceholder: 'Brian Mwangi',
+              emailPlaceholder: 'brian@company.com',
+              detailsPlaceholder: "Tell me about the problem you're trying to solve…",
+              soon: 'soon',
+              quarter: 'this quarter',
+              flexible: 'flexible',
+              min: 'Min',
+              max: 'Max',
+              send: 'Send Inquiry →',
+              sending: 'Sending…',
+              emailClient: 'Opens your default email client',
+            },
+          },
 
-        }
+          notes: {
+            title: 'Thoughts & Field Notes',
+            search: 'Search notes…',
+            all: 'All',
+            featured: 'Featured',
+            read: 'Read note →',
+            readShort: 'Read →',
+            peek: 'Quick peek',
+            peekShort: 'Peek',
+            empty: 'No notes match that filter… yet.',
+            error: 'Could not load notes',
+          },
+
+          // Legacy — preserved for backward compat
+          experiences: {
+            title: 'PROFESSIONAL EXPERIENCES',
+            cardTitlte: 'Professional Experiences',
+            download: 'Download my resume',
+          },
+          educations: { title: 'EDUCATION AND TRAINING' },
+          publications: { title: 'PUBLICATIONS' },
+
+          shop: {
+            title: 'Shop',
+            category: 'Category',
+            filter: {
+              all: 'All',
+              platform: 'Platforms',
+              app: 'Apps',
+              document: 'Documents',
+              service: 'Services',
+            },
+            digitalProducts: 'Digital Products',
+            services: 'Services',
+            serviceBadge: 'Service',
+            custom: 'Need something custom?',
+            talk: "Let's talk",
+            noItems: 'No items match this filter.',
+            view: 'View →',
+            learnMore: 'Learn more →',
+            itemSingular: '{{count}} item',
+            itemPlural: '{{count}} items',
+          },
+        },
       },
+
       fr: {
         translation: {
-          welcome: "Bienvenue",
+          welcome: 'Bienvenue',
           menu: {
-            about: "À propos",
-            journey: "Parcours",
-            projects: "Projets",
-            contact: "Contact",
-            cv: "CV",
-            mail: "Mail"
-          },
-          hero: {
-            title: {
-              fullstack: "Fullstack Developer",
-              engineer: "Software Engineer",
-              openSource: "et contributeur open source."
-            },
-            description: {
-              phrase1: "Salut, moi c’est <strong>Arden BOUET</strong> <strong>développeur fullstack</strong> et artisan du code bien fait. J’ai un faible pour les interfaces fluides, les applis qui ont du sens, et les lignes de code qui simplifient la vie. Mon terrain de jeu préféré ? <strong>Laravel</strong>, les <strong>plateformes SaaS</strong> et tout ce qui permet d’automatiser les petites galères du quotidien. J’aime transformer les idées en solutions concrètes, élégantes et efficaces.",
-              phrase2: "Qu’il s’agisse d’optimiser des flux de travail ou de donner vie à de nouvelles idées, je suis animé par la création de solutions intelligentes, évolutives et ancrées dans le concret. Toujours partant pour des défis stimulants, des idées neuves et des collaborations qui ont du sens."
-            },
-            stack: "Outils et technologies dans mon arsenal de dev"
-          },
-          experiences: {
-            title: "EXPÉRIENCES PROFESSIONNELLES",
-            cardTitlte: "Expériences Professionnelle",
-            projects: {
-              title: "Projets",
-              see: "Voir le projet"
-            },
-            jobs: {
-            
-              petroleumProductionIntern: {
-                title: "Stagiaire en Production de Pétrole",
-                where: "China National Petroleum Corporation International Tchad (CNPCIC) - Rônier / Mimosa / Baobab, Tchad",
-                when: "12/2012 ~ 10/2013",
-                point1: "Réalisation des inspections et vérifications des puits de production de pétrole et d'eau, garantissant l'efficacité opérationnelle et le respect des normes de sécurité.",
-                point2: "Collaboration sur l'entrée de données dans la base de données de production de pétrole CNPCIC, améliorant l'optimisation du système tout en développant de solides compétences en résolution de problèmes et travail en équipe.",
-                skills: "<b>Compétences :</b> Ressources naturelles, Analyse des données, Production de pétrole, Résolution de problèmes, Communication, Support technique, Collaboration en équipe, Efficacité opérationnelle, Systèmes énergétiques."
-              }
-            },
-            download: "Téléchargez mon CV"
-          },
-          educations: {
-            title: "ÉDUCATION ET FORMATION",
-            schools: {
-              school1: {
-                title: "Université de Nairobi",
-                when: "11/2021 – 09/2025",
-                where: "Kenya",
-                detail: "Doctorat en Physique (Spécialisation Énergie, y compris Énergies Renouvelables)"
-              },
-              school2: {
-                title: "Quant Energy Academy (École d'Ingénierie Logicielle pour l'Énergie)",
-                when: "11/2024 – 11/2025",
-                where: "Royaume-Uni",
-                detail: "Formation avancée en Science des Données, Optimisation et Applications de l'Apprentissage Automatique dans l'Énergie"
-              },
-              school3: {
-                title: "MIT Institute for Data, Systems, and Society (IDSS)",
-                when: "06/2022 – 10/2022",
-                where: "États-Unis d'Amérique",
-                detail: "Certificat en Science des Données et Apprentissage Automatique : Prise de Décisions Basée sur les Données"
-              },
-              school4: {
-                title: "KALU Institute | Centre d'Études d'Aide Humanitaire",
-                when: "10/2021 – 09/2022",
-                where: "Espagne",
-                detail: "Master en Coopération Internationale et Aide Humanitaire"
-              },
-              school5: {
-                title: "Université du Cap – École Supérieure de Commerce",
-                when: "05/2021 – 10/2021",
-                where: "Afrique du Sud",
-                detail: "Florence School of Regulation | Italie, Enel Foundation | Italie, Programme Open Africa Power 2021 pour la nouvelle génération de leaders de l'Énergie Propre en Afrique, Régulation pour l'Objectif de Développement Durable 7"
-              },
-              school6: {
-                title: "Université Gaston Berger de Saint-Louis",
-                when: "06/2016 – 12/2018",
-                where: "Sénégal",
-                detail: "Master en Sciences et Technologies, Physique Appliquée, Spécialisation en Énergies Renouvelables"
-              },
-              school7: {
-                title: "Institut des Énergies Renouvelables de Cologne / TH Köln - Université des Sciences Appliquées",
-                when: "09/2017",
-                where: "Allemagne",
-                detail: "École d'Été (Énergies Renouvelables et Efficacité Énergétique)"
-              },
-              school8: {
-                title: "Centre de Formation Sibérien Schlumberger",
-                when: "08/2015 – 10/2015",
-                where: "Tioumen, Russie",
-                detail: "Formation Professionnelle en Prestation de Services et Technologie d'Intégrité des Puits"
-              },
-              school9: {
-                title: "Centre d'Enseignement des Langues",
-                when: "03/2014 – 06/2014",
-                where: "Le Cap, Afrique du Sud",
-                detail: "Cours Intensifs d'Anglais Technique et Général"
-              },
-              school10: {
-                title: "Institut Universitaire du Pétrole de Mao",
-                when: "11/2010 – 02/2014",
-                where: "N'Djamena, Tchad",
-                detail: "Licence en Exploitation des Hydrocarbures, spécialisation en Production Pétrolière"
-              }
-            }
+            about: 'À propos',
+            journey: 'Parcours',
+            projects: 'Projets',
+            contact: 'Contact',
+            cv: 'CV',
+            mail: 'Mail',
           },
 
-          publications: {
-            title: "PUBLICATIONS",
-            posts: {
-              post1: {
-                author: 'Dr. MAHAMAT ADOUM ABDOULAYE',
-                title: "Dimensionnement optimal d'un système hybride solaire-éolien",
-                date: "1 Juillet 2024",
-                desc: "Aborder les défis d'accès à l'électricité en Afrique, en particulier en Afrique subsaharienne et au Tchad, à travers l'adoption de systèmes hybrides solaire-éolien avec stockage d'énergie pour fournir une énergie durable, abordable et fiable pour l'électrification rurale."
-              },
-              post2: {
-                author: 'Dr. MAHAMAT ADOUM ABDOULAYE',
-                title: "Dimensionnement optimal des systèmes énergétiques hybrides pour l'électrification rurale au Tchad",
-                date: "27 Février 2024",
-                desc: "Optimisation techno-économique et environnementale d'un système hybride PV/Éolien/Batterie/Pile à combustible pour l'électrification rurale au Tchad."
-              },
-              post3: {
-                author: 'Dr. MAHAMAT ADOUM ABDOULAYE',
-                title: "Impact de l'intermittence PV sur la fréquence du réseau du Sénégal",
-                date: "Juillet 2020",
-                desc: "Analyse de l'impact de l'intermittence photovoltaïque (PV) sur la gestion de la fréquence dans le réseau électrique sénégalais."
-              },
+          hero: {
+            aria: "À propos d'Arden",
+            role: 'Ingénieur Logiciel',
+            title: {
+              fullstack: 'Fullstack Developer',
+              engineer: 'Software Engineer',
+              openSource: 'et contributeur open source.',
             },
-          }
-          
-          
-        }
+            description: {
+              phrase1: "Salut, moi c'est <strong>Arden BOUET</strong> <strong>développeur fullstack</strong> et artisan du code bien fait. J'ai un faible pour les interfaces fluides, les applis qui ont du sens, et les lignes de code qui simplifient la vie.",
+              phrase2: "Qu'il s'agisse d'optimiser des flux de travail ou de donner vie à de nouvelles idées, je suis animé par la création de solutions intelligentes, évolutives et ancrées dans le concret.",
+            },
+            alt: { profile: 'Arden BOUET' },
+            cta: { primary: 'Voir mes projets', secondary: 'Parlons-en' },
+            stack: "Outils et technologies dans mon arsenal de dev",
+            hoverToPause: 'Survoler pour mettre en pause',
+            specialism0: 'Systèmes temps réel',
+            specialism1: 'Architecture cloud',
+            specialism2: 'Embarqué & IoT',
+            specialism3: 'SaaS multi-tenant',
+            stats: {
+              projects: 'Projets livrés',
+              years: 'Années actif',
+              continents: 'Continents',
+            },
+          },
+
+          projects: {
+            title: 'Réalisations & Études de cas',
+            filter: 'Filtrer',
+            filters: {
+              all: 'Tout',
+              client: 'Client',
+              openSource: 'Open Source',
+            },
+            contact: 'Besoin d\'un build ?',
+            cta: 'Parlons-en',
+            error: 'Erreur lors du chargement des projets.',
+            caseStudy: 'Étude de cas →',
+            visit: 'Voir →',
+          },
+
+          experience: {
+            title: 'Expériences Professionnelles',
+            role: 'poste',
+            roles: 'postes',
+            outcomes: 'Résultats',
+            error: 'Impossible de charger les expériences',
+            resume: {
+              label: 'CV',
+              title: 'Vous voulez la version concise ?',
+              desc: 'Projets, stack et impact en 1 page. Mis à jour régulièrement.',
+              view: 'Voir le CV (PDF)',
+              discuss: 'Discuter des opportunités',
+            },
+          },
+
+          journey: {
+            title: 'Formation & Certifications',
+            education: 'Formation',
+            certifications: 'Certifications',
+            viewCredential: 'Voir le diplôme →',
+            credential: 'Diplôme →',
+            showAll: 'Voir les {{count}} ↓',
+            showFewer: 'Voir moins ↑',
+            noEducation: 'Aucune formation enregistrée.',
+            noCerts: 'Aucune certification enregistrée.',
+            error: 'Impossible de charger le parcours',
+          },
+
+          contact: {
+            title: 'N\'hésitez pas à me contacter',
+            headline1: 'Construisons',
+            headline2: 'Quelque chose de fiable.',
+            available: 'Disponible pour de nouveaux projets',
+            emailLabel: 'Email',
+            phoneLabel: 'Téléphone',
+            findMe: 'Me retrouver sur',
+            iSpecialize: 'Je suis spécialisé en',
+            specialisms: {
+              '0': 'Applications web production',
+              '1': 'Intégrations API complexes',
+              '2': 'IoT & Systèmes temps réel',
+              '3': 'Développement SaaS MVP',
+            },
+            chips: {
+              saas: 'Développement SaaS',
+              api: 'Intégration API',
+              iot: 'IoT/Télémétrie',
+              ui: 'UI/Frontend',
+              consult: 'Consultation',
+            },
+            form: {
+              name: 'Nom',
+              email: 'Email',
+              needHelp: "J'ai besoin d'aide avec",
+              timeframe: 'Délai',
+              budget: 'Budget',
+              details: 'Détails du projet',
+              namePlaceholder: 'Jean Dupont',
+              emailPlaceholder: 'jean@societe.fr',
+              detailsPlaceholder: 'Décrivez le problème que vous cherchez à résoudre…',
+              soon: 'rapidement',
+              quarter: 'ce trimestre',
+              flexible: 'flexible',
+              min: 'Min',
+              max: 'Max',
+              send: 'Envoyer →',
+              sending: 'Envoi…',
+              emailClient: 'Ouvre votre client email par défaut',
+            },
+          },
+
+          notes: {
+            title: 'Réflexions & Notes de terrain',
+            search: 'Rechercher des notes…',
+            all: 'Tout',
+            featured: 'À la une',
+            read: 'Lire la note →',
+            readShort: 'Lire →',
+            peek: 'Aperçu rapide',
+            peekShort: 'Aperçu',
+            empty: 'Aucune note ne correspond à ce filtre.',
+            error: 'Impossible de charger les notes',
+          },
+
+          // Legacy — preserved for backward compat
+          experiences: {
+            title: 'EXPÉRIENCES PROFESSIONNELLES',
+            cardTitlte: 'Expériences Professionnelle',
+            download: 'Téléchargez mon CV',
+          },
+          educations: { title: 'ÉDUCATION ET FORMATION' },
+          publications: { title: 'PUBLICATIONS' },
+
+          shop: {
+            title: 'Boutique',
+            category: 'Catégorie',
+            filter: {
+              all: 'Tout',
+              platform: 'Plateformes',
+              app: 'Applications',
+              document: 'Documents',
+              service: 'Services',
+            },
+            digitalProducts: 'Produits numériques',
+            services: 'Services',
+            serviceBadge: 'Service',
+            custom: "Besoin d'un projet sur mesure ?",
+            talk: 'Parlons-en',
+            noItems: 'Aucun article ne correspond à ce filtre.',
+            view: 'Voir →',
+            learnMore: 'En savoir plus →',
+            itemSingular: '{{count}} article',
+            itemPlural: '{{count}} articles',
+          },
+        },
       },
     },
     fallbackLng: 'en',
     supportedLngs: ['en', 'fr'],
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      order: ['cookie', 'localStorage', 'navigator'],
+      caches: ['cookie', 'localStorage'],
+      lookupCookie: 'arden_lang',
       lookupLocalStorage: 'arden_lang',
+      cookieOptions: { path: '/', sameSite: 'lax' as const, maxAge: 365 * 24 * 60 * 60 },
     },
-    interpolation: {
-      escapeValue: false,
-    },
+    interpolation: { escapeValue: false },
   });
 
 export default i18n;

@@ -1,6 +1,8 @@
 'use client';
+import '../i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types (unchanged) ───────────────────────────────────────────────────────
 type JourneyRow = {
@@ -46,6 +48,22 @@ const INITIAL_CERTS = 6;
 // ─── Design primitives ───────────────────────────────────────────────────────
 function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+function CredentialLink({ href, long = false }: { href: string; long?: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={long
+        ? 'mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-[#2467AC]'
+        : 'font-mono text-[9px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-[#2467AC]'}
+    >
+      {long ? t('journey.viewCredential') : t('journey.credential')}
+    </a>
+  );
 }
 
 // ─── Education chapter row ───────────────────────────────────────────────────
@@ -120,14 +138,7 @@ function EduRow({ e, index }: { e: Entry; index: number }) {
           )}
 
           {e.credentialUrl && (
-            <a
-              href={e.credentialUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-[#2467AC]"
-            >
-              View Credential →
-            </a>
+            <CredentialLink href={e.credentialUrl} long />
           )}
         </div>
       </div>
@@ -167,14 +178,7 @@ function CertCell({ e, index }: { e: Entry; index: number }) {
         </p>
       )}
       {e.credentialUrl && (
-        <a
-          href={e.credentialUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-[#2467AC]"
-        >
-          Credential →
-        </a>
+        <CredentialLink href={e.credentialUrl} />
       )}
       {/* Left-edge accent on hover */}
       <span
@@ -187,6 +191,7 @@ function CertCell({ e, index }: { e: Entry; index: number }) {
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export const Journey = () => {
+  const { t } = useTranslation();
   const [education, setEducation] = useState<Entry[]>([]);
   const [certsAll, setCertsAll]   = useState<Entry[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -239,7 +244,7 @@ export const Journey = () => {
       <Rule />
       <div className="flex items-baseline justify-between py-4">
         <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Education &amp; Certifications
+          {t('journey.title')}
         </h2>
       </div>
       <Rule />
@@ -265,7 +270,7 @@ export const Journey = () => {
       {!!err && !loading && (
         <div className="mt-8 border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-center">
           <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-            Could not load journey: {err}
+            {t('journey.error')}: {err}
           </p>
         </div>
       )}
@@ -277,7 +282,7 @@ export const Journey = () => {
           {/* ── EDUCATION CHAPTER ROWS ──────────────────────────────── */}
           <div>
             <p className="mb-0 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-              Education
+              {t('journey.education')}
             </p>
             {education.length > 0 ? (
               <>
@@ -289,7 +294,7 @@ export const Journey = () => {
             ) : (
               <div className="mt-2 border border-dashed border-zinc-200 dark:border-zinc-800 py-8 text-center">
                 <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-                  No education entries yet.
+                  {t('journey.noEducation')}
                 </p>
               </div>
             )}
@@ -299,7 +304,7 @@ export const Journey = () => {
           <div className="mt-14">
             <div className="mb-2 flex items-center justify-between">
               <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                Certifications
+                {t('journey.certifications')}
                 {certsAll.length > 0 && (
                   <span className="ml-3 text-zinc-300 dark:text-zinc-700">
                     ({certsAll.length})
@@ -313,7 +318,7 @@ export const Journey = () => {
                   aria-expanded={showAll}
                   className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                 >
-                  {showAll ? 'Show fewer ↑' : `Show all ${certsAll.length} ↓`}
+                  {showAll ? t('journey.showFewer') : t('journey.showAll', { count: certsAll.length })}
                 </button>
               )}
             </div>
@@ -337,7 +342,7 @@ export const Journey = () => {
             ) : (
               <div className="border border-dashed border-zinc-200 dark:border-zinc-800 py-8 text-center">
                 <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-                  No certifications yet.
+                  {t('journey.noCerts')}
                 </p>
               </div>
             )}

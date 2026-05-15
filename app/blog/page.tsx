@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { Header } from '../components/Header';
+import { getLocale, makeT } from '@/lib/serverT';
 
 export const metadata: Metadata = {
   title: 'Field Notes · Arden BOUET',
@@ -73,6 +74,10 @@ export default async function BlogPage() {
   const notes    = await getNotes();
   const featured = notes[0];
   const archive  = notes.slice(1);
+  const t = makeT(getLocale());
+  const noteCount = (n: number) => n === 1
+    ? t('blog.noteSingular', { count: n })
+    : t('blog.notePlural', { count: n });
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:pt-16">
@@ -81,10 +86,10 @@ export default async function BlogPage() {
       <Rule />
       <div className="flex items-baseline justify-between py-4">
         <h1 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Field Notes
+          {t('blog.title')}
         </h1>
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-          {notes.length} note{notes.length !== 1 ? 's' : ''}
+          {noteCount(notes.length)}
         </p>
       </div>
       <Rule />
@@ -93,7 +98,7 @@ export default async function BlogPage() {
       {notes.length === 0 && (
         <div className="py-24 text-center">
           <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-            No notes yet.
+            {t('blog.noNotes')}
           </p>
         </div>
       )}
@@ -132,7 +137,7 @@ export default async function BlogPage() {
             <div className="flex flex-col p-6 lg:p-8">
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <span className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  Latest
+                  {t('blog.latest')}
                 </span>
                 <time className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
                   {fmtDate(featured.date)}
@@ -165,7 +170,7 @@ export default async function BlogPage() {
 
               <div className="mt-6">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-700 dark:text-zinc-400 group-hover:text-[#2467AC] transition-colors duration-200">
-                  Read note →
+                  {t('blog.readNote')}
                 </span>
               </div>
             </div>
@@ -182,7 +187,7 @@ export default async function BlogPage() {
       {archive.length > 0 && (
         <div className="mt-14">
           <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-            Archive
+            {t('blog.archive')}
           </p>
           <Rule />
           <ul>

@@ -39,12 +39,7 @@ type Filter = 'all' | 'saas' | 'client' | 'open-source';
 // ─── Config ──────────────────────────────────────────────────────────────────
 const EXPO = [0.16, 1, 0.3, 1] as const;
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all',         label: 'All'         },
-  { key: 'saas',        label: 'SaaS'        },
-  { key: 'client',      label: 'Client'      },
-  { key: 'open-source', label: 'Open Source' },
-];
+// Labels computed inside component via useTranslation — see FILTERS useMemo below
 
 // ─── Inline ruled line (consistent with Hero / Header motif) ─────────────────
 function Rule() {
@@ -74,6 +69,13 @@ function SkeletonCard() {
 // ─── Main component ──────────────────────────────────────────────────────────
 export const Projects = () => {
   const { t } = useTranslation();
+
+  const FILTERS: { key: Filter; label: string }[] = [
+    { key: 'all',         label: t('projects.filters.all') },
+    { key: 'saas',        label: 'SaaS' },
+    { key: 'client',      label: t('projects.filters.client') },
+    { key: 'open-source', label: t('projects.filters.openSource') },
+  ];
 
   // ── Remote data ──────────────────────────────────────────────────────────
   const [projects, setProjects] = useState<Project[]>([]);
@@ -125,7 +127,7 @@ export const Projects = () => {
       <Rule />
       <div className="flex items-baseline justify-between py-4">
         <h2 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Builds &amp; Case Files
+          {t('projects.title')}
         </h2>
         {!loading && (
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
@@ -143,7 +145,7 @@ export const Projects = () => {
 
           {/* Filter label — desktop only */}
           <p className="mb-3 hidden font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600 lg:block">
-            Filter
+            {t('projects.filter')}
           </p>
 
           {/* Filter buttons */}

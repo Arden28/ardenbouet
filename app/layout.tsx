@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import "./globals.css";
@@ -13,8 +14,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = cookies().get('arden_lang')?.value === 'fr' ? 'fr' : 'en';
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         <link rel="icon" href="/images/me.png" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

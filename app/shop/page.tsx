@@ -1,6 +1,7 @@
 'use client';
 // app/shop/page.tsx — Header is provided by app/layout.tsx
-
+import '../i18n';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -113,6 +114,7 @@ function FilterGroup<T extends string>({
 
 // ─── Product card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, currency }: { product: ShopProduct; currency: CurrencyCode }) {
+  const { t } = useTranslation();
   const price = formatPrice(product.price, product.currency, currency);
   return (
     <Link href={`/shop/${product.slug}`} className="group block">
@@ -170,7 +172,7 @@ function ProductCard({ product, currency }: { product: ShopProduct; currency: Cu
               {price}
             </motion.span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors duration-150 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-              View →
+              {t('shop.view')}
             </span>
           </div>
         </div>
@@ -187,13 +189,14 @@ function ProductCard({ product, currency }: { product: ShopProduct; currency: Cu
 
 // ─── Service row ──────────────────────────────────────────────────────────────
 function ServiceRow({ product, currency }: { product: ShopProduct; currency: CurrencyCode }) {
+  const { t } = useTranslation();
   const price = formatPrice(product.price, product.currency, currency);
   return (
     <div className="group">
       <Link href={`/shop/${product.slug}`}>
         <div className="flex items-center gap-5 px-1 py-5 transition-colors duration-150 hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40">
           <span className="hidden shrink-0 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 sm:inline">
-            Service
+            {t('shop.serviceBadge')}
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-heading text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50 transition-colors duration-200 group-hover:text-[#2467AC]">
@@ -214,7 +217,7 @@ function ServiceRow({ product, currency }: { product: ShopProduct; currency: Cur
               {price}
             </motion.p>
             <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors duration-150 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
-              Learn more →
+              {t('shop.learnMore')}
             </p>
           </div>
         </div>
@@ -250,6 +253,7 @@ function SkeletonCard() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ShopPage() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [category, setCategory] = useState<CategoryFilter>('all');
@@ -282,13 +286,15 @@ export default function ShopPage() {
       <Rule />
       <div className="flex items-center justify-between py-4">
         <h1 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          Shop
+          {t('shop.title')}
         </h1>
         <div className="flex items-center gap-3">
           <CurrencyPicker value={currency} onChange={setCurrency} />
           <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-700" />
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-            {loading ? '…' : `${total} item${total !== 1 ? 's' : ''}`}
+            {loading ? '…' : total === 1
+              ? t('shop.itemSingular', { count: total })
+              : t('shop.itemPlural', { count: total })}
           </p>
         </div>
       </div>
@@ -299,15 +305,15 @@ export default function ShopPage() {
         <aside className="self-start lg:sticky lg:top-28">
           <div className="flex flex-col gap-6">
             <FilterGroup
-              label="Category"
+              label={t('shop.category')}
               value={category}
               onChange={setCategory}
               options={[
-                { key: 'all',      label: 'All'       },
-                { key: 'platform', label: 'Platforms' },
-                { key: 'app',      label: 'Apps'      },
-                { key: 'document', label: 'Documents' },
-                { key: 'service',  label: 'Services'  },
+                { key: 'all',      label: t('shop.filter.all')      },
+                { key: 'platform', label: t('shop.filter.platform') },
+                { key: 'app',      label: t('shop.filter.app')      },
+                { key: 'document', label: t('shop.filter.document') },
+                { key: 'service',  label: t('shop.filter.service')  },
               ]}
             />
           </div>
@@ -316,7 +322,7 @@ export default function ShopPage() {
             <Rule />
             <div className="py-4">
               <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-                Need something custom?
+                {t('shop.custom')}
               </p>
               <Link
                 href="/#contact"
@@ -330,7 +336,7 @@ export default function ShopPage() {
                   'transition-colors duration-150',
                 ].join(' ')}
               >
-                Let&apos;s talk <span aria-hidden>→</span>
+                {t('shop.talk')} <span aria-hidden>→</span>
               </Link>
             </div>
           </div>
@@ -355,7 +361,7 @@ export default function ShopPage() {
               >
                 <div className="mb-2 flex items-center justify-between">
                   <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                    Digital Products
+                    {t('shop.digitalProducts')}
                   </p>
                   <span className="font-mono text-[9px] text-zinc-300 dark:text-zinc-700">
                     ({digital.length})
@@ -384,7 +390,7 @@ export default function ShopPage() {
               >
                 <div className="mb-2 flex items-center justify-between">
                   <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                    Services
+                    {t('shop.services')}
                   </p>
                   <span className="font-mono text-[9px] text-zinc-300 dark:text-zinc-700">
                     ({services.length})
@@ -403,7 +409,7 @@ export default function ShopPage() {
           {!loading && total === 0 && (
             <div className="border border-dashed border-zinc-200 dark:border-zinc-800 py-16 text-center">
               <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                No items match this filter.
+                {t('shop.noItems')}
               </p>
             </div>
           )}

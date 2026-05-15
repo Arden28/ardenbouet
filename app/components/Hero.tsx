@@ -264,9 +264,8 @@ export const Hero = () => {
                 'text-zinc-500 dark:text-zinc-400',
               ].join(' ')}
             >
-              {['Realtime systems', 'Cloud architecture', 'Embedded & IoT', 'Multi-tenant SaaS'].map((s) => (
+              {[t('hero.specialism0'), t('hero.specialism1'), t('hero.specialism2'), t('hero.specialism3')].map((s) => (
                 <li key={s} className="flex items-center gap-1.5">
-                  {/* Lime dash accent — replaces pill badges */}
                   <span className="text-[#2467AC] leading-none">—</span>
                   {s}
                 </li>
@@ -325,9 +324,9 @@ export const Hero = () => {
               'border-l border-zinc-200 dark:border-zinc-800 pl-8',
             ].join(' ')}
           >
-            <Stat number="12+" label="Shipped Projects" />
-            <Stat number="5+"  label="Years Active" />
-            <Stat number="3"   label="Continents Served" />
+            <Stat number="12+" label={t('hero.stats.projects')} />
+            <Stat number="5+"  label={t('hero.stats.years')} />
+            <Stat number="3"   label={t('hero.stats.continents')} />
 
             {/* Index label — decorative type element */}
             <p className="mt-auto text-[9px] uppercase tracking-[0.2em] font-mono text-zinc-300 dark:text-zinc-700">
@@ -351,7 +350,7 @@ export const Hero = () => {
               {t('hero.stack', { defaultValue: 'Tech I enjoy' })}
             </span>
             <span className="text-[10px] uppercase tracking-[0.15em] font-mono text-zinc-300 dark:text-zinc-700">
-              Hover to pause
+              {t('hero.hoverToPause')}
             </span>
           </motion.div>
 
