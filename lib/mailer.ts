@@ -8,6 +8,9 @@ const MAILGUN_FROM   = process.env.MAILGUN_FROM
 const MAILGUN_BASE   = process.env.MAILGUN_BASE_URL ?? 'https://api.mailgun.net';
 
 export async function sendPurchaseEmail(props: PurchaseEmailProps): Promise<void> {
+  console.log('[mailer] sendPurchaseEmail called for:', props.customerEmail);
+  console.log('[mailer] MAILGUN_KEY set:', !!MAILGUN_KEY, '| MAILGUN_DOMAIN:', MAILGUN_DOMAIN || '(empty)');
+
   if (!MAILGUN_KEY || !MAILGUN_DOMAIN) {
     console.warn('[mailer] MAILGUN_KEY or MAILGUN_DOMAIN not set — email skipped.');
     return;
@@ -26,8 +29,10 @@ export async function sendPurchaseEmail(props: PurchaseEmailProps): Promise<void
   });
 
   const creds = Buffer.from(`api:${MAILGUN_KEY}`).toString('base64');
+  const url   = `${MAILGUN_BASE}/v3/${MAILGUN_DOMAIN}/messages`;
+  console.log('[mailer] POSTing to:', url, '| from:', MAILGUN_FROM, '| to:', props.customerEmail);
 
-  const res = await fetch(`${MAILGUN_BASE}/v3/${MAILGUN_DOMAIN}/messages`, {
+  const res = await fetch(url, {
     method:  'POST',
     headers: {
       Authorization:  `Basic ${creds}`,
@@ -36,8 +41,10 @@ export async function sendPurchaseEmail(props: PurchaseEmailProps): Promise<void
     body: form.toString(),
   });
 
+  const body = await res.text();
+  console.log('[mailer] Mailgun response:', res.status, body);
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`[mailer] Mailgun ${res.status}: ${text}`);
+    throw new Error(`[mailer] Mailgun ${res.status}: ${body}`);
   }
 }
