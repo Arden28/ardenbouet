@@ -147,8 +147,8 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
 
         {/* ── Logline — always visible ─────────────────────────────────── */}
         {s.logline && (
-          <p className="mb-4 max-w-2xl pl-14 text-sm font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400">
-            "{s.logline}"
+          <p className="mb-4 max-w-3xl pl-14 text-sm font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400">
+            {s.logline}
           </p>
         )}
 
