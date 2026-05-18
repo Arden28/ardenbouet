@@ -141,7 +141,7 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
         </button>
 
         {/* ── Period (mobile only) ────────────────────────────────────── */}
-        <p className="pl-14 -mt-4 pb-3 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 sm:hidden">
+        <p className="pl-14 -mt-4 pb-3 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           {s.period}
         </p>
 
