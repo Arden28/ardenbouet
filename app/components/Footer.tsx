@@ -181,7 +181,7 @@ export const Footer = () => {
               ].join(' ')}
               aria-label="Arden Bouet"
             >
-              Arden<br />Bouetoumoussa
+              Arden<br />Bouet
             </p>
 
             {/* Role + location */}
