@@ -145,6 +145,13 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
           {s.period}
         </p>
 
+        {/* ── Logline — always visible ─────────────────────────────────── */}
+        {s.logline && (
+          <p className="mb-4 max-w-2xl pl-14 text-sm font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400">
+            "{s.logline}"
+          </p>
+        )}
+
         {/* ── Collapsible body ─────────────────────────────────────────── */}
         <AnimatePresence initial={false}>
           {open && (
@@ -157,13 +164,6 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
               className="overflow-hidden"
             >
               <div className="pb-8">
-                {/* Logline */}
-                {s.logline && (
-                  <p className="mt-0 max-w-2xl pl-14 text-sm font-medium italic leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    "{s.logline}"
-                  </p>
-                )}
-
                 {/* Bullets */}
                 {s.bullets.length > 0 && (
                   <ul className="mt-4 space-y-1.5 pl-14">
