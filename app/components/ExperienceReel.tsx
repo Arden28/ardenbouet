@@ -116,10 +116,10 @@ function SceneEntry({ s, index }: { s: Scene; index: number }) {
           {/* Company + role */}
           <div className="flex-1 min-w-0">
             <h3 className="font-heading text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
-              {s.company}
+              {s.role}
             </h3>
             <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              {[s.role, s.type, s.location].filter(Boolean).join(' · ')}
+              {[s.company, s.type, s.location].filter(Boolean).join(' · ')}
             </p>
           </div>
 
