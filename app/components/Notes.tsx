@@ -384,7 +384,7 @@ export default function Notes() {
                       {/* Hover left-edge lime accent */}
                       <span
                         aria-hidden
-                        className="absolute left-0 top-0 h-0 w-[2px] bg-[#CBFF4D] transition-[height] duration-300 group-hover:h-full"
+                        className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full"
                       />
                     </article>
                   </motion.li>

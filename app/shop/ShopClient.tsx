@@ -60,7 +60,7 @@ function getHighlights(item: ShopItem): string[] {
 // PURCHASE DRAWER
 // Right-side slide-in panel — identical motion pattern to QuickPeek.
 // bg-[#F5F4F0] warm paper to contrast the page.
-// Price shown in lime (#CBFF4D) — the only accent usage on this panel.
+// Price shown in lime (#2467AC) — the only accent usage on this panel.
 // ────────────────────────────────────────────────────────────────────────────
 export function PurchaseDrawer({
   item,
@@ -181,7 +181,7 @@ export function PurchaseDrawer({
               <ul className="space-y-2">
                 {highlights.map((h, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-zinc-700">
-                    <span className="mt-0.5 shrink-0 text-[#CBFF4D] leading-none" aria-hidden>—</span>
+                    <span className="mt-0.5 shrink-0 text-[#2467AC] leading-none" aria-hidden>—</span>
                     {h}
                   </li>
                 ))}

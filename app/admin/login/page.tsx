@@ -123,7 +123,7 @@ function BrandPanel() {
       {/* Bottom: EAT clock */}
       <div className="flex items-center gap-2">
         {/* Lime availability dot — same as Hero and Footer */}
-        <span className="h-1.5 w-1.5 rounded-full bg-[#CBFF4D]" />
+        <span className="h-1.5 w-1.5 rounded-full bg-[#2467AC]" />
         <EATClock />
         <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-700">
           EAT
@@ -152,7 +152,7 @@ function ModeTab({
         'font-mono text-[10px] uppercase tracking-widest',
         'pb-1.5 border-b-2 transition-colors duration-150 focus-visible:outline-none',
         active
-          ? 'border-[#CBFF4D] text-zinc-900 dark:text-zinc-50'
+          ? 'border-[#2467AC] text-zinc-900 dark:text-zinc-50'
           : 'border-transparent text-zinc-400 dark:text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300',
       ].join(' ')}
     >
@@ -341,7 +341,7 @@ function LoginForm() {
         className="space-y-4"
       >
         <div className="flex items-center gap-2 mb-5">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#CBFF4D]" aria-hidden />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#2467AC]" aria-hidden />
           <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
             Link sent
           </p>
