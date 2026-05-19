@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Download } from 'lucide-react';
 
 import type { ContentBundle, Order } from './types';
+import { scanBundleUrls } from '@/lib/scanBundleUrls';
 import ProjectsEditor   from './components/ProjectsEditor';
 import ExperienceEditor from './components/ExperienceEditor';
 import JourneyEditor    from './components/JourneyEditor';
@@ -241,6 +242,8 @@ export default function AdminPage() {
   };
 
   // ── Counts ────────────────────────────────────────────────────────────────
+  const usedUrls = useMemo(() => bundle ? scanBundleUrls(bundle) : new Set<string>(), [bundle]);
+
   const counts = useMemo(() => ({
     projects:   bundle?.projects.length    ?? 0,
     experience: bundle?.experiences.length ?? 0,
@@ -457,7 +460,7 @@ export default function AdminPage() {
                   onChange={v => setBundle(b => ({ ...b!, notes: v }))}
                 />
               )}
-              {tab === 'media'      && <MediaLibrary />}
+              {tab === 'media'      && <MediaLibrary usedUrls={usedUrls} />}
               {tab === 'settings'   && (
                 <SettingsEditor
                   value={bundle.settings ?? {}}

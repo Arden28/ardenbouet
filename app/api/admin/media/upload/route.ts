@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'R2 not configured' }, { status: 503 });
   }
 
-  const { filename, contentType } = await req.json();
+  const { filename, contentType, folder } = await req.json();
 
   if (!filename || typeof filename !== 'string' || filename.includes('..')) {
     return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
@@ -35,7 +35,10 @@ export async function POST(req: NextRequest) {
   if (!contentType || typeof contentType !== 'string') {
     return NextResponse.json({ error: 'Invalid contentType' }, { status: 400 });
   }
+  const folderPrefix = folder && typeof folder === 'string' && !folder.includes('..')
+    ? `${folder}/`
+    : '';
 
-  const result = await createUploadPresignedUrl(filename, contentType, cfg);
+  const result = await createUploadPresignedUrl(filename, contentType, cfg, folderPrefix);
   return NextResponse.json(result);
 }

@@ -3,6 +3,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
   PutObjectCommand,
+  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -94,13 +95,24 @@ export async function deleteMediaFile(key: string, cfg: R2Config): Promise<void>
   await makeClient(cfg).send(new DeleteObjectCommand({ Bucket: cfg.bucketName, Key: key }));
 }
 
+export async function renameMediaFile(oldKey: string, newKey: string, cfg: R2Config): Promise<void> {
+  const client = makeClient(cfg);
+  await client.send(new CopyObjectCommand({
+    Bucket:     cfg.bucketName,
+    CopySource: `${cfg.bucketName}/${oldKey}`,
+    Key:        newKey,
+  }));
+  await client.send(new DeleteObjectCommand({ Bucket: cfg.bucketName, Key: oldKey }));
+}
+
 export async function createUploadPresignedUrl(
   filename: string,
   contentType: string,
   cfg: R2Config,
+  folderPrefix = '',
 ): Promise<{ signedUrl: string; publicUrl: string; key: string }> {
   const safe = sanitizeFilename(filename);
-  const key  = `media/${Date.now()}-${safe}`;
+  const key  = `media/${folderPrefix}${Date.now()}-${safe}`;
   const client = makeClient(cfg);
 
   const cmd = new PutObjectCommand({
