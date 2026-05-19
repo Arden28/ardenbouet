@@ -16,6 +16,11 @@ export type MediaFile = {
   contentType:  string;
 };
 
+export type MediaFolder = {
+  prefix: string; // full R2 prefix, e.g. 'media/images/'
+  name:   string; // display name, e.g. 'images'
+};
+
 export type R2Config = {
   accountId:       string;
   accessKeyId:     string;
@@ -36,6 +41,12 @@ const EXT_MAP: Record<string, string> = {
   webm: 'video/webm',
   mov:  'video/quicktime',
   pdf:  'application/pdf',
+  zip:  'application/zip',
+  doc:  'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls:  'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  txt:  'text/plain',
 };
 
 function inferContentType(key: string): string {
@@ -74,12 +85,24 @@ export function isR2Configured(): boolean {
   return getEnvR2Config() !== null;
 }
 
-export async function listMediaFiles(cfg: R2Config): Promise<MediaFile[]> {
+/**
+ * Lists files and virtual subfolders at a given prefix level.
+ * Uses Delimiter '/' so it behaves like a directory listing.
+ */
+export async function listFolderContents(
+  prefix: string,
+  cfg: R2Config,
+): Promise<{ files: MediaFile[]; folders: MediaFolder[] }> {
   const client = makeClient(cfg);
-  const res = await client.send(
-    new ListObjectsV2Command({ Bucket: cfg.bucketName, MaxKeys: 1000 }),
-  );
-  return (res.Contents ?? [])
+  const res = await client.send(new ListObjectsV2Command({
+    Bucket:    cfg.bucketName,
+    Prefix:    prefix,
+    Delimiter: '/',
+    MaxKeys:   1000,
+  }));
+
+  const files: MediaFile[] = (res.Contents ?? [])
+    .filter(obj => !obj.Key!.endsWith('.keep'))
     .map(obj => ({
       key:          obj.Key!,
       url:          `${cfg.publicUrl}/${obj.Key}`,
@@ -89,6 +112,25 @@ export async function listMediaFiles(cfg: R2Config): Promise<MediaFile[]> {
       contentType:  inferContentType(obj.Key!),
     }))
     .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+
+  const folders: MediaFolder[] = (res.CommonPrefixes ?? [])
+    .filter(p => p.Prefix)
+    .map(p => ({
+      prefix: p.Prefix!,
+      name:   p.Prefix!.slice(prefix.length).replace(/\/$/, ''),
+    }));
+
+  return { files, folders };
+}
+
+/** Creates an empty .keep sentinel object so the folder appears in listings. */
+export async function createVirtualFolder(prefix: string, cfg: R2Config): Promise<void> {
+  await makeClient(cfg).send(new PutObjectCommand({
+    Bucket:      cfg.bucketName,
+    Key:         `${prefix}.keep`,
+    Body:        Buffer.from(''),
+    ContentType: 'application/octet-stream',
+  }));
 }
 
 export async function deleteMediaFile(key: string, cfg: R2Config): Promise<void> {
