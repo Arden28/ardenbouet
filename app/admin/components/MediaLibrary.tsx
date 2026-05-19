@@ -8,7 +8,7 @@ import {
   Check, Copy, ImageIcon, FileVideo, Trash2, Upload,
   AlertCircle, Loader2, ChevronLeft, ChevronRight, X,
   ArrowUpDown, Link2, CheckSquare, Square, Folder, FolderPlus,
-  MoveRight,
+  MoveRight, Download, ExternalLink, Pencil, Code2, Eye,
 } from 'lucide-react';
 import type { MediaFile, MediaFolder } from '@/lib/r2';
 
@@ -23,7 +23,20 @@ interface UploadEntry {
   error?:   string;
 }
 
-const EXPO = [0.16, 1, 0.3, 1] as const;
+type CtxItem =
+  | { kind: 'action'; label: string; icon: React.ReactNode; onClick: () => void; danger?: boolean }
+  | { kind: 'separator' }
+  | { kind: 'label'; text: string };
+
+type CtxMenuState = {
+  x:      number;
+  y:      number;
+  target: { type: 'file'; file: MediaFile } | { type: 'folder'; folder: MediaFolder };
+} | null;
+
+const EXPO          = [0.16, 1, 0.3, 1] as const;
+// Custom drag-data type so DropZone can distinguish card drags from OS file drops
+const DT_MEDIA_KEY  = 'application/x-media-key';
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 function formatBytes(b: number) {
@@ -61,12 +74,10 @@ function sortFiles(files: MediaFile[], by: SortBy): MediaFile[] {
   return arr;
 }
 
-/** Strips 'media/' prefix and splits into breadcrumb segments */
 function parseBreadcrumb(prefix: string): string[] {
   return prefix.replace(/^media\//, '').split('/').filter(Boolean);
 }
 
-/** Builds a prefix string from breadcrumb segments */
 function buildPrefix(segments: string[]): string {
   return 'media/' + (segments.length ? segments.join('/') + '/' : '');
 }
@@ -97,45 +108,145 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
+function triggerDownload(url: string, filename: string) {
+  fetch(url)
+    .then(r => r.blob())
+    .then(blob => {
+      const a = document.createElement('a');
+      a.href  = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(() => window.open(url, '_blank'));
+}
+
+// ─── Context Menu ─────────────────────────────────────────────────────────────
+function ContextMenu({ x, y, items, onClose }: {
+  x: number; y: number; items: CtxItem[]; onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x, y });
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const { width, height } = ref.current.getBoundingClientRect();
+    setPos({
+      x: Math.max(4, Math.min(x, window.innerWidth  - width  - 4)),
+      y: Math.max(4, Math.min(y, window.innerHeight - height - 4)),
+    });
+  }, [x, y]);
+
+  useEffect(() => {
+    const onMouse  = (e: MouseEvent)    => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const onKey    = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onScroll = ()                 => onClose();
+    document.addEventListener('mousedown', onMouse);
+    document.addEventListener('keydown',   onKey);
+    window.addEventListener('scroll',      onScroll, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onMouse);
+      document.removeEventListener('keydown',   onKey);
+      window.removeEventListener('scroll',      onScroll, { capture: true });
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999 }}
+      className="min-w-[192px] border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-xl py-1"
+      onContextMenu={e => e.preventDefault()}
+    >
+      {items.map((item, i) => {
+        if (item.kind === 'separator') return <div key={i} className="my-1 border-t border-zinc-100 dark:border-zinc-800" />;
+        if (item.kind === 'label')     return <p key={i} className="px-3 pt-1.5 pb-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">{item.text}</p>;
+        return (
+          <button key={i} type="button" onClick={() => { item.onClick(); onClose(); }}
+            className={[
+              'flex w-full items-center gap-2.5 px-3 py-1.5 font-mono text-[10px] text-left transition-colors',
+              item.danger
+                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800',
+            ].join(' ')}>
+            <span className="h-3 w-3 shrink-0 flex items-center">{item.icon}</span>
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
 function Breadcrumb({
-  prefix, onNavigate, onNewFolder,
+  prefix, isDragging, dragOverPrefix, onNavigate, onNewFolder, onDragOverPrefix, onDropOnPrefix,
 }: {
-  prefix:      string;
-  onNavigate:  (prefix: string) => void;
-  onNewFolder: () => void;
+  prefix:          string;
+  isDragging:      boolean;
+  dragOverPrefix:  string | null;
+  onNavigate:      (prefix: string) => void;
+  onNewFolder:     () => void;
+  onDragOverPrefix:(prefix: string | null) => void;
+  onDropOnPrefix:  (prefix: string) => void;
 }) {
   const segments = parseBreadcrumb(prefix);
+
+  // Each ancestor segment (root + all but last) is a drop target when dragging
+  const ancestorPrefixes: Array<{ label: string; prefix: string }> = [
+    { label: 'Media', prefix: 'media/' },
+    ...segments.slice(0, -1).map((seg, i) => ({
+      label: seg,
+      prefix: buildPrefix(segments.slice(0, i + 1)),
+    })),
+  ];
+
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-1 font-mono text-[10px] flex-wrap">
-        <button type="button" onClick={() => onNavigate('media/')}
-          className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          Media
-        </button>
+
+        {/* Root "Media" segment */}
+        <DropSegment
+          label="Media"
+          targetPrefix="media/"
+          isDragging={isDragging}
+          isOver={dragOverPrefix === 'media/'}
+          isAncestor={prefix !== 'media/'}
+          onClick={() => onNavigate('media/')}
+          onDragOver={() => onDragOverPrefix('media/')}
+          onDragLeave={() => onDragOverPrefix(null)}
+          onDrop={() => onDropOnPrefix('media/')}
+        />
+
         {segments.map((seg, i) => {
-          const isLast = i === segments.length - 1;
+          const isLast     = i === segments.length - 1;
+          const segPrefix  = buildPrefix(segments.slice(0, i + 1));
+          const isAncestor = !isLast;
           return (
             <span key={i} className="flex items-center gap-1">
               <span className="text-zinc-300 dark:text-zinc-700">/</span>
               {isLast ? (
                 <span className="font-bold text-zinc-900 dark:text-zinc-50">{seg}</span>
               ) : (
-                <button type="button"
-                  onClick={() => onNavigate(buildPrefix(segments.slice(0, i + 1)))}
-                  className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                  {seg}
-                </button>
+                <DropSegment
+                  label={seg}
+                  targetPrefix={segPrefix}
+                  isDragging={isDragging}
+                  isOver={dragOverPrefix === segPrefix}
+                  isAncestor={isAncestor}
+                  onClick={() => onNavigate(segPrefix)}
+                  onDragOver={() => onDragOverPrefix(segPrefix)}
+                  onDragLeave={() => onDragOverPrefix(null)}
+                  onDrop={() => onDropOnPrefix(segPrefix)}
+                />
               )}
             </span>
           );
         })}
       </div>
-      <button
-        type="button"
-        onClick={onNewFolder}
-        className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest text-zinc-400 hover:border-zinc-900 dark:hover:border-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-      >
+
+      <button type="button" onClick={onNewFolder}
+        className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest text-zinc-400 hover:border-zinc-900 dark:hover:border-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
         <FolderPlus className="h-3 w-3" />
         New Folder
       </button>
@@ -143,50 +254,168 @@ function Breadcrumb({
   );
 }
 
-// ─── Folder Card ──────────────────────────────────────────────────────────────
-function FolderCard({ folder, onClick }: { folder: MediaFolder; onClick: () => void }) {
+function DropSegment({
+  label, targetPrefix, isDragging, isOver, isAncestor, onClick,
+  onDragOver, onDragLeave, onDrop,
+}: {
+  label:        string;
+  targetPrefix: string;
+  isDragging:   boolean;
+  isOver:       boolean;
+  isAncestor:   boolean;
+  onClick:      () => void;
+  onDragOver:   () => void;
+  onDragLeave:  () => void;
+  onDrop:       () => void;
+}) {
+  const dragCounter = useRef(0);
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col border border-zinc-200 dark:border-zinc-800 hover:border-[#2467AC] transition-colors duration-150 text-left"
+      onDragEnter={e => {
+        if (!e.dataTransfer.types.includes(DT_MEDIA_KEY)) return;
+        e.preventDefault();
+        dragCounter.current++;
+        onDragOver();
+      }}
+      onDragOver={e => {
+        if (!e.dataTransfer.types.includes(DT_MEDIA_KEY)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
+      onDragLeave={() => {
+        dragCounter.current--;
+        if (dragCounter.current <= 0) { dragCounter.current = 0; onDragLeave(); }
+      }}
+      onDrop={e => {
+        e.preventDefault();
+        dragCounter.current = 0;
+        onDragLeave();
+        onDrop();
+      }}
+      className={[
+        'rounded px-1.5 py-0.5 transition-all duration-150',
+        isDragging && isAncestor
+          ? isOver
+            ? 'bg-[#2467AC] text-white scale-105'
+            : 'text-zinc-400 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100'
+          : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100',
+      ].join(' ')}
     >
-      <div className="aspect-video flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-950/20 transition-colors">
-        <Folder className="h-10 w-10 text-zinc-300 dark:text-zinc-700 group-hover:text-[#2467AC] transition-colors" />
+      {label}
+    </button>
+  );
+}
+
+// ─── Folder Card ──────────────────────────────────────────────────────────────
+function FolderCard({
+  folder, isDropTarget, onContextMenu,
+  onClick, onDragEnter, onDragLeave, onDrop,
+}: {
+  folder:        MediaFolder;
+  isDropTarget:  boolean;
+  onClick:       () => void;
+  onContextMenu: (e: React.MouseEvent, folder: MediaFolder) => void;
+  onDragEnter:   () => void;
+  onDragLeave:   () => void;
+  onDrop:        () => void;
+}) {
+  const dragCounter = useRef(0);
+  const [flash, setFlash] = useState<'none' | 'success'>('none');
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(DT_MEDIA_KEY)) return;
+    e.preventDefault();
+    dragCounter.current = 0;
+    onDragLeave();
+    onDrop();
+    setFlash('success');
+    setTimeout(() => setFlash('none'), 700);
+  };
+
+  return (
+    <motion.button
+      type="button"
+      layout
+      onClick={onClick}
+      onContextMenu={e => { e.preventDefault(); onContextMenu(e, folder); }}
+      onDragEnter={e => {
+        if (!e.dataTransfer.types.includes(DT_MEDIA_KEY)) return;
+        e.preventDefault();
+        dragCounter.current++;
+        onDragEnter();
+      }}
+      onDragOver={e => {
+        if (!e.dataTransfer.types.includes(DT_MEDIA_KEY)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
+      onDragLeave={() => {
+        dragCounter.current--;
+        if (dragCounter.current <= 0) { dragCounter.current = 0; onDragLeave(); }
+      }}
+      onDrop={handleDrop}
+      animate={
+        flash === 'success'
+          ? { borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)' }
+          : isDropTarget
+          ? { borderColor: '#2467AC', backgroundColor: 'rgba(36,103,172,0.06)', scale: 1.04 }
+          : { borderColor: 'transparent', scale: 1 }
+      }
+      transition={{ duration: 0.15 }}
+      className={[
+        'group flex flex-col border transition-colors duration-150 text-left',
+        flash === 'success'
+          ? 'border-emerald-400'
+          : isDropTarget
+          ? 'border-[#2467AC]'
+          : 'border-zinc-200 dark:border-zinc-800 hover:border-[#2467AC]',
+      ].join(' ')}
+    >
+      <div className={[
+        'aspect-video flex items-center justify-center transition-colors',
+        flash === 'success'
+          ? 'bg-emerald-50 dark:bg-emerald-950/20'
+          : isDropTarget
+          ? 'bg-blue-50/70 dark:bg-blue-950/30'
+          : 'bg-zinc-50 dark:bg-zinc-900 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-950/20',
+      ].join(' ')}>
+        <Folder className={[
+          'h-10 w-10 transition-colors',
+          flash === 'success'
+            ? 'text-emerald-500'
+            : isDropTarget
+            ? 'text-[#2467AC] scale-110'
+            : 'text-zinc-300 dark:text-zinc-700 group-hover:text-[#2467AC]',
+        ].join(' ')} />
       </div>
       <div className="p-2">
         <p className="truncate font-mono text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{folder.name}</p>
-        <p className="font-mono text-[9px] text-zinc-400 dark:text-zinc-600">Folder</p>
+        <p className={[
+          'font-mono text-[9px] transition-colors',
+          isDropTarget ? 'text-[#2467AC]' : 'text-zinc-400 dark:text-zinc-600',
+        ].join(' ')}>
+          {isDropTarget ? 'Drop to move here' : 'Folder'}
+        </p>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
 // ─── File Type Thumbnail ──────────────────────────────────────────────────────
 function FileTypeThumb({ file, videoRef }: { file: MediaFile; videoRef?: React.RefObject<HTMLVideoElement> }) {
   const kind = getKind(file.contentType);
-
-  if (kind === 'image') {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={file.url} alt={file.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-    );
-  }
-
-  if (kind === 'video') {
-    return (
-      // eslint-disable-next-line jsx-a11y/media-has-caption
-      <video
-        ref={videoRef}
-        src={file.url}
-        muted loop playsInline
-        className="h-full w-full object-cover"
-        onMouseEnter={() => videoRef?.current?.play()}
-        onMouseLeave={() => { if (videoRef?.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; } }}
-      />
-    );
-  }
-
+  if (kind === 'image') return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={file.url} alt={file.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+  );
+  if (kind === 'video') return (
+    // eslint-disable-next-line jsx-a11y/media-has-caption
+    <video ref={videoRef} src={file.url} muted loop playsInline className="h-full w-full object-cover"
+      onMouseEnter={() => videoRef?.current?.play()}
+      onMouseLeave={() => { if (videoRef?.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; } }} />
+  );
   const { bg, label } = fileTypeBadge(file.contentType, file.name);
   return (
     <div className={`flex h-full w-full flex-col items-center justify-center gap-1.5 ${bg}`}>
@@ -208,7 +437,6 @@ function MovePopover({
     { prefix: 'media/', name: 'Root' },
     ...allFolders.filter(f => f.prefix !== currentPrefix),
   ];
-
   return (
     <div className="absolute bottom-full left-0 z-20 mb-1 min-w-[140px] border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg">
       <p className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-zinc-800">Move to</p>
@@ -219,38 +447,49 @@ function MovePopover({
           {t.name}
         </button>
       ))}
-      {targets.length === 0 && (
-        <p className="px-3 py-2 font-mono text-[10px] text-zinc-400">No other folders</p>
-      )}
+      {targets.length === 0 && <p className="px-3 py-2 font-mono text-[10px] text-zinc-400">No other folders</p>}
     </div>
   );
 }
 
 // ─── File Card ────────────────────────────────────────────────────────────────
 function FileCard({
-  file, pickerMode, isUsed, isSelected, currentPrefix, allFolders,
-  onSelect, onCopy, onDelete, onPreview, onToggleSelect, onRename, onMove,
+  file, pickerMode, isUsed, isSelected, isDragging, currentPrefix, allFolders,
+  forceRenaming, onRenameForced,
+  onSelect, onCopy, onDelete, onPreview, onToggleSelect, onRename, onMove, onContextMenu,
+  onDragStart, onDragEnd,
 }: {
-  file:          MediaFile;
-  pickerMode:    boolean;
-  isUsed:        boolean;
-  isSelected:    boolean;
-  currentPrefix: string;
-  allFolders:    MediaFolder[];
-  onSelect:      (url: string) => void;
-  onCopy:        (url: string) => void;
-  onDelete:      (key: string) => void;
-  onPreview:     (file: MediaFile) => void;
-  onToggleSelect:(key: string) => void;
-  onRename:      (key: string, newName: string) => void;
-  onMove:        (key: string, targetPrefix: string) => void;
+  file:           MediaFile;
+  pickerMode:     boolean;
+  isUsed:         boolean;
+  isSelected:     boolean;
+  isDragging:     boolean;
+  currentPrefix:  string;
+  allFolders:     MediaFolder[];
+  forceRenaming:  boolean;
+  onRenameForced: () => void;
+  onSelect:       (url: string) => void;
+  onCopy:         (url: string) => void;
+  onDelete:       (key: string) => void;
+  onPreview:      (file: MediaFile) => void;
+  onToggleSelect: (key: string) => void;
+  onRename:       (key: string, newName: string) => void;
+  onMove:         (key: string, targetPrefix: string) => void;
+  onContextMenu:  (e: React.MouseEvent, file: MediaFile) => void;
+  onDragStart:    (file: MediaFile) => void;
+  onDragEnd:      () => void;
 }) {
-  const [copied,    setCopied]    = useState(false);
-  const [renaming,  setRenaming]  = useState(false);
-  const [nameVal,   setNameVal]   = useState(file.name);
-  const [showMove,  setShowMove]  = useState(false);
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const inputRef   = useRef<HTMLInputElement>(null);
+  const [copied,   setCopied]   = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [nameVal,  setNameVal]  = useState(file.name);
+  const [showMove, setShowMove] = useState(false);
+  const videoRef  = useRef<HTMLVideoElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (forceRenaming && !renaming) setRenaming(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceRenaming]);
 
   const handleCopy = async () => {
     await onCopy(file.url);
@@ -260,6 +499,7 @@ function FileCard({
 
   const commitRename = () => {
     setRenaming(false);
+    onRenameForced();
     if (nameVal.trim() && nameVal !== file.name) onRename(file.key, nameVal.trim());
     else setNameVal(file.name);
   };
@@ -267,12 +507,25 @@ function FileCard({
   useEffect(() => { if (renaming) inputRef.current?.select(); }, [renaming]);
 
   return (
-    <div className={[
-      'group relative flex flex-col border transition-colors duration-150',
-      isSelected
-        ? 'border-[#2467AC]'
-        : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600',
-    ].join(' ')}>
+    <div
+      draggable={!renaming}
+      onDragStart={e => {
+        e.dataTransfer.setData(DT_MEDIA_KEY, file.key);
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart(file);
+      }}
+      onDragEnd={onDragEnd}
+      onContextMenu={e => { e.preventDefault(); onContextMenu(e, file); }}
+      className={[
+        'group relative flex flex-col border transition-all duration-150',
+        isDragging
+          ? 'opacity-40 scale-95 cursor-grabbing'
+          : 'cursor-grab',
+        isSelected
+          ? 'border-[#2467AC]'
+          : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600',
+      ].join(' ')}
+    >
 
       {/* Checkbox */}
       <button type="button" onClick={() => onToggleSelect(file.key)}
@@ -289,22 +542,20 @@ function FileCard({
         </span>
       )}
 
-      {/* Thumbnail */}
-      <button type="button" onClick={() => onPreview(file)} className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+      {/* Thumbnail — drag handle doubles as preview trigger */}
+      <button type="button" onClick={() => onPreview(file)}
+        onMouseDown={e => e.stopPropagation()} // don't interfere with card drag
+        className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
         <FileTypeThumb file={file} videoRef={videoRef} />
       </button>
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1 p-2">
         {renaming ? (
-          <input
-            ref={inputRef}
-            value={nameVal}
-            onChange={e => setNameVal(e.target.value)}
+          <input ref={inputRef} value={nameVal} onChange={e => setNameVal(e.target.value)}
             onBlur={commitRename}
-            onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setRenaming(false); setNameVal(file.name); } }}
-            className="w-full bg-transparent font-mono text-[10px] text-zinc-900 dark:text-zinc-100 outline-none border-b border-[#2467AC]"
-          />
+            onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setRenaming(false); setNameVal(file.name); onRenameForced(); } }}
+            className="w-full bg-transparent font-mono text-[10px] text-zinc-900 dark:text-zinc-100 outline-none border-b border-[#2467AC]" />
         ) : (
           <p className="truncate font-mono text-[10px] text-zinc-700 dark:text-zinc-300 cursor-text"
             title="Double-click to rename"
@@ -329,25 +580,17 @@ function FileCard({
             {copied ? 'Copied' : 'Copy'}
           </button>
         )}
-        {/* Move */}
         <button type="button" onClick={() => setShowMove(s => !s)}
           className="p-1 text-zinc-300 dark:text-zinc-700 hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
           <MoveRight className="h-3 w-3" />
         </button>
-        {/* Delete */}
         <button type="button" onClick={() => onDelete(file.key)}
           className="p-1 text-zinc-300 dark:text-zinc-700 hover:text-red-500 transition-colors">
           <Trash2 className="h-3 w-3" />
         </button>
-
-        {/* Move popover */}
         {showMove && (
-          <MovePopover
-            allFolders={allFolders}
-            currentPrefix={currentPrefix}
-            onMove={prefix => onMove(file.key, prefix)}
-            onClose={() => setShowMove(false)}
-          />
+          <MovePopover allFolders={allFolders} currentPrefix={currentPrefix}
+            onMove={prefix => onMove(file.key, prefix)} onClose={() => setShowMove(false)} />
         )}
       </div>
     </div>
@@ -357,13 +600,35 @@ function FileCard({
 // ─── Drop Zone ────────────────────────────────────────────────────────────────
 function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
   const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+
+  const isCardDrag = (e: React.DragEvent) => e.dataTransfer.types.includes(DT_MEDIA_KEY);
 
   return (
     <div
-      onDragOver={e => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={e => { e.preventDefault(); setDragging(false); const f = Array.from(e.dataTransfer.files); if (f.length) onFiles(f); }}
+      onDragEnter={e => {
+        if (isCardDrag(e)) return;
+        e.preventDefault();
+        dragCounter.current++;
+        setDragging(true);
+      }}
+      onDragOver={e => {
+        if (isCardDrag(e)) return;
+        e.preventDefault();
+      }}
+      onDragLeave={() => {
+        dragCounter.current--;
+        if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); }
+      }}
+      onDrop={e => {
+        if (isCardDrag(e)) return;
+        e.preventDefault();
+        dragCounter.current = 0;
+        setDragging(false);
+        const f = Array.from(e.dataTransfer.files);
+        if (f.length) onFiles(f);
+      }}
       onClick={() => inputRef.current?.click()}
       className={[
         'flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed py-6 transition-colors duration-150',
@@ -376,7 +641,8 @@ function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
       <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">
         Drop files or click — uploads go into current folder
       </p>
-      <input ref={inputRef} type="file" multiple hidden onChange={e => { if (e.target.files?.length) { onFiles(Array.from(e.target.files)); e.target.value = ''; } }} />
+      <input ref={inputRef} type="file" multiple hidden
+        onChange={e => { if (e.target.files?.length) { onFiles(Array.from(e.target.files)); e.target.value = ''; } }} />
     </div>
   );
 }
@@ -385,14 +651,13 @@ function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
 function PreviewModal({
   file, files, onClose, onSelect,
 }: {
-  file:     MediaFile;
-  files:    MediaFile[];
-  onClose:  () => void;
+  file:      MediaFile;
+  files:     MediaFile[];
+  onClose:   () => void;
   onSelect?: (url: string) => void;
 }) {
   const [current, setCurrent] = useState(file);
   const [copied,  setCopied]  = useState(false);
-
   useEffect(() => setCurrent(file), [file]);
 
   const curIdx  = files.findIndex(f => f.key === current.key);
@@ -425,18 +690,21 @@ function PreviewModal({
         className="fixed inset-0 z-[71] flex items-center justify-center p-4 sm:p-8" style={{ pointerEvents: 'none' }}>
         <div className="flex w-full max-w-4xl flex-col bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 overflow-hidden max-h-[90vh]"
           style={{ pointerEvents: 'auto' }} onClick={e => e.stopPropagation()}>
-          {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 gap-3">
             <p className="font-mono text-xs text-zinc-900 dark:text-zinc-100 truncate flex-1">{current.name}</p>
             <div className="flex items-center gap-2 shrink-0">
               <span className="font-mono text-[10px] text-zinc-400">{formatBytes(current.size)}</span>
               <span className="font-mono text-[10px] text-zinc-400">{current.contentType}</span>
-              <button type="button" onClick={onClose} className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+              <button type="button" onClick={() => triggerDownload(current.url, current.name)}
+                className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors" title="Download">
+                <Download className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={onClose}
+                className="p-1 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
-          {/* Media */}
           <div className="relative flex-1 min-h-0 bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center overflow-hidden">
             {kind === 'image' && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -472,7 +740,6 @@ function PreviewModal({
               </button>
             )}
           </div>
-          {/* Footer */}
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-zinc-200 dark:border-zinc-800 px-4 py-3">
             <p className="font-mono text-[10px] text-zinc-400 truncate flex-1">{current.url}</p>
             <div className="flex items-center gap-2 shrink-0">
@@ -518,6 +785,14 @@ export default function MediaLibrary({
   const [currentPrefix, setCurrentPrefix] = useState('media/');
   const [importUrl,     setImportUrl]     = useState('');
   const [importing,     setImporting]     = useState(false);
+  const [renamingKey,   setRenamingKey]   = useState<string | null>(null);
+  const [ctxMenu,       setCtxMenu]       = useState<CtxMenuState>(null);
+
+  // ── Drag state ────────────────────────────────────────────────────────────
+  const [draggingFile,  setDraggingFile]  = useState<MediaFile | null>(null);
+  const [dragOverPrefix,setDragOverPrefix]= useState<string | null>(null);
+
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), []);
 
   // ── Load current folder ───────────────────────────────────────────────────
   useEffect(() => {
@@ -568,7 +843,6 @@ export default function MediaLibrary({
     const id = Math.random().toString(36).slice(2);
     const folder = prefix.replace(/^media\//, '').replace(/\/$/, '');
     setUploads(u => [...u, { id, filename: compressed.name, progress: 0 }]);
-
     try {
       const res = await fetch('/api/admin/media/upload', {
         method: 'POST',
@@ -577,7 +851,6 @@ export default function MediaLibrary({
       });
       if (!res.ok) throw new Error('Presign failed');
       const { signedUrl, publicUrl, key } = await res.json();
-
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', signedUrl);
@@ -590,7 +863,6 @@ export default function MediaLibrary({
         xhr.onerror = () => reject(new Error('Network error'));
         xhr.send(compressed);
       });
-
       const newFile: MediaFile = {
         key, url: publicUrl, name: compressed.name,
         size: compressed.size, lastModified: new Date(), contentType: compressed.type,
@@ -612,17 +884,17 @@ export default function MediaLibrary({
   }, [uploadFile, currentPrefix]);
 
   // ── New folder ────────────────────────────────────────────────────────────
-  const createFolder = async () => {
+  const createFolder = async (parentPrefix = currentPrefix) => {
     const raw = window.prompt('Folder name:')?.trim().replace(/[^a-zA-Z0-9_-]/g, '');
     if (!raw) return;
-    const prefix = currentPrefix + raw + '/';
+    const prefix = parentPrefix + raw + '/';
     await fetch('/api/admin/media', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action: 'createFolder', prefix }),
     });
-    setFolders(f => [...f, { prefix, name: raw }]);
-    if (currentPrefix === 'media/') setAllTopFolders(f => [...f, { prefix, name: raw }]);
+    if (parentPrefix === currentPrefix) setFolders(f => [...f, { prefix, name: raw }]);
+    if (parentPrefix === 'media/') setAllTopFolders(f => [...f, { prefix, name: raw }]);
   };
 
   // ── Delete ────────────────────────────────────────────────────────────────
@@ -647,6 +919,21 @@ export default function MediaLibrary({
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ key }),
     })));
+  };
+
+  const deleteFolder = async (folder: MediaFolder) => {
+    if (!confirm(`Delete folder "${folder.name}" and all its contents?`)) return;
+    const res = await fetch(`/api/admin/media?prefix=${encodeURIComponent(folder.prefix)}`);
+    const data = res.ok ? await res.json() : { files: [] };
+    const keys: string[] = [
+      ...((data.files as MediaFile[]) ?? []).map((f: MediaFile) => f.key),
+      `${folder.prefix}.keep`,
+    ];
+    await Promise.all(keys.map(key =>
+      fetch('/api/admin/media', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key }) })
+    ));
+    setFolders(f => f.filter(x => x.prefix !== folder.prefix));
+    setAllTopFolders(f => f.filter(x => x.prefix !== folder.prefix));
   };
 
   // ── Rename ────────────────────────────────────────────────────────────────
@@ -674,6 +961,25 @@ export default function MediaLibrary({
     setFiles(f => f.filter(x => x.key !== oldKey));
   };
 
+  // ── Drag handlers ─────────────────────────────────────────────────────────
+  const handleDragStart = useCallback((file: MediaFile) => {
+    setDraggingFile(file);
+    setCtxMenu(null); // close any open context menu
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingFile(null);
+    setDragOverPrefix(null);
+  }, []);
+
+  const handleDrop = useCallback((targetPrefix: string) => {
+    if (!draggingFile) return;
+    moveFile(draggingFile.key, targetPrefix);
+    setDraggingFile(null);
+    setDragOverPrefix(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draggingFile]);
+
   // ── URL Import ────────────────────────────────────────────────────────────
   const importFromUrl = async () => {
     if (!importUrl.trim()) return;
@@ -691,6 +997,60 @@ export default function MediaLibrary({
       setImportUrl('');
     } finally { setImporting(false); }
   };
+
+  // ── Context menu builders ─────────────────────────────────────────────────
+  const buildFileCtxItems = useCallback((file: MediaFile): CtxItem[] => {
+    const kind      = getKind(file.contentType);
+    const mdContent = kind === 'image'
+      ? `![${file.name}](${file.url})`
+      : `[${file.name}](${file.url})`;
+    const moveTargets = [
+      { prefix: 'media/', name: 'Root' },
+      ...allTopFolders.filter(f => f.prefix !== currentPrefix),
+    ];
+    const items: CtxItem[] = [
+      { kind: 'action', label: 'Preview',          icon: <Eye className="h-3 w-3" />,          onClick: () => setPreview(file) },
+      { kind: 'action', label: 'Open in new tab',  icon: <ExternalLink className="h-3 w-3" />, onClick: () => window.open(file.url, '_blank') },
+      { kind: 'action', label: 'Download',          icon: <Download className="h-3 w-3" />,     onClick: () => triggerDownload(file.url, file.name) },
+      { kind: 'separator' },
+      { kind: 'action', label: 'Copy URL',          icon: <Copy className="h-3 w-3" />,         onClick: () => navigator.clipboard.writeText(file.url) },
+      { kind: 'action', label: 'Copy as Markdown',  icon: <Code2 className="h-3 w-3" />,        onClick: () => navigator.clipboard.writeText(mdContent) },
+    ];
+    if (kind === 'image') {
+      items.push({ kind: 'action', label: 'Copy as HTML', icon: <Code2 className="h-3 w-3" />,
+        onClick: () => navigator.clipboard.writeText(`<img src="${file.url}" alt="${file.name}" />`) });
+    }
+    items.push({ kind: 'separator' });
+    items.push({ kind: 'action', label: 'Rename', icon: <Pencil className="h-3 w-3" />, onClick: () => setRenamingKey(file.key) });
+    if (moveTargets.length > 0) {
+      items.push({ kind: 'label', text: 'Move to' });
+      for (const t of moveTargets) {
+        items.push({ kind: 'action', label: t.name, icon: <Folder className="h-3 w-3" />, onClick: () => moveFile(file.key, t.prefix) });
+      }
+    }
+    items.push({ kind: 'separator' });
+    items.push({ kind: 'action', label: 'Delete', icon: <Trash2 className="h-3 w-3" />, onClick: () => deleteFile(file.key), danger: true });
+    return items;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTopFolders, currentPrefix]);
+
+  const buildFolderCtxItems = useCallback((folder: MediaFolder): CtxItem[] => [
+    { kind: 'action', label: 'Open folder',   icon: <Folder className="h-3 w-3" />,     onClick: () => setCurrentPrefix(folder.prefix) },
+    { kind: 'action', label: 'New subfolder', icon: <FolderPlus className="h-3 w-3" />, onClick: () => createFolder(folder.prefix) },
+    { kind: 'separator' },
+    { kind: 'action', label: 'Delete folder', icon: <Trash2 className="h-3 w-3" />,     onClick: () => deleteFolder(folder), danger: true },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], []);
+
+  const handleFileCtxMenu   = useCallback((e: React.MouseEvent, file: MediaFile)     => setCtxMenu({ x: e.clientX, y: e.clientY, target: { type: 'file',   file   } }), []);
+  const handleFolderCtxMenu = useCallback((e: React.MouseEvent, folder: MediaFolder) => setCtxMenu({ x: e.clientX, y: e.clientY, target: { type: 'folder', folder } }), []);
+
+  const ctxItems = useMemo(() => {
+    if (!ctxMenu) return [];
+    return ctxMenu.target.type === 'file'
+      ? buildFileCtxItems(ctxMenu.target.file)
+      : buildFolderCtxItems(ctxMenu.target.folder);
+  }, [ctxMenu, buildFileCtxItems, buildFolderCtxItems]);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -762,7 +1122,15 @@ export default function MediaLibrary({
       )}
 
       {/* ── Breadcrumb ──────────────────────────────────────────────────── */}
-      <Breadcrumb prefix={currentPrefix} onNavigate={setCurrentPrefix} onNewFolder={createFolder} />
+      <Breadcrumb
+        prefix={currentPrefix}
+        isDragging={!!draggingFile}
+        dragOverPrefix={dragOverPrefix}
+        onNavigate={setCurrentPrefix}
+        onNewFolder={() => createFolder()}
+        onDragOverPrefix={setDragOverPrefix}
+        onDropOnPrefix={handleDrop}
+      />
 
       {/* ── Drop zone ──────────────────────────────────────────────────── */}
       <DropZone onFiles={handleFiles} />
@@ -859,20 +1227,39 @@ export default function MediaLibrary({
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 xl:grid-cols-5">
           {/* Folders first */}
           {folders.map(folder => (
-            <FolderCard key={folder.prefix} folder={folder} onClick={() => setCurrentPrefix(folder.prefix)} />
+            <FolderCard
+              key={folder.prefix}
+              folder={folder}
+              isDropTarget={dragOverPrefix === folder.prefix}
+              onClick={() => setCurrentPrefix(folder.prefix)}
+              onContextMenu={handleFolderCtxMenu}
+              onDragEnter={() => setDragOverPrefix(folder.prefix)}
+              onDragLeave={() => setDragOverPrefix(null)}
+              onDrop={() => handleDrop(folder.prefix)}
+            />
           ))}
 
           {/* Files */}
           <AnimatePresence mode="popLayout">
             {filtered.map(file => (
-              <motion.div key={file.key} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}>
+              <motion.div
+                key={file.key}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+              >
                 <FileCard
                   file={file}
                   pickerMode={pickerMode}
                   isUsed={usedUrls?.has(file.url) ?? false}
                   isSelected={selected.has(file.key)}
+                  isDragging={draggingFile?.key === file.key}
                   currentPrefix={currentPrefix}
                   allFolders={allTopFolders}
+                  forceRenaming={renamingKey === file.key}
+                  onRenameForced={() => setRenamingKey(null)}
                   onSelect={onSelect ?? (() => {})}
                   onCopy={url => navigator.clipboard.writeText(url)}
                   onDelete={deleteFile}
@@ -880,6 +1267,9 @@ export default function MediaLibrary({
                   onToggleSelect={toggleSelect}
                   onRename={renameFile}
                   onMove={moveFile}
+                  onContextMenu={handleFileCtxMenu}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
                 />
               </motion.div>
             ))}
@@ -909,6 +1299,11 @@ export default function MediaLibrary({
       {/* ── Preview modal ────────────────────────────────────────────────── */}
       {preview && (
         <PreviewModal file={preview} files={filtered} onClose={() => setPreview(null)} onSelect={onSelect} />
+      )}
+
+      {/* ── Context menu ─────────────────────────────────────────────────── */}
+      {ctxMenu && (
+        <ContextMenu x={ctxMenu.x} y={ctxMenu.y} items={ctxItems} onClose={closeCtxMenu} />
       )}
     </div>
   );
