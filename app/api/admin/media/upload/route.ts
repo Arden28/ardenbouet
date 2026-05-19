@@ -1,0 +1,39 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createUploadPresignedUrl, isR2Configured } from '@/lib/r2';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
+
+async function isAuthed() {
+  try {
+    const store = await cookies();
+    return store.get(COOKIE_NAME)?.value === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(req: NextRequest) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!isR2Configured()) {
+    return NextResponse.json({ error: 'R2 not configured' }, { status: 503 });
+  }
+
+  const { filename, contentType } = await req.json();
+
+  if (!filename || typeof filename !== 'string' || filename.includes('..')) {
+    return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
+  }
+  if (!contentType || typeof contentType !== 'string') {
+    return NextResponse.json({ error: 'Invalid contentType' }, { status: 400 });
+  }
+
+  const result = await createUploadPresignedUrl(filename, contentType);
+  return NextResponse.json(result);
+}

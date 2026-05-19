@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Note } from '../types';
-import { TextField, uid, Button, Rule, cn, LanguageField } from './atoms';
+import { TextField, MediaPickerField, uid, Button, Rule, cn, LanguageField } from './atoms';
 import { ArrayField } from './ArrayField';
 
 const lowlight = createLowlight(common);
@@ -316,18 +316,12 @@ function NoteEditorOverlay({
             rows={3}
             placeholder="One-line summary shown in the blog grid…"
           />
-          <TextField
-            label="Cover image URL"
+          <MediaPickerField
+            label="Cover image"
             value={draft.cover ?? ''}
             onChange={v => onDraftChange({ ...draft, cover: v })}
-            placeholder="https://…"
+            accept="image/*"
           />
-          {draft.cover && (
-            <div className="relative aspect-video w-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={draft.cover} alt="" className="h-full w-full object-cover" />
-            </div>
-          )}
           <ArrayField
             label="Tags (comma-separated)"
             value={draft.tags ?? []}

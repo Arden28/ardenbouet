@@ -6,7 +6,7 @@ import { Plus, MoveUp, MoveDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Experience } from '../types';
 import {
-  TextField, SelectField, uid,
+  TextField, SelectField, MediaPickerField, uid,
   EditorDrawer, Button, Rule, LanguageField,
 } from './atoms';
 import { ArrayField } from './ArrayField';
@@ -238,10 +238,11 @@ export default function ExperienceEditor({
               separator="comma"
               placeholder="Laravel, React, Docker…"
             />
-            <TextField
-              label="Company logo URL"
+            <MediaPickerField
+              label="Company logo"
               value={draft.poster ?? ''}
               onChange={v => setDraft({ ...draft, poster: v })}
+              accept="image/*"
             />
 
             <LanguageField

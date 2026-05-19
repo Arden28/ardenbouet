@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Package, FileText, Wrench, Layers, Search, X, Globe, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ShopProduct, ProductMediaItem, DiscountCode } from '../types';
-import { TextField, SelectField, uid, Button, Rule, cn, LanguageField } from './atoms';
+import { TextField, SelectField, uid, Button, Rule, cn, LanguageField, MediaPickerField } from './atoms';
 import { ArrayField } from './ArrayField';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -123,10 +123,11 @@ function MediaEditor({ items, onChange }: { items: ProductMediaItem[]; onChange:
             </button>
           </div>
 
-          <TextField
+          <MediaPickerField
             label="URL"
             value={item.url}
             onChange={v => update(i, { url: v })}
+            accept={item.kind === 'image' ? 'image/*' : 'video/*'}
             placeholder="https://example.com/screenshot.png"
           />
           <TextField
@@ -142,13 +143,6 @@ function MediaEditor({ items, onChange }: { items: ProductMediaItem[]; onChange:
             placeholder="Optional context shown below the thumbnail"
           />
 
-          {/* Image preview */}
-          {item.kind === 'image' && item.url && (
-            <div className="aspect-video overflow-hidden border border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt="" className="h-full w-full object-cover" />
-            </div>
-          )}
         </div>
       ))}
     </div>
@@ -343,16 +337,11 @@ function ProductEditorOverlay({
 
           <Rule />
 
-          <TextField label="Cover image URL" value={draft.cover ?? ''} onChange={v => set({ cover: v })} placeholder="https://…" />
-          {draft.cover && (
-            <div className="relative aspect-video w-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={draft.cover} alt="" className="h-full w-full object-cover" />
-            </div>
-          )}
+          <MediaPickerField label="Cover image" value={draft.cover ?? ''} onChange={v => set({ cover: v })} accept="image/*" placeholder="https://…" />
 
           <TextField label="Demo URL" value={draft.demoUrl ?? ''} onChange={v => set({ demoUrl: v })} placeholder="https://demo.…" />
           <TextField label="Buy / Stripe URL" value={draft.buyUrl ?? ''} onChange={v => set({ buyUrl: v })} placeholder="https://buy.stripe.com/…" />
+          <MediaPickerField label="File URL (downloadable product)" value={draft.fileUrl ?? ''} onChange={v => set({ fileUrl: v })} accept="*" placeholder="https://…/product.zip" />
 
           <Rule />
 

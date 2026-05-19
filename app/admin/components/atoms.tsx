@@ -1,11 +1,14 @@
 'use client';
 // app/admin/components/atoms.tsx
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, FolderOpen } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MediaPicker = dynamic(() => import('./MediaPicker'), { ssr: false });
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
 const EXPO = [0.16, 1, 0.3, 1] as const;
@@ -454,4 +457,83 @@ export function LanguageField({
 /* ===================== InlineRule ===================== */
 export function Rule({ className = '' }: { className?: string }) {
   return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+}
+
+/* ===================== MediaPickerField ===================== */
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|svg|avif)(\?.*)?$/i;
+
+function isImageUrl(url: string): boolean {
+  return url.startsWith('http') && IMAGE_EXTS.test(url.split('?')[0]);
+}
+
+export interface MediaPickerFieldProps {
+  label:        string;
+  value:        string;
+  onChange:     (v: string) => void;
+  placeholder?: string;
+  accept?:      'image/*' | 'video/*' | '*';
+  hint?:        string;
+}
+
+export function MediaPickerField({
+  label, value, onChange, placeholder, hint,
+}: MediaPickerFieldProps) {
+  const [pickerOpen,  setPickerOpen]  = useState(false);
+  const [imgError,    setImgError]    = useState(false);
+  const prevValue = useRef(value);
+
+  // Reset image error when URL changes
+  useEffect(() => {
+    if (value !== prevValue.current) { setImgError(false); prevValue.current = value; }
+  }, [value]);
+
+  const showThumb = isImageUrl(value) && !imgError;
+
+  return (
+    <div>
+      <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
+        {label}
+      </label>
+
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder ?? 'https://…'}
+          className="min-w-0 flex-1 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-[11px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-zinc-900 dark:focus:border-zinc-100 focus:outline-none transition-colors"
+        />
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="flex shrink-0 items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-zinc-500 hover:border-[#2467AC] hover:text-[#2467AC] transition-colors"
+          title="Browse media library"
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          Browse
+        </button>
+      </div>
+
+      {showThumb && (
+        <div className="mt-2 h-16 w-28 overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+          <img
+            src={value}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        </div>
+      )}
+
+      {hint && (
+        <p className="mt-1 font-mono text-[9px] text-zinc-400">{hint}</p>
+      )}
+
+      <MediaPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={url => { onChange(url); setPickerOpen(false); }}
+      />
+    </div>
+  );
 }

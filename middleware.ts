@@ -35,5 +35,7 @@ export const config = {
     '/api/admin/content',
     '/api/admin/orders',
     '/api/admin/orders/:id*',
+    '/api/admin/media',
+    '/api/admin/media/upload',
   ],
 };

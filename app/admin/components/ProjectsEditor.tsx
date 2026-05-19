@@ -6,7 +6,7 @@ import { Plus, Trash2, MoveUp, MoveDown, Hash, ExternalLink } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Project, CaseImage } from '../types';
 import {
-  TextField, uid, EditorDrawer, Button, Chip, Rule, cn, LanguageField,
+  TextField, uid, EditorDrawer, Button, Chip, Rule, cn, LanguageField, MediaPickerField,
 } from './atoms';
 import { ArrayField } from './ArrayField';
 
@@ -99,28 +99,29 @@ function ImagesManager({
         {images.map((img, i) => (
           <div
             key={i}
-            className="flex items-start gap-3 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3"
+            className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 space-y-2"
           >
-            <div className="h-12 w-16 shrink-0 overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800">
-              {img.src && <img src={img.src} className="h-full w-full object-cover" alt="" />}
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                Image {i + 1}
+              </span>
+              <button type="button" onClick={() => remove(i)} className="text-zinc-400 hover:text-red-500 transition-colors">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <div className="flex-1 space-y-1.5">
-              <input
-                className="w-full bg-transparent text-xs text-zinc-900 dark:text-zinc-100 outline-none border-b border-zinc-100 dark:border-zinc-800 pb-1 placeholder:text-zinc-400"
-                placeholder="Image URL"
-                value={img.src}
-                onChange={e => update(i, 'src', e.target.value)}
-              />
-              <input
-                className="w-full bg-transparent text-xs text-zinc-600 dark:text-zinc-400 outline-none placeholder:text-zinc-400"
-                placeholder="Alt description"
-                value={img.alt}
-                onChange={e => update(i, 'alt', e.target.value)}
-              />
-            </div>
-            <button type="button" onClick={() => remove(i)} className="text-zinc-400 hover:text-red-500 transition-colors mt-0.5">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <MediaPickerField
+              label="Image URL"
+              value={img.src}
+              onChange={v => update(i, 'src', v)}
+              accept="image/*"
+              placeholder="https://…"
+            />
+            <input
+              className="w-full bg-transparent text-xs text-zinc-600 dark:text-zinc-400 outline-none placeholder:text-zinc-400 border-b border-zinc-100 dark:border-zinc-800 pb-1"
+              placeholder="Alt description"
+              value={img.alt}
+              onChange={e => update(i, 'alt', e.target.value)}
+            />
           </div>
         ))}
       </div>
@@ -342,19 +343,18 @@ export default function ProjectsEditor({
               placeholder="React, Next.js, Prisma…"
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <TextField
-                label="Logo URL"
-                value={draft.logoUrl}
-                onChange={v => setDraft({ ...draft, logoUrl: v })}
-              />
-              <TextField
-                label="Metric (e.g. 12k users)"
-                value={(draft as any).metric ?? ''}
-                onChange={v => setDraft({ ...draft, metric: v } as any)}
-                placeholder="Optional"
-              />
-            </div>
+            <MediaPickerField
+              label="Logo URL"
+              value={draft.logoUrl}
+              onChange={v => setDraft({ ...draft, logoUrl: v })}
+              accept="image/*"
+            />
+            <TextField
+              label="Metric (e.g. 12k users)"
+              value={(draft as any).metric ?? ''}
+              onChange={v => setDraft({ ...draft, metric: v } as any)}
+              placeholder="Optional"
+            />
 
             <LanguageField
               value={draft.language ?? 'en'}
