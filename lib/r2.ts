@@ -51,6 +51,9 @@ function makeClient(cfg: R2Config): S3Client {
     region:   'auto',
     endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId: cfg.accessKeyId, secretAccessKey: cfg.secretAccessKey },
+    // R2 does not support AWS SDK v3 automatic checksums — disable them
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
 }
 
