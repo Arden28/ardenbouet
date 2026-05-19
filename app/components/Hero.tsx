@@ -213,7 +213,7 @@ export const Hero = () => {
               ].join(' ')}
             >
               <Image
-                src="/images/me.jpg"
+                src="/images/me.png"
                 alt={t('hero.alt.profile') || 'Arden BOUET'}
                 className="object-cover w-full h-auto pointer-events-none"
                 width={600}
