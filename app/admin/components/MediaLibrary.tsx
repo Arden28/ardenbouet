@@ -283,14 +283,11 @@ export default function MediaLibrary({ onSelect }: MediaLibraryProps) {
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
         <AlertCircle className="h-8 w-8 text-amber-500" />
         <div>
-          <p className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-50">R2 not configured</p>
+          <p className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-50">Storage not configured</p>
           <p className="mt-1 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
-            Add <code className="font-mono text-xs">R2_ACCOUNT_ID</code>,{' '}
-            <code className="font-mono text-xs">R2_ACCESS_KEY_ID</code>,{' '}
-            <code className="font-mono text-xs">R2_SECRET_ACCESS_KEY</code>,{' '}
-            <code className="font-mono text-xs">R2_BUCKET_NAME</code>, and{' '}
-            <code className="font-mono text-xs">R2_PUBLIC_URL</code>{' '}
-            to your environment variables.
+            Add your Cloudflare R2 credentials in{' '}
+            <span className="font-mono text-xs text-zinc-900 dark:text-zinc-100">Settings → Media Storage</span>
+            {' '}or via environment variables.
           </p>
         </div>
       </div>

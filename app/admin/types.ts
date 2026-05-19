@@ -113,12 +113,34 @@ export type Order = {
   notes?: string | null;
 };
 
+export type SiteSettings = {
+  // General
+  siteTitle?: string;
+  siteTagline?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  location?: string;
+  // Social
+  github?: string;
+  twitter?: string;
+  linkedin?: string;
+  instagram?: string;
+  youtube?: string;
+  // Storage (R2) — env vars take precedence over these
+  r2AccountId?: string;
+  r2AccessKeyId?: string;
+  r2SecretAccessKey?: string;
+  r2BucketName?: string;
+  r2PublicUrl?: string;
+};
+
 export type ContentBundle = {
   projects: Project[];
   experiences: Experience[];
   journey: JourneyItem[];
   notes: Note[];
   products: ShopProduct[];
+  settings?: SiteSettings;
 };
 
 export type Message = {

@@ -13,7 +13,7 @@ const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 // 2. MUST be async in Next.js 15
 async function isAuthed() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     return cookieStore.get(COOKIE_NAME)?.value === '1';
   } catch (err) {
     return false;
@@ -53,14 +53,15 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    const { projects, experiences, journey, notes, products } = body as Record<string, unknown>;
+    const { projects, experiences, journey, notes, products, settings } = body as Record<string, unknown>;
     if (!projects || !experiences || !journey || !notes) {
       return NextResponse.json({ error: 'Missing sections' }, { status: 400 });
     }
-    // products is optional for backwards compat with old saved bundles
+    // products and settings are optional for backwards compat
     if (products !== undefined && !Array.isArray(products)) {
       return NextResponse.json({ error: 'Invalid products' }, { status: 400 });
     }
+    void settings; // accepted as-is; validated loosely at the type level
 
     await prisma.content.upsert({
       where: { id: 1 },

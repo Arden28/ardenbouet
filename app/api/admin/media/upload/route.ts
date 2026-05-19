@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createUploadPresignedUrl, isR2Configured } from '@/lib/r2';
+import { createUploadPresignedUrl } from '@/lib/r2';
+import { getR2Config } from '@/lib/getR2Config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!isR2Configured()) {
+  const cfg = await getR2Config();
+  if (!cfg) {
     return NextResponse.json({ error: 'R2 not configured' }, { status: 503 });
   }
 
@@ -34,6 +36,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid contentType' }, { status: 400 });
   }
 
-  const result = await createUploadPresignedUrl(filename, contentType);
+  const result = await createUploadPresignedUrl(filename, contentType, cfg);
   return NextResponse.json(result);
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { listMediaFiles, deleteMediaFile, isR2Configured } from '@/lib/r2';
+import { listMediaFiles, deleteMediaFile } from '@/lib/r2';
+import { getR2Config } from '@/lib/getR2Config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,11 +22,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!isR2Configured()) {
+  const cfg = await getR2Config();
+  if (!cfg) {
     return NextResponse.json({ error: 'R2 not configured' }, { status: 503 });
   }
 
-  const files = await listMediaFiles();
+  const files = await listMediaFiles(cfg);
   return NextResponse.json(files);
 }
 
@@ -34,7 +36,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!isR2Configured()) {
+  const cfg = await getR2Config();
+  if (!cfg) {
     return NextResponse.json({ error: 'R2 not configured' }, { status: 503 });
   }
 
@@ -44,6 +47,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid key' }, { status: 400 });
   }
 
-  await deleteMediaFile(key);
+  await deleteMediaFile(key, cfg);
   return NextResponse.json({ ok: true });
 }

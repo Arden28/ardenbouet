@@ -14,10 +14,11 @@ import NotesEditor      from './components/NotesEditor';
 import ShopEditor       from './components/ShopEditor';
 import OrdersEditor     from './components/OrdersEditor';
 import MediaLibrary     from './components/MediaLibrary';
+import SettingsEditor   from './components/SettingsEditor';
 import { Toggle, downloadJSON } from './components/atoms';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'media' | 'shop' | 'orders';
+type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'media' | 'shop' | 'orders' | 'settings';
 type Status = 'idle' | 'dirty' | 'saving' | 'error' | 'loaded' | 'loading';
 
 const STORAGE_KEY = 'arden_cms_v2';
@@ -276,6 +277,7 @@ export default function AdminPage() {
     { key: 'media',      label: 'Media',      count: 0                 },
     { key: 'shop',       label: 'Shop',       count: counts.shop       },
     { key: 'orders',     label: 'Orders',     count: counts.orders,    hint: counts.orders > 0 ? 'pending' : undefined },
+    { key: 'settings',   label: 'Settings',   count: 0                 },
   ];
 
   return (
@@ -455,6 +457,12 @@ export default function AdminPage() {
                 />
               )}
               {tab === 'media'      && <MediaLibrary />}
+              {tab === 'settings'   && (
+                <SettingsEditor
+                  value={bundle.settings ?? {}}
+                  onChange={v => setBundle(b => ({ ...b!, settings: v }))}
+                />
+              )}
               {tab === 'shop'       && (
                 <ShopEditor
                   value={bundle.products}
