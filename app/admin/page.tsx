@@ -183,6 +183,7 @@ export default function AdminPage() {
           journey:     json.journey     ?? [],
           notes:       json.notes       ?? [],
           products:    json.products    ?? [],
+          settings:    json.settings    ?? {},
         });
         setLoadFailed(false);
         setStatus('loaded');
