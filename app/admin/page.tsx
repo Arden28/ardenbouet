@@ -16,10 +16,11 @@ import ShopEditor       from './components/ShopEditor';
 import OrdersEditor     from './components/OrdersEditor';
 import MediaLibrary     from './components/MediaLibrary';
 import SettingsEditor   from './components/SettingsEditor';
+import CrmEditor        from './components/crm/CrmEditor';
 import { Toggle, downloadJSON } from './components/atoms';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'media' | 'shop' | 'orders' | 'settings';
+type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'media' | 'shop' | 'orders' | 'crm' | 'settings';
 type Status = 'idle' | 'dirty' | 'saving' | 'error' | 'loaded' | 'loading';
 
 const STORAGE_KEY = 'arden_cms_v2';
@@ -281,6 +282,7 @@ export default function AdminPage() {
     { key: 'media',      label: 'Media',      count: 0                 },
     { key: 'shop',       label: 'Shop',       count: counts.shop       },
     { key: 'orders',     label: 'Orders',     count: counts.orders,    hint: counts.orders > 0 ? 'pending' : undefined },
+    { key: 'crm',        label: 'CRM',        count: 0                 },
     { key: 'settings',   label: 'Settings',   count: 0                 },
   ];
 
@@ -480,6 +482,7 @@ export default function AdminPage() {
                   onOrdersChange={setOrders}
                 />
               )}
+              {tab === 'crm'        && <CrmEditor />}
             </motion.div>
           </AnimatePresence>
         </main>

@@ -153,3 +153,5 @@ export type Message = {
   status: 'unread' | 'read' | 'archived';
   bodyMd: string;
 };
+
+export type * from './crm-types';

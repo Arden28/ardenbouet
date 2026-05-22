@@ -89,3 +89,96 @@ model DownloadToken {
 
   @@index([orderId])
 }
+
+// ─── CRM ──────────────────────────────────────────────────────────────────────
+
+enum CrmClientStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+}
+
+enum CrmProjectStatus {
+  DISCOVERY
+  PROPOSAL
+  ACTIVE
+  REVIEW
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum CrmInvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model CrmClient {
+  id        String          @id @default(cuid())
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  name      String
+  company   String?
+  email     String
+  phone     String?
+  country   String?
+  status    CrmClientStatus @default(LEAD)
+  notes     String?
+  tags      String[]        @default([])
+
+  projects  CrmProject[]
+  invoices  CrmInvoice[]
+
+  @@index([email])
+  @@index([status, createdAt])
+}
+
+model CrmProject {
+  id          String           @id @default(cuid())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  title       String
+  description String?
+  status      CrmProjectStatus @default(DISCOVERY)
+  budget      Float?
+  currency    String           @default("USD")
+  startDate   DateTime?
+  endDate     DateTime?
+  notes       String[]         @default([])
+
+  clientId    String
+  client      CrmClient        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoices    CrmInvoice[]
+
+  @@index([clientId])
+  @@index([status, createdAt])
+}
+
+model CrmInvoice {
+  id            String           @id @default(cuid())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  invoiceNumber String           @unique
+  amount        Float
+  currency      String           @default("USD")
+  status        CrmInvoiceStatus @default(DRAFT)
+  issuedAt      DateTime         @default(now())
+  dueAt         DateTime?
+  paidAt        DateTime?
+  notes         String?
+
+  clientId      String
+  client        CrmClient        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId     String?
+  project       CrmProject?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([projectId])
+  @@index([status, issuedAt])
+}

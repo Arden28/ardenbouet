@@ -38,5 +38,6 @@ export const config = {
     '/api/admin/media',
     '/api/admin/media/upload',
     '/api/admin/media/import',
+    '/api/admin/crm/:path*',
   ],
 };
