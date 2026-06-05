@@ -10,12 +10,21 @@ const EMPTY = { projects: [], experiences: [], journey: [], notes: [], products:
 
 export async function GET() {
   try {
-    const { prisma } = await import('@/lib/prisma'); // lazy import so build doesn’t touch Prisma
+    const { prisma } = await import('@/lib/prisma');
     const row = await prisma.content.findUnique({ where: { id: 1 } });
-    return NextResponse.json(row?.data ?? EMPTY, { status: 200 });
+    const data: Record<string, unknown> = (row?.data as Record<string, unknown>) ?? { ...EMPTY };
+
+    // Strip fileUrl before sending to the public client.
+    // R2/CDN file URLs must never be exposed — downloads go through /api/download/[token].
+    if (Array.isArray(data.products)) {
+      data.products = (data.products as Record<string, unknown>[]).map(
+        ({ fileUrl: _f, ...rest }) => rest,
+      );
+    }
+
+    return NextResponse.json(data, { status: 200 });
   } catch (err) {
     console.error('GET /api/content failed', err);
-    // Still return a valid JSON shape so the app can render
     return NextResponse.json(EMPTY, { status: 200 });
   }
 }
