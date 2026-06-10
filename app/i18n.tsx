@@ -54,6 +54,7 @@ i18n
               client: 'Client',
               openSource: 'Open Source',
               mobile: 'Mobile Application',
+              job: 'Job Role',
             },
             contact: 'Need a build?',
             cta: "Let's talk",

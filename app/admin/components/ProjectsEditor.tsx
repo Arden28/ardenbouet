@@ -310,7 +310,7 @@ export default function ProjectsEditor({
                 Category Tags
               </span>
               <div className="flex flex-wrap gap-2">
-                {(['saas', 'client', 'open-source', 'mobile'] as const).map(t => (
+                {(['saas', 'client', 'open-source', 'mobile', 'job'] as const).map(t => (
                   <Chip
                     key={t}
                     active={draft.tags.includes(t)}

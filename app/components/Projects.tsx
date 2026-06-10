@@ -14,7 +14,7 @@ type Project = {
   description: string;
   logoUrl: string;
   url: string;
-  tags: Array<'saas' | 'client' | 'open-source' | 'mobile'>;
+  tags: Array<'saas' | 'client' | 'open-source' | 'mobile' | 'job'>;
   tech?: string[];
   metric?: string;
   caseFile?: {
@@ -34,7 +34,7 @@ type ContentBundle = {
   notes: unknown[];
 };
 
-type Filter = 'all' | 'saas' | 'client' | 'open-source' | 'mobile';
+type Filter = 'all' | 'saas' | 'client' | 'open-source' | 'mobile' | 'job';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const EXPO = [0.16, 1, 0.3, 1] as const;
@@ -74,6 +74,7 @@ export const Projects = () => {
     { key: 'client',      label: t('projects.filters.client') },
     { key: 'open-source', label: t('projects.filters.openSource') },
     { key: 'mobile',      label: t('projects.filters.mobile') },
+    { key: 'job',         label: t('projects.filters.job') },
   ];
 
   // ── Remote data ──────────────────────────────────────────────────────────
