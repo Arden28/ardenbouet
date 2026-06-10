@@ -252,6 +252,11 @@ export const Hero = () => {
               className="text-sm sm:text-base leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto sm:mx-0 text-pretty"
               dangerouslySetInnerHTML={{ __html: t('hero.description.phrase1') }}
             />
+            <motion.p
+              variants={fadeUp}
+              className="text-sm sm:text-base leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto sm:mx-0 text-pretty"
+              dangerouslySetInnerHTML={{ __html: t('hero.description.phrase2') }}
+            />
 
             {/* Specialism list — dash-prefixed, no pills */}
             <motion.ul

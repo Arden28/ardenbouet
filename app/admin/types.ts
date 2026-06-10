@@ -14,7 +14,7 @@ export type Project = {
   description: string;
   logoUrl: string;
   url: string;
-  tags: Array<'saas' | 'client' | 'open-source'>;
+  tags: Array<'saas' | 'client' | 'open-source' | 'mobile'>;
   tech?: string[];
   metric?: string;
   language?: 'en' | 'fr' | 'both';
