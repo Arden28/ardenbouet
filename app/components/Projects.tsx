@@ -14,7 +14,7 @@ type Project = {
   description: string;
   logoUrl: string;
   url: string;
-  tags: Array<'saas' | 'client' | 'open-source'>;
+  tags: Array<'saas' | 'client' | 'open-source' | 'mobile'>;
   tech?: string[];
   metric?: string;
   caseFile?: {
@@ -34,12 +34,10 @@ type ContentBundle = {
   notes: unknown[];
 };
 
-type Filter = 'all' | 'saas' | 'client' | 'open-source';
+type Filter = 'all' | 'saas' | 'client' | 'open-source' | 'mobile';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const EXPO = [0.16, 1, 0.3, 1] as const;
-
-// Labels computed inside component via useTranslation — see FILTERS useMemo below
 
 // ─── Inline ruled line (consistent with Hero / Header motif) ─────────────────
 function Rule() {
@@ -75,6 +73,7 @@ export const Projects = () => {
     { key: 'saas',        label: 'SaaS' },
     { key: 'client',      label: t('projects.filters.client') },
     { key: 'open-source', label: t('projects.filters.openSource') },
+    { key: 'mobile',      label: t('projects.filters.mobile') },
   ];
 
   // ── Remote data ──────────────────────────────────────────────────────────
@@ -106,6 +105,18 @@ export const Projects = () => {
     () => filter === 'all' ? projects : projects.filter(p => p.tags?.includes(filter)),
     [filter, projects]
   );
+
+  // ── Expand/Collapse State ────────────────────────────────────────────────
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // ── Modal ────────────────────────────────────────────────────────────────
   const [open, setOpen]                     = useState(false);
@@ -242,130 +253,146 @@ export const Projects = () => {
           {/* Loaded state */}
           {!loading && !err && (
             <>
-              {/*
-                Inner-border grid:
-                  container has border-t border-l
-                  each cell has border-b border-r
-                → creates a clean grid-line pattern with no outer shadow
-              */}
               <motion.ul
                 layout
                 className="grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 md:grid-cols-2"
               >
                 <AnimatePresence mode="popLayout">
-                  {filtered.map((p, i) => (
-                    <motion.li
-                      key={p.id}
-                      layout
-                      initial={{ opacity: 0, y: 18 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '-60px' }}
-                      transition={{ duration: 0.55, ease: EXPO, delay: (i % 4) * 0.07 }}
-                      exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
-                      className="relative border-b border-r border-zinc-200 dark:border-zinc-800"
-                    >
-                      <article
-                        className={[
-                          'group relative h-full p-5 lg:p-6',
-                          'transition-colors duration-200',
-                          'hover:bg-zinc-50 dark:hover:bg-zinc-900/60',
-                        ].join(' ')}
-                      >
+                  {filtered.map((p, i) => {
+                    const isExpanded = expandedIds.has(p.id);
+                    // Only show the toggle button if the text is likely to span more than two lines
+                    const needsCollapse = p.description.length > 100;
 
-                        {/* Top row: category tags + logo mark */}
-                        <div className="mb-4 flex items-start justify-between gap-3">
-                          <div className="flex flex-wrap gap-1.5">
-                            {p.tags?.map(tag => (
-                              <span
-                                key={tag}
+                    return (
+                      <motion.li
+                        key={p.id}
+                        layout
+                        initial={{ opacity: 0, y: 18 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: '-60px' }}
+                        transition={{ duration: 0.55, ease: EXPO, delay: (i % 4) * 0.07 }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
+                        className="relative border-b border-r border-zinc-200 dark:border-zinc-800"
+                      >
+                        <article
+                          className={[
+                            'group relative h-full p-5 lg:p-6',
+                            'transition-colors duration-200',
+                            'hover:bg-zinc-50 dark:hover:bg-zinc-900/60',
+                          ].join(' ')}
+                        >
+                          {/* Top row: category tags + logo mark */}
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div className="flex flex-wrap gap-1.5">
+                              {p.tags?.map(tag => (
+                                <span
+                                  key={tag}
+                                  className={[
+                                    'border border-zinc-200 dark:border-zinc-800',
+                                    'px-2 py-0.5',
+                                    'font-mono text-[9px] uppercase tracking-widest',
+                                    'text-zinc-400 dark:text-zinc-500',
+                                  ].join(' ')}
+                                >
+                                  {tag.replace('-', ' ')}
+                                </span>
+                              ))}
+                            </div>
+                            <ImageWithFallback
+                              src={p.logoUrl}
+                              alt={`${p.title} logo`}
+                              width={32}
+                              height={32}
+                              className="shrink-0 border border-zinc-200/60 dark:border-zinc-700/50 object-cover"
+                            />
+                          </div>
+
+                          {/* Metric */}
+                          {p.metric && (
+                            <p className="mb-1 font-mono text-3xl font-bold leading-none tracking-tight text-zinc-900 dark:text-zinc-50">
+                              {p.metric}
+                            </p>
+                          )}
+
+                          {/* Title */}
+                          <h3 className="mb-1.5 font-heading text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+                            {p.title}
+                          </h3>
+
+                          {/* Description + Collapse Toggle */}
+                          <div className="mb-4">
+                            <motion.p
+                              layout
+                              className={[
+                                'text-sm leading-relaxed text-zinc-500 dark:text-zinc-400',
+                                isExpanded ? '' : 'line-clamp-2',
+                              ].join(' ')}
+                            >
+                              {p.description}
+                            </motion.p>
+                            
+                            {needsCollapse && (
+                              <button
+                                type="button"
+                                onClick={() => toggleExpand(p.id)}
                                 className={[
-                                  'border border-zinc-200 dark:border-zinc-800',
-                                  'px-2 py-0.5',
-                                  'font-mono text-[9px] uppercase tracking-widest',
-                                  'text-zinc-400 dark:text-zinc-500',
+                                  'mt-2 flex items-center gap-1 border-b border-transparent',
+                                  'font-mono text-[10px] font-bold uppercase tracking-widest',
+                                  'text-[#2467AC] dark:text-[#3a8ceb]',
+                                  'transition-colors hover:border-[#2467AC] dark:hover:border-[#3a8ceb]',
                                 ].join(' ')}
                               >
-                                {tag.replace('-', ' ')}
-                              </span>
-                            ))}
+                                {isExpanded ? 'Show Less ↑' : 'Read More ↓'}
+                              </button>
+                            )}
                           </div>
-                          <ImageWithFallback
-                            src={p.logoUrl}
-                            alt={`${p.title} logo`}
-                            width={32}
-                            height={32}
-                            className="shrink-0 border border-zinc-200/60 dark:border-zinc-700/50 object-cover"
-                          />
-                        </div>
 
-                        {/*
-                          Metric as large display number.
-                          Treated like a KPI callout — the first thing your eye lands on.
-                        */}
-                        {p.metric && (
-                          <p className="mb-1 font-mono text-3xl font-bold leading-none tracking-tight text-zinc-900 dark:text-zinc-50">
-                            {p.metric}
-                          </p>
-                        )}
+                          {/* Tech */}
+                          {p.tech && p.tech.length > 0 && (
+                            <p className="mb-5 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
+                              {p.tech.slice(0, 4).join(' · ')}
+                            </p>
+                          )}
 
-                        {/* Title */}
-                        <h3 className="mb-1.5 font-heading text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                          {p.title}
-                        </h3>
+                          {/* Action row */}
+                          <div className="flex items-center justify-between">
+                            {p.url && p.url.trim() !== '' ? (
+                              <a
+                                href={p.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Open ${p.title}`}
+                                className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                              >
+                                Visit →
+                              </a>
+                            ) : <span />}
 
-                        {/* Description */}
-                        <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-                          {p.description}
-                        </p>
-
-                        {/* Tech — monospace dot-separated, understated */}
-                        {p.tech && p.tech.length > 0 && (
-                          <p className="mb-5 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
-                            {p.tech.slice(0, 4).join(' · ')}
-                          </p>
-                        )}
-
-                        {/* Action row */}
-                        <div className="flex items-center justify-between">
-                          {p.url && p.url.trim() !== '' ? (
-                            <a
-                              href={p.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={`Open ${p.title}`}
-                              className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                            <button
+                              type="button"
+                              onClick={() => p.caseFile ? openCase(p.id) : undefined}
+                              disabled={!p.caseFile}
+                              aria-disabled={!p.caseFile}
+                              className={[
+                                'font-mono text-[10px] uppercase tracking-widest transition-colors',
+                                p.caseFile
+                                  ? 'cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-[#2467AC]'
+                                  : 'cursor-not-allowed text-zinc-300 dark:text-zinc-700',
+                              ].join(' ')}
                             >
-                              Visit →
-                            </a>
-                          ) : <span />}
+                              {p.caseFile ? 'Case file ↗' : 'Case file soon'}
+                            </button>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => p.caseFile ? openCase(p.id) : undefined}
-                            disabled={!p.caseFile}
-                            aria-disabled={!p.caseFile}
-                            className={[
-                              'font-mono text-[10px] uppercase tracking-widest transition-colors',
-                              p.caseFile
-                                ? 'cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-[#2467AC]'
-                                : 'cursor-not-allowed text-zinc-300 dark:text-zinc-700',
-                            ].join(' ')}
-                          >
-                            {p.caseFile ? 'Case file ↗' : 'Case file soon'}
-                          </button>
-                        </div>
-
-                        {/*
-                          Hover border accent: a 2px line that grows on the card's
-                          left edge — matches the Hero's ruled-line motion language
-                        */}
-                        <span
-                          aria-hidden
-                          className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full"
-                        />
-                      </article>
-                    </motion.li>
-                  ))}
+                          {/* Hover border accent */}
+                          <span
+                            aria-hidden
+                            className="absolute left-0 top-0 h-0 w-[2px] bg-[#2467AC] transition-[height] duration-300 group-hover:h-full"
+                          />
+                        </article>
+                      </motion.li>
+                    );
+                  })}
                 </AnimatePresence>
               </motion.ul>
 
