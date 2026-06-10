@@ -3,12 +3,13 @@ import '../i18n';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRef } from 'react';
+import { useState } from 'react';
 import {
   motion,
   useMotionValue,
   useSpring,
   useTransform,
+  AnimatePresence,
 } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { GithubIcon } from './icons/GithubIcon';
@@ -18,9 +19,9 @@ import CpanelIcon from './icons/CpanelIcon';
 import StackIcon from 'tech-stack-icons';
 import AnimatedTitle from './AnimatedTitle';
 import Mapbox from './icons/Mapbox';
+import OpenTripPlanner from './icons/OpenTripPlanner';
 
 // ─── Motion config ──────────────────────────────────────────────────────────
-// Custom cubic-bezier for a refined, non-bouncy ease-out-expo feel
 const EXPO = [0.16, 1, 0.3, 1] as const;
 
 const stagger = {
@@ -38,7 +39,6 @@ const fadeIn = {
   show: { opacity: 1, transition: { duration: 1, ease: EXPO } },
 };
 
-// Ruled line that draws itself left → right
 const revealRule = {
   hidden: { scaleX: 0, originX: '0%' },
   show: { scaleX: 1, originX: '0%', transition: { duration: 1.1, ease: EXPO } },
@@ -46,7 +46,6 @@ const revealRule = {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-/** Thin ruled line that animates in */
 function Rule({ className = '' }: { className?: string }) {
   return (
     <motion.div
@@ -56,7 +55,6 @@ function Rule({ className = '' }: { className?: string }) {
   );
 }
 
-/** Single stat — large mono number with a label */
 function Stat({ number, label }: { number: string; label: string }) {
   return (
     <motion.div variants={fadeUp} className="flex flex-col gap-0.5 pl-4 border-l border-zinc-300 dark:border-zinc-700">
@@ -70,16 +68,7 @@ function Stat({ number, label }: { number: string; label: string }) {
   );
 }
 
-/** Social icon link — square, sharp-cornered */
-function SocialLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: React.ReactNode;
-}) {
+function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
@@ -98,11 +87,28 @@ function SocialLink({
   );
 }
 
+/** Sharp, editorial tech badge for the description area */
+function TechBadge({ label }: { label: string }) {
+  return (
+    <span className={[
+      'inline-flex items-center gap-1.5',
+      'border border-zinc-200 dark:border-zinc-800',
+      'bg-zinc-50 dark:bg-zinc-900/40',
+      'px-2 py-1',
+      'text-[9px] font-mono uppercase tracking-widest text-zinc-600 dark:text-zinc-400'
+    ].join(' ')}>
+      <span className="h-1 w-1 bg-[#2467AC] shrink-0" />
+      {label}
+    </span>
+  );
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 export const Hero = () => {
   const { t } = useTranslation();
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
-  // Physics-based tilt for portrait — kept intentionally subtle
+  // Physics-based tilt
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const sX = useSpring(mx, { stiffness: 220, damping: 38 });
@@ -117,7 +123,6 @@ export const Hero = () => {
   };
   const onMouseLeave = () => { mx.set(0); my.set(0); };
 
-  // ── Solutions chips (no state — static for marquee performance)
   const solutions = [
     'Subscriptions & Billing',
     'Multi-tenant SaaS',
@@ -128,6 +133,8 @@ export const Hero = () => {
     'Payments / Stripe',
     'Webhooks & Events',
   ];
+
+  const coreTech = ['Laravel', 'Spring Boot', 'React', 'Next.js', 'PostGIS', 'Redis'];
 
   return (
     <section
@@ -146,11 +153,7 @@ export const Hero = () => {
         <Rule />
 
         {/* ── NAME + ROLE HEADER ROW ───────────────────────────────────── */}
-        <motion.div
-          variants={fadeUp}
-          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 py-4"
-        >
-          {/* Billboard name — purely visual, aria-hidden; h1 is below */}
+        <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 py-4">
           <p
             aria-hidden
             className={[
@@ -163,10 +166,8 @@ export const Hero = () => {
             Arden<br />Bouetoumoussa
           </p>
 
-          {/* Availability badge — sharp pill replaced with an editorial label */}
           <div className="flex flex-col items-start sm:items-end gap-1 shrink-0 pb-1">
             <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-mono text-zinc-500 dark:text-zinc-400">
-              {/* Electric lime dot — the ONLY accent color in the design */}
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2467AC] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2467AC]" />
@@ -182,7 +183,7 @@ export const Hero = () => {
         {/* ── MID RULE ─────────────────────────────────────────────────── */}
         <Rule />
 
-        {/* ── MAIN GRID: portrait / content / stats ────────────────────── */}
+        {/* ── MAIN GRID ────────────────────────────────────────────────── */}
         <div
           className={[
             'py-8 grid gap-8',
@@ -191,7 +192,6 @@ export const Hero = () => {
             'lg:grid-cols-[200px_1fr_160px] lg:gap-10',
           ].join(' ')}
         >
-
           {/* ── PORTRAIT ─────────────────────────────────────────────── */}
           <motion.div
             variants={fadeIn}
@@ -204,9 +204,7 @@ export const Hero = () => {
               style={{ transform: 'translateZ(12px)' }}
               className={[
                 'relative overflow-hidden',
-                // Sharp corners — no border-radius
                 'border border-zinc-300/80 dark:border-zinc-700',
-                // Subtle offset shadow using box-shadow instead of a blob
                 'shadow-[4px_4px_0px_0px_theme(colors.zinc.900/8%)]',
                 'dark:shadow-[4px_4px_0px_0px_theme(colors.zinc.50/6%)]',
                 'w-40 sm:w-[200px]',
@@ -220,17 +218,12 @@ export const Hero = () => {
                 height={600}
                 priority
               />
-              {/* Inner vignette — purely shadow, no gradient */}
               <div className="absolute inset-0 shadow-[inset_0_0_24px_rgba(0,0,0,0.07)] dark:shadow-[inset_0_0_24px_rgba(0,0,0,0.25)] pointer-events-none" />
             </div>
           </motion.div>
 
           {/* ── TEXT CONTENT ─────────────────────────────────────────── */}
-          <motion.div
-            variants={stagger}
-            className="flex flex-col gap-5 text-center sm:text-left"
-          >
-            {/* Semantic h1 — uses AnimatedTitle component */}
+          <motion.div variants={stagger} className="flex flex-col gap-5 text-center sm:text-left">
             <motion.h1
               variants={fadeUp}
               className={[
@@ -246,19 +239,62 @@ export const Hero = () => {
               </span>
             </motion.h1>
 
-            {/* Description */}
-            <motion.p
-              variants={fadeUp}
-              className="text-sm sm:text-base leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto sm:mx-0 text-pretty"
-              dangerouslySetInnerHTML={{ __html: t('hero.description.phrase1') }}
-            />
-            <motion.p
-              variants={fadeUp}
-              className="text-sm sm:text-base leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto sm:mx-0 text-pretty"
-              dangerouslySetInnerHTML={{ __html: t('hero.description.phrase2') }}
-            />
+            <motion.div variants={fadeUp} className="max-w-xl mx-auto sm:mx-0">
+              {/* Lead Paragraph */}
+              <p 
+                className="text-base sm:text-lg leading-relaxed text-zinc-800 dark:text-zinc-200 text-pretty"
+                dangerouslySetInnerHTML={{ __html: t('hero.description.phrase1') }} 
+              />
+              
+              {/* Tech Badges Row */}
+              {/* <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4 mb-2">
+                {coreTech.map(tech => (
+                  <TechBadge key={tech} label={tech} />
+                ))}
+              </div> */}
 
-            {/* Specialism list — dash-prefixed, no pills */}
+              {/* Collapsible Secondary Paragraphs */}
+              <AnimatePresence initial={false}>
+                {isDescExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.4, ease: EXPO }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-4 flex flex-col gap-3 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 ml-1">
+                      <p 
+                        className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 text-pretty"
+                        dangerouslySetInnerHTML={{ __html: t('hero.description.phrase2') }} 
+                      />
+                      <p 
+                        className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 text-pretty"
+                        dangerouslySetInnerHTML={{ __html: t('hero.description.phrase3') }} 
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Toggle Button */}
+              <div className="mt-3 flex justify-center sm:justify-start">
+                <button
+                  type="button"
+                  onClick={() => setIsDescExpanded(!isDescExpanded)}
+                  className={[
+                    'flex items-center gap-1 border-b border-transparent',
+                    'font-mono text-[10px] font-bold uppercase tracking-widest',
+                    'text-[#2467AC] dark:text-[#3a8ceb]',
+                    'transition-colors hover:border-[#2467AC] dark:hover:border-[#3a8ceb]',
+                  ].join(' ')}
+                >
+                  {isDescExpanded ? 'Read Less ↑' : 'Read Full Bio ↓'}
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Specialism list */}
             <motion.ul
               variants={fadeUp}
               className={[
@@ -266,7 +302,7 @@ export const Hero = () => {
                 'flex flex-wrap gap-x-5 gap-y-1.5',
                 'justify-center sm:justify-start',
                 'text-[11px] uppercase tracking-[0.12em] font-mono',
-                'text-zinc-500 dark:text-zinc-400',
+                'text-zinc-500 dark:text-zinc-400 mt-2',
               ].join(' ')}
             >
               {[t('hero.specialism0'), t('hero.specialism1'), t('hero.specialism2'), t('hero.specialism3')].map((s) => (
@@ -278,45 +314,20 @@ export const Hero = () => {
             </motion.ul>
 
             {/* ── CTAs + Socials ────────────────────────────────────── */}
-            <motion.div
-              variants={fadeUp}
-              className="flex flex-wrap items-center gap-3 justify-center sm:justify-start"
-            >
-              {/* Buttons: no border-radius — square, editorial */}
-              <Button
-                asChild
-                size="lg"
-                className="rounded-none px-6 uppercase text-[11px] tracking-widest font-semibold"
-              >
-                <Link href="#projects">
-                  {t('hero.cta.primary', { defaultValue: 'See my projects' })}
-                </Link>
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3 justify-center sm:justify-start mt-2">
+              <Button asChild size="lg" className="rounded-none px-6 uppercase text-[11px] tracking-widest font-semibold">
+                <Link href="#projects">{t('hero.cta.primary', { defaultValue: 'See my projects' })}</Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="rounded-none px-6 uppercase text-[11px] tracking-widest font-semibold"
-              >
-                <Link href="#contact">
-                  {t('hero.cta.secondary', { defaultValue: "Let's talk" })}
-                </Link>
+              <Button asChild size="lg" variant="outline" className="rounded-none px-6 uppercase text-[11px] tracking-widest font-semibold">
+                <Link href="#contact">{t('hero.cta.secondary', { defaultValue: "Let's talk" })}</Link>
               </Button>
 
-              {/* Divider */}
               <div className="h-6 w-px bg-zinc-300 dark:bg-zinc-700 mx-1" />
 
-              {/* Social links */}
               <div className="flex items-center gap-2">
-                <SocialLink href="https://github.com/arden28" label="GitHub">
-                  <GithubIcon className="h-4 w-4" />
-                </SocialLink>
-                <SocialLink href="https://www.linkedin.com/in/arden-bouet/" label="LinkedIn">
-                  <LinkedinIcon className="h-4 w-4" />
-                </SocialLink>
-                <SocialLink href="https://www.upwork.com/freelancers/~01b718c179049bbd70" label="Upwork">
-                  <img src="images/upwork.svg" alt="" className="h-4 w-4 opacity-80" />
-                </SocialLink>
+                <SocialLink href="https://github.com/arden28" label="GitHub"><GithubIcon className="h-4 w-4" /></SocialLink>
+                <SocialLink href="https://www.linkedin.com/in/arden-bouet/" label="LinkedIn"><LinkedinIcon className="h-4 w-4" /></SocialLink>
+                <SocialLink href="https://www.upwork.com/freelancers/~01b718c179049bbd70" label="Upwork"><img src="images/upwork.svg" alt="" className="h-4 w-4 opacity-80" /></SocialLink>
               </div>
             </motion.div>
           </motion.div>
@@ -324,16 +335,12 @@ export const Hero = () => {
           {/* ── STATS COLUMN (desktop only) ──────────────────────────── */}
           <motion.div
             variants={stagger}
-            className={[
-              'hidden lg:flex flex-col justify-start gap-6',
-              'border-l border-zinc-200 dark:border-zinc-800 pl-8',
-            ].join(' ')}
+            className="hidden lg:flex flex-col justify-start gap-6 border-l border-zinc-200 dark:border-zinc-800 pl-8"
           >
             <Stat number="12+" label={t('hero.stats.projects')} />
             <Stat number="5+"  label={t('hero.stats.years')} />
             <Stat number="3"   label={t('hero.stats.continents')} />
 
-            {/* Index label — decorative type element */}
             <p className="mt-auto text-[9px] uppercase tracking-[0.2em] font-mono text-zinc-300 dark:text-zinc-700">
               Portfolio<br />2025 • v2
             </p>
@@ -345,12 +352,7 @@ export const Hero = () => {
 
         {/* ── TECH STACK MARQUEES ──────────────────────────────────────── */}
         <div className="pt-5 pb-2">
-
-          {/* Section label */}
-          <motion.div
-            variants={fadeUp}
-            className="mb-4 flex items-center justify-between"
-          >
+          <motion.div variants={fadeUp} className="mb-4 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-zinc-400 dark:text-zinc-500">
               {t('hero.stack', { defaultValue: 'Tech I enjoy' })}
             </span>
@@ -359,14 +361,8 @@ export const Hero = () => {
             </span>
           </motion.div>
 
-          {/* Line 1 — Tech icons */}
           <motion.div variants={fadeIn}>
-            <div
-              className="pause-on-hover relative overflow-hidden"
-              style={{
-                maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
-              }}
-            >
+            <div className="pause-on-hover relative overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}>
               <div className="flex w-max items-center gap-8 animate-marquee">
                 {[...Array(2)].map((_, i) => (
                   <div key={i} className="flex items-center gap-8 py-1">
@@ -379,6 +375,7 @@ export const Hero = () => {
                       <StackIcon key="tailwindcss" name="tailwindcss" className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
                       <StackIcon key="mysql"       name="mysql"       className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
                       <StackIcon key="prisma"      name="prisma"      className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
+                      <OpenTripPlanner key="opentripplanner" className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
                       <Mapbox    key="mapbox"                         className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
                       <StackIcon key="docker"      name="docker"      className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
                       <StackIcon key="redis"       name="redis"       className="w-8 opacity-50 hover:opacity-100 transition-opacity duration-200" />,
@@ -395,17 +392,10 @@ export const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Thin divider between marquee rows */}
           <div className="my-3 h-px w-full bg-zinc-100 dark:bg-zinc-900" />
 
-          {/* Line 2 — Solution chips (sharp monospace tags) */}
           <motion.div variants={fadeIn}>
-            <div
-              className="pause-on-hover relative overflow-hidden"
-              style={{
-                maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
-              }}
-            >
+            <div className="pause-on-hover relative overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 8%, black 92%, transparent)' }}>
               <div className="flex w-max items-center gap-2 animate-marquee-reverse">
                 {[...Array(2)].map((_, i) => (
                   <div key={i} className="flex items-center gap-2 py-0.5">
