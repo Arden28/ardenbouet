@@ -22,12 +22,12 @@ i18n
             aria: 'About Arden',
             role: 'Software Engineer',
             title: {
-              fullstack: 'Travel Tech Engineer',
+              fullstack: 'Mobility & Navigation Software Engineer',
               engineer: 'Software Engineer',
               openSource: 'and open-source contributor',
             },
             description: {
-              phrase1: "I'm <strong>Arden BOUET</strong>, a travel tech engineer specializing in the design and development of scalable mobility, navigation, and travel systems. Experienced in building full-stack, multi-tenant platforms leveraging <strong>Laravel (PHP)</strong>, <strong>Java (Spring Boot)</strong>, <strong>React (Web & Mobile)</strong>, and <strong>Next.js</strong>, with robust data architectures built on <strong>PostgreSQL/PostGIS</strong>, <strong>MySQL</strong>, and <strong>Redis</strong>. <br /> <br /> With a strong foundation in geospatial systems, map-based applications, and routing engines such as <strong>OpenTripPlanner</strong>, along with real-time data pipelines powering dynamic navigation and mobility platforms.",
+              phrase1: "I'm <strong>Arden BOUET</strong>, a mobility & navigation software engineer specializing in the design and development of scalable mobility, navigation, and travel systems. Experienced in building full-stack, multi-tenant platforms leveraging <strong>Laravel (PHP)</strong>, <strong>Java (Spring Boot)</strong>, <strong>React (Web & Mobile)</strong>, and <strong>Next.js</strong>, with robust data architectures built on <strong>PostgreSQL/PostGIS</strong>, <strong>MySQL</strong>, and <strong>Redis</strong>. <br /> <br /> With a strong foundation in geospatial systems, map-based applications, and routing engines such as <strong>OpenTripPlanner</strong>, along with real-time data pipelines powering dynamic navigation and mobility platforms.",
               phrase2: 'Experienced in integrating and building systems around global travel and booking infrastructure, including airline and hotel distribution APIs such as <strong>Amadeus</strong>, flight aggregators (e.g. <strong>PKFARE</strong>), and <strong>OTA ecosystems</strong>, handling search, pricing, availability, and reservation workflows across distributed inventories.',
               phrase3: "Skilled in designing clean, modular architectures, scalable backend services, and production-grade APIs. Combines system design rigor with a strong UX mindset to deliver intuitive, map-driven and travel-centric platforms built for reliability, scale, and continuous evolution.",
             },
@@ -196,7 +196,7 @@ i18n
             aria: "À propos d'Arden",
             role: 'Ingénieur Logiciel',
             title: {
-              fullstack: 'Travel Tech Engineer',
+              fullstack: 'Mobility & Navigation Software Engineer',
               engineer: 'Software Engineer',
               openSource: 'et contributeur open source.',
             },
