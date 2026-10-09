@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CaseModal from './CaseModal';
 import ImageWithFallback from './ImageWithFallback';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -118,19 +117,6 @@ export const Projects = () => {
       return next;
     });
   };
-
-  // ── Modal ────────────────────────────────────────────────────────────────
-  const [open, setOpen]                     = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [activeProjectId, setActiveProjectId]   = useState<string | null>(null);
-
-  const activeProject = useMemo(
-    () => projects.find(p => p.id === activeProjectId) || null,
-    [projects, activeProjectId]
-  );
-
-  const openCase = (id: string) => { setActiveProjectId(id); setActiveImageIndex(0); setOpen(true); };
-  const closeCase = () => { setOpen(false); setTimeout(() => setActiveProjectId(null), 400); };
 
   return (
     <section id="projects" className="relative mx-auto mt-24 max-w-6xl px-4">
@@ -369,20 +355,12 @@ export const Projects = () => {
                               </a>
                             ) : <span />}
 
-                            <button
-                              type="button"
-                              onClick={() => p.caseFile ? openCase(p.id) : undefined}
-                              disabled={!p.caseFile}
-                              aria-disabled={!p.caseFile}
-                              className={[
-                                'font-mono text-[10px] uppercase tracking-widest transition-colors',
-                                p.caseFile
-                                  ? 'cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-[#2467AC]'
-                                  : 'cursor-not-allowed text-zinc-300 dark:text-zinc-700',
-                              ].join(' ')}
+                            <Link
+                              href={`/projects/${p.id}`}
+                              className="font-mono text-[10px] uppercase tracking-widest text-zinc-600 transition-colors hover:text-[#2467AC] dark:text-zinc-400"
                             >
-                              {p.caseFile ? 'Case file ↗' : 'Case file soon'}
-                            </button>
+                              {p.caseFile ? 'Case file ↗' : 'View project ↗'}
+                            </Link>
                           </div>
 
                           {/* Hover border accent */}
@@ -426,16 +404,6 @@ export const Projects = () => {
           )}
         </div>
       </div>
-
-      {/* ── MODAL ──────────────────────────────────────────────────────── */}
-      <CaseModal
-        open={open && !!activeProject?.caseFile}
-        onClose={closeCase}
-        title={activeProject?.title || ''}
-        caseFile={activeProject?.caseFile || { problem: '', approach: [], result: '' }}
-        activeImageIndex={activeImageIndex}
-        setActiveImageIndex={setActiveImageIndex}
-      />
     </section>
   );
 };

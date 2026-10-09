@@ -13,7 +13,7 @@ export default function Home() {
       <Hero></Hero>
       <Projects></Projects>
       <ExperienceReel></ExperienceReel> 
-      <Journey></Journey>
+      {/* <Journey></Journey> */}
       <Contact/>
       <Notes />
 
