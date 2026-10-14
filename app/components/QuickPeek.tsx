@@ -209,7 +209,7 @@ export default function QuickPeek({
               {/* ── Actions ────────────────────────────────────────── */}
               <div className="mt-6 flex items-center gap-3 border-t border-zinc-200 pt-4">
                 <Link
-                  href={`/notes/${post.slug}`}
+                  href={`/blog/${post.slug}`}
                   className={[
                     'flex-1 inline-flex items-center justify-center',
                     'bg-zinc-900',

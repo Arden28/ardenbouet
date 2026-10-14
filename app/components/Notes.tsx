@@ -19,11 +19,17 @@ type Post = {
   tags: string[];
 };
 
-type ContentBundle = {
-  projects: unknown[];
-  experiences: unknown[];
-  journey: unknown[];
-  notes: Post[];
+// Shape returned by GET /api/blog/posts (lib/blog/queries.ts → PostCard)
+type BlogPostCard = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  excerpt: string;
+  coverUrl: string | null;
+  publishedAt: string | null;
+  readingMinutes: number;
+  tags: string[];
 };
 
 type Filter = 'all' | string;
@@ -60,13 +66,21 @@ export default function Notes() {
       try {
         setLoading(true);
         setErr(null);
-        const res = await fetch('/api/content', { credentials: 'same-origin', cache: 'no-store' });
+        const res = await fetch('/api/blog/posts?take=24', { credentials: 'same-origin', cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json: ContentBundle = await res.json();
-        const clean = (json.notes || [])
+        const json: { posts: BlogPostCard[] } = await res.json();
+        const clean: Post[] = (json.posts || [])
           .filter(n => n && n.title && n.slug)
-          .map(n => ({ ...n, reading: n.reading || '5 min', tags: Array.isArray(n.tags) ? n.tags : [] }))
-          .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+          .map(n => ({
+            id: n.id,
+            slug: n.slug,
+            title: n.title,
+            excerpt: n.excerpt || n.subtitle,
+            cover: n.coverUrl ?? undefined,
+            date: n.publishedAt ?? '',
+            reading: `${n.readingMinutes} min`,
+            tags: Array.isArray(n.tags) ? n.tags : [],
+          }));
         if (alive) setNotes(clean);
       } catch (e: any) {
         if (alive) setErr(e?.message || 'Failed to load notes');
@@ -280,7 +294,7 @@ export default function Notes() {
                 {/* Actions */}
                 <div className="mt-5 flex items-center gap-3">
                   <Link
-                    href={`/notes/${featured.slug}`}
+                    href={`/blog/${featured.slug}`}
                     className={[
                       'inline-flex items-center justify-center',
                       'bg-zinc-900 dark:bg-zinc-50',
@@ -367,7 +381,7 @@ export default function Notes() {
                       {/* Actions */}
                       <div className="flex items-center justify-between">
                         <Link
-                          href={`/notes/${p.slug}`}
+                          href={`/blog/${p.slug}`}
                           className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
                         >
                           {t('notes.readShort')}

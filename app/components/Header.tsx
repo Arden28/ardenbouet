@@ -140,6 +140,9 @@ export const Header = () => {
     return pathname === item.href || pathname.startsWith(item.href + '/');
   };
 
+  // The blog renders its own Medium-style chrome (app/blog/layout.tsx).
+  if (pathname?.startsWith('/blog') || pathname?.startsWith('/admin/blog')) return null;
+
   // ── Shared chrome classes ─────────────────────────────────────────────────
   const chromeCls = scrolled
     ? 'bg-white/95 backdrop-blur-sm dark:bg-zinc-950/95'

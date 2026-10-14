@@ -1,223 +1,123 @@
-// app/blog/page.tsx
-import Image from 'next/image';
+// app/blog/page.tsx — Medium-style home: tabbed feed + sidebar (featured, topics, newsletter)
 import Link from 'next/link';
-import { headers } from 'next/headers';
 import type { Metadata } from 'next';
-import { Header } from '../components/Header';
-import { getLocale, makeT } from '@/lib/serverT';
+import { getLocale } from '@/lib/serverT';
+import { blogT } from '@/lib/blog/strings';
+import { countVisible, getFeatured, getTopTags, listPosts } from '@/lib/blog/queries';
+import { CompactRow, FeedRow, TopicPills } from './_components/PostList';
+import { SubscribeForm } from './_components/SubscribeForm';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Field Notes · Arden BOUET',
-  description:
-    'Thoughts on software engineering, SaaS, IoT, and the craft of building production systems.',
+  title: 'Blog · Arden BOUET',
+  description: 'Stories on software engineering, SaaS, product building and the craft of shipping production systems.',
+  alternates: { types: { 'application/rss+xml': '/blog/rss.xml' } },
 };
 
-export const revalidate = 0;
-export const dynamic   = 'force-dynamic';
+const PAGE = 12;
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-type Post = {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  cover?: string;
-  date: string;
-  reading: string;
-  tags: string[];
-};
+export default async function BlogHome({ searchParams }: { searchParams: { tab?: string; q?: string; page?: string } }) {
+  const locale = getLocale();
+  const t = blogT(locale);
+  const q = searchParams.q?.trim() || '';
+  const tab = searchParams.tab === 'popular' ? 'popular' : 'latest';
+  const page = Math.max(1, Number(searchParams.page) || 1);
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function getBase() {
-  const h     = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host  = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  return `${proto}://${host}`;
-}
+  const [posts, featured, tags, total] = await Promise.all([
+    listPosts({ q, sort: tab, take: PAGE + 1, skip: (page - 1) * PAGE }),
+    getFeatured(3),
+    getTopTags(9),
+    countVisible(),
+  ]);
+  const hasMore = posts.length > PAGE;
+  const shown = posts.slice(0, PAGE);
 
-function fmtDate(d?: string) {
-  if (!d) return '';
-  const dt = new Date(d);
-  return isNaN(dt.getTime())
-    ? d
-    : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-async function getNotes(): Promise<Post[]> {
-  try {
-    const res = await fetch(`${getBase()}/api/content`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return ((json.notes ?? []) as any[])
-      .filter(n => n?.title && n?.slug)
-      .map(n => ({
-        ...n,
-        reading: n.reading ?? '5 min',
-        tags: Array.isArray(n.tags) ? n.tags : [],
-      }))
-      .sort(
-        (a, b) =>
-          new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime()
-      );
-  } catch {
-    return [];
-  }
-}
-
-// ─── Design primitives ───────────────────────────────────────────────────────
-function Rule() {
-  return <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />;
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default async function BlogPage() {
-  const notes    = await getNotes();
-  const featured = notes[0];
-  const archive  = notes.slice(1);
-  const t = makeT(getLocale());
-  const noteCount = (n: number) => n === 1
-    ? t('blog.noteSingular', { count: n })
-    : t('blog.notePlural', { count: n });
+  const tabHref = (tb: string) => `/blog${tb === 'latest' ? '' : `?tab=${tb}`}`;
+  const pageHref = (p: number) => {
+    const sp = new URLSearchParams();
+    if (q) sp.set('q', q);
+    if (tab !== 'latest') sp.set('tab', tab);
+    if (p > 1) sp.set('page', String(p));
+    const s = sp.toString();
+    return `/blog${s ? `?${s}` : ''}`;
+  };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:pt-16">
-
-      {/* ── Section header ──────────────────────────────────────────── */}
-      <Rule />
-      <div className="flex items-baseline justify-between py-4">
-        <h1 className="font-heading text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">
-          {t('blog.title')}
-        </h1>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600">
-          {noteCount(notes.length)}
-        </p>
-      </div>
-      <Rule />
-
-      {/* ── Empty state ──────────────────────────────────────────────── */}
-      {notes.length === 0 && (
-        <div className="py-24 text-center">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">
-            {t('blog.noNotes')}
-          </p>
-        </div>
-      )}
-
-      {/* ── FEATURED — editorial inner-border split ──────────────────── */}
-      {/*
-        The latest note gets full editorial treatment: image left 50%,
-        content right 50%, 1px inner border separating them.
-        On hover, title transitions to the lime accent — a subtle reward.
-      */}
-      {featured && (
-        <Link href={`/notes/${featured.slug}`} className="group mt-8 block">
-          <article className="grid grid-cols-1 border border-zinc-200 dark:border-zinc-800 lg:grid-cols-2">
-
-            {/* Cover */}
-            {featured.cover ? (
-              <div className="relative aspect-[3/2] overflow-hidden border-b border-zinc-200 dark:border-zinc-800 lg:border-b-0 lg:border-r">
-                <Image
-                  src={featured.cover}
-                  alt={featured.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                  sizes="(max-width:1024px) 100vw, 520px"
-                  priority
-                />
-              </div>
-            ) : (
-              <div className="flex aspect-[3/2] items-center justify-center border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 lg:border-b-0 lg:border-r">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
-                  No cover
-                </span>
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="flex flex-col p-6 lg:p-8">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  {t('blog.latest')}
-                </span>
-                <time className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
-                  {fmtDate(featured.date)}
-                </time>
-                <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">
-                  {featured.reading}
-                </span>
-              </div>
-
-              <h2
-                className={[
-                  'font-heading text-2xl font-bold leading-tight tracking-tight',
-                  'text-zinc-900 dark:text-zinc-50',
-                  'transition-colors duration-200',
-                  'lg:text-3xl',
-                ].join(' ')}
+    <div className="mx-auto flex max-w-[1192px] justify-between gap-12 px-6">
+      {/* ── Feed ─────────────────────────────────────────────────────────── */}
+      <main className="min-w-0 max-w-[728px] flex-1 pt-6 sm:pt-10">
+        {q ? (
+          <h1 className="pb-6 text-[28px] font-bold leading-9 tracking-[-0.02em] text-[#6b6b6b] sm:text-[42px] sm:leading-[52px]">
+            {t('searchResults')} <span className="text-[#242424]">{q}</span>
+          </h1>
+        ) : (
+          <nav className="no-scrollbar sticky top-[57px] z-10 -mx-1 flex gap-8 overflow-x-auto border-b border-[#f2f2f2] bg-white px-1 text-[14px]" aria-label="Feed">
+            {(['latest', 'popular'] as const).map(tb => (
+              <Link
+                key={tb}
+                href={tabHref(tb)}
+                className={`shrink-0 border-b py-4 ${tab === tb ? 'border-[#242424] text-[#242424]' : 'border-transparent text-[#6b6b6b] hover:text-[#242424]'}`}
               >
-                {featured.title}
-              </h2>
-
-              <p className="mt-3 flex-1 line-clamp-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                {featured.excerpt}
-              </p>
-
-              {featured.tags.length > 0 && (
-                <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-zinc-300 dark:text-zinc-700">
-                  {featured.tags.join(' · ')}
-                </p>
-              )}
-
-              <div className="mt-6">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-700 dark:text-zinc-400 group-hover:text-[#2467AC] transition-colors duration-200">
-                  {t('blog.readNote')}
-                </span>
-              </div>
-            </div>
-          </article>
-        </Link>
-      )}
-
-      {/* ── ARCHIVE — editorial date / title / reading list ──────────── */}
-      {/*
-        Each row: [date left, fixed width] [title, dominant] [reading, right].
-        This reads like a newspaper's archive or a design journal index.
-        No card backgrounds — just ruled lines and type.
-      */}
-      {archive.length > 0 && (
-        <div className="mt-14">
-          <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-            {t('blog.archive')}
-          </p>
-          <Rule />
-          <ul>
-            {archive.map(note => (
-              <li key={note.id}>
-                <Link
-                  href={`/notes/${note.slug}`}
-                  className="group flex items-baseline justify-between gap-4 py-4 transition-colors duration-150 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 px-1"
-                >
-                  {/* Left: date + title */}
-                  <div className="flex min-w-0 items-baseline gap-5">
-                    <time className="hidden shrink-0 font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600 sm:block w-28">
-                      {fmtDate(note.date)}
-                    </time>
-                    <h3 className="truncate font-heading text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50 group-hover:text-[#2467AC] transition-colors duration-200">
-                      {note.title}
-                    </h3>
-                  </div>
-
-                  {/* Right: reading time */}
-                  <span className="shrink-0 font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
-                    {note.reading}
-                  </span>
-                </Link>
-                <Rule />
-              </li>
+                {t(tb)}
+              </Link>
             ))}
-          </ul>
+            {tags.slice(0, 6).map(({ tag }) => (
+              <Link key={tag} href={`/blog/tag/${encodeURIComponent(tag)}`} className="shrink-0 border-b border-transparent py-4 capitalize text-[#6b6b6b] hover:text-[#242424]">
+                {tag}
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        {shown.length === 0 && (
+          <p className="py-24 text-center text-[16px] text-[#6b6b6b]">{q ? t('noResults') : t('noStories')}</p>
+        )}
+
+        <div>
+          {shown.map((p, i) => <FeedRow key={p.id} post={p} locale={locale} t={t} priority={i < 3} />)}
         </div>
-      )}
-    </main>
+
+        {(hasMore || page > 1) && (
+          <div className="flex items-center justify-between py-10 text-[14px]">
+            {page > 1 ? <Link href={pageHref(page - 1)} className="rounded-full border border-[#242424] px-4 py-2 hover:bg-[#f9f9f9]">← {t('previous')}</Link> : <span />}
+            {hasMore && <Link href={pageHref(page + 1)} className="rounded-full border border-[#242424] px-4 py-2 hover:bg-[#f9f9f9]">{t('next')} →</Link>}
+          </div>
+        )}
+      </main>
+
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <aside className="hidden w-[328px] shrink-0 border-l border-[#f2f2f2] pl-10 lg:block">
+        <div className="sticky top-[57px] space-y-10 pb-10 pt-10">
+          <section className="rounded-md bg-[#f6f6f6] p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/me.png" alt="" className="h-16 w-16 rounded-full object-cover" />
+            <h2 className="mt-4 text-[16px] font-bold text-[#242424]">Arden BOUET</h2>
+            <p className="text-[13px] text-[#6b6b6b]">{total === 1 ? t('storyCount') : t('storiesCount', { n: total })}</p>
+            <p className="mt-3 text-[14px] leading-5 text-[#6b6b6b]">{t('aboutAuthor')}</p>
+          </section>
+
+          {featured.length > 0 && (
+            <section>
+              <h2 className="text-[16px] font-bold text-[#242424]">{t('staffPicks')}</h2>
+              <ul className="mt-3">{featured.map(p => <CompactRow key={p.id} post={p} locale={locale} />)}</ul>
+            </section>
+          )}
+
+          {tags.length > 0 && (
+            <section>
+              <h2 className="mb-4 text-[16px] font-bold text-[#242424]">{t('topics')}</h2>
+              <TopicPills tags={tags} />
+            </section>
+          )}
+
+          <section>
+            <h2 className="text-[16px] font-bold text-[#242424]">{t('subscribeTitle')}</h2>
+            <p className="mb-4 mt-1 text-[14px] leading-5 text-[#6b6b6b]">{t('subscribeBody')}</p>
+            <SubscribeForm source="blog-sidebar" variant="stacked" />
+          </section>
+        </div>
+      </aside>
+    </div>
   );
 }
