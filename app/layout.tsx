@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
+import { I18nProvider } from "./I18nProvider";
+import { getLocale } from "@/lib/serverT";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,9 +15,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const lang = cookies().get('arden_lang')?.value === 'fr' ? 'fr' : 'en';
+  const locale = getLocale();
   return (
-    <html lang={lang}>
+    <html lang={locale}>
       <head>
         <link rel="icon" href="/images/me.png" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,11 +38,13 @@ export default function RootLayout({
           });
         ` }} />
       </head>
-      
+
       <body>
-        <Header/>
-        {children}
-        <Footer/>
+        <I18nProvider locale={locale}>
+          <Header/>
+          {children}
+          <Footer/>
+        </I18nProvider>
       </body>
     </html>
   );

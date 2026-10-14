@@ -187,6 +187,7 @@ model CrmInvoice {
 
 enum PostStatus {
   DRAFT
+  REVIEW // submitted by a writer whose grant can't publish directly
   SCHEDULED
   PUBLISHED
   ARCHIVED
@@ -245,12 +246,25 @@ model Post {
   series      Series? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   seriesOrder Int     @default(0)
 
+  // null author = the site owner (Arden). Writers are Readers with a WriterGrant.
+  authorId         String?
+  author           Reader? @relation("AuthoredPosts", fields: [authorId], references: [id], onDelete: SetNull)
+  donationsEnabled Boolean @default(false)
+
+  // EN/FR versions of the same story point at the original.
+  translationOfId String?
+  translationOf   Post?   @relation("Translations", fields: [translationOfId], references: [id], onDelete: SetNull)
+  translations    Post[]  @relation("Translations")
+
   comments   Comment[]
   claps      Clap[]
   highlights Highlight[]
   bookmarks  Bookmark[]
   revisions  PostRevision[]
+  donations  Donation[]
 
+  @@index([authorId, status])
+  @@index([translationOfId])
   @@index([status, publishedAt])
   @@index([seriesId, seriesOrder])
 }
@@ -292,12 +306,199 @@ model Reader {
   image             String?
   banned            Boolean  @default(false)
 
-  comments     Comment[]
-  commentLikes CommentLike[]
-  highlights   Highlight[]
-  bookmarks    Bookmark[]
+  // Public profile (/blog/@handle)
+  handle     String?   @unique
+  bio        String    @default("")
+  website    String?
+  location   String?
+  locale     String    @default("en")
+  lastSeenAt DateTime?
+
+  // Writer payouts (Stripe Connect Express)
+  stripeAccountId      String? @unique
+  stripeChargesEnabled Boolean @default(false)
+  stripePayoutsEnabled Boolean @default(false)
+
+  comments          Comment[]
+  commentLikes      CommentLike[]
+  highlights        Highlight[]
+  bookmarks         Bookmark[]
+  posts             Post[]          @relation("AuthoredPosts")
+  writerGrant       WriterGrant?
+  writerRequests    WriterRequest[]
+  invitesUsed       WriterInvite[]
+  donationsReceived Donation[]      @relation("DonationRecipient")
+  donationsMade     Donation[]      @relation("DonationDonor")
 
   @@unique([provider, providerAccountId])
+}
+
+// ─── Writers ──────────────────────────────────────────────────────────────────
+
+enum GrantScope {
+  UNLIMITED // write as many stories as they like
+  LIMITED // up to maxPosts stories of their own
+  SPECIFIC // only edit the stories listed in postIds
+}
+
+/// Writing permission for a reader. One per reader; revoked grants keep their row.
+model WriterGrant {
+  id         String     @id @default(cuid())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  readerId   String     @unique
+  reader     Reader     @relation(fields: [readerId], references: [id], onDelete: Cascade)
+  scope      GrantScope @default(UNLIMITED)
+  maxPosts   Int?
+  postIds    String[]   @default([])
+  canPublish Boolean    @default(true) // false = stories go to REVIEW
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  note       String     @default("")
+}
+
+model WriterInvite {
+  id              String     @id @default(cuid())
+  createdAt       DateTime   @default(now())
+  token           String     @unique
+  email           String?
+  note            String     @default("")
+  scope           GrantScope @default(UNLIMITED)
+  maxPosts        Int?
+  postIds         String[]   @default([])
+  canPublish      Boolean    @default(true)
+  grantExpiresAt  DateTime?
+  inviteExpiresAt DateTime?
+  acceptedAt      DateTime?
+  acceptedById    String?
+  acceptedBy      Reader?    @relation(fields: [acceptedById], references: [id], onDelete: SetNull)
+  revokedAt       DateTime?
+}
+
+enum WriterRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model WriterRequest {
+  id           String              @id @default(cuid())
+  createdAt    DateTime            @default(now())
+  readerId     String
+  reader       Reader              @relation(fields: [readerId], references: [id], onDelete: Cascade)
+  message      String
+  sampleUrl    String?
+  topics       String[]            @default([])
+  status       WriterRequestStatus @default(PENDING)
+  decidedAt    DateTime?
+  decisionNote String              @default("")
+
+  @@index([status, createdAt])
+}
+
+// ─── Donations (Stripe Connect) ───────────────────────────────────────────────
+
+enum DonationStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Donation {
+  id                    String         @id @default(cuid())
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  postId                String?
+  post                  Post?          @relation(fields: [postId], references: [id], onDelete: SetNull)
+  // null recipient = the site owner (paid to the platform account)
+  recipientId           String?
+  recipient             Reader?        @relation("DonationRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  donorId               String?
+  donor                 Reader?        @relation("DonationDonor", fields: [donorId], references: [id], onDelete: SetNull)
+  donorName             String         @default("")
+  donorEmail            String?
+  message               String         @default("")
+  isPublic              Boolean        @default(true)
+  amount                Int // minor units (cents)
+  currency              String         @default("usd")
+  feeAmount             Int            @default(0)
+  status                DonationStatus @default(PENDING)
+  stripePaymentIntentId String         @unique
+
+  @@index([recipientId, status])
+  @@index([postId, status])
+}
+
+// ─── Bookings (Google Calendar) ───────────────────────────────────────────────
+
+enum MeetingLocation {
+  GOOGLE_MEET
+  CUSTOM_LINK
+  PHONE
+  IN_PERSON
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model MeetingType {
+  id             String          @id @default(cuid())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  slug           String          @unique
+  title          String
+  titleFr        String          @default("")
+  description    String          @default("")
+  descriptionFr  String          @default("")
+  durationMin    Int             @default(30)
+  bufferMin      Int             @default(10)
+  location       MeetingLocation @default(GOOGLE_MEET)
+  locationDetail String          @default("")
+  active         Boolean         @default(true)
+  sortOrder      Int             @default(0)
+  bookings       Booking[]
+}
+
+/// Singleton (id = 1): weekly availability + Google Calendar connection.
+model BookingConfig {
+  id                 Int      @id @default(1)
+  updatedAt          DateTime @updatedAt
+  timezone           String   @default("Africa/Nairobi")
+  // [{ day: 0-6 (Sun-Sat), start: "09:00", end: "17:00" }]
+  rules              Json     @default("[]")
+  minNoticeMin       Int      @default(240)
+  maxDaysAhead       Int      @default(30)
+  slotStepMin        Int      @default(30)
+  googleRefreshToken String?
+  googleEmail        String?
+  googleCalendarId   String   @default("primary")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  meetingTypeId String
+  meetingType   MeetingType   @relation(fields: [meetingTypeId], references: [id], onDelete: Cascade)
+  start         DateTime
+  end           DateTime
+  name          String
+  email         String
+  notes         String        @default("")
+  guestTimezone String        @default("UTC")
+  locale        String        @default("en")
+  status        BookingStatus @default(CONFIRMED)
+  googleEventId String?
+  meetLink      String?
+  cancelToken   String        @unique
+  cancelledAt   DateTime?
+  cancelReason  String        @default("")
+  crmClientId   String?
+
+  @@index([start, status])
 }
 
 model Comment {

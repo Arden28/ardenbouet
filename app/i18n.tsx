@@ -1,11 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
+// The URL decides the language (/fr prefix → middleware → x-locale). Components get a per-request
+// clone pinned to that locale from <I18nProvider> (app/I18nProvider.tsx); server code uses getT().
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    lng: 'en',
+    initAsync: false,
     resources: {
       en: {
         translation: {
@@ -353,13 +355,6 @@ i18n
     },
     fallbackLng: 'en',
     supportedLngs: ['en', 'fr'],
-    detection: {
-      order: ['cookie', 'localStorage', 'navigator'],
-      caches: ['cookie', 'localStorage'],
-      lookupCookie: 'arden_lang',
-      lookupLocalStorage: 'arden_lang',
-      cookieOptions: { path: '/', sameSite: 'lax' as const, maxAge: 365 * 24 * 60 * 60 },
-    },
     interpolation: { escapeValue: false },
   });
 
