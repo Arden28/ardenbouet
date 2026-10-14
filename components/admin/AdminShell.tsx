@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import {
-  FileText, MessageSquare, Mail, Library, LayoutDashboard, ShoppingBag, Users, Image as ImageIcon, Settings, LogOut, Menu, X, PenSquare, ExternalLink,
+  FileText, MessageSquare, UserCog, Mail, Library, LayoutDashboard, ShoppingBag, Users, Image as ImageIcon, Settings, LogOut, Menu, X, PenSquare, ExternalLink,
 } from 'lucide-react';
 
 type Item = { href: string; label: string; icon: typeof FileText; exact?: boolean; badge?: number };
@@ -18,6 +18,12 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       { href: '/admin/blog/comments', label: 'Responses', icon: MessageSquare },
       { href: '/admin/blog/subscribers', label: 'Subscribers', icon: Mail },
       { href: '/admin/blog/series', label: 'Series', icon: Library },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { href: '/admin/users', label: 'Users & writers', icon: UserCog },
     ],
   },
   {

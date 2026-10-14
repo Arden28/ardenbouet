@@ -19,6 +19,8 @@ export type PostCard = {
   claps: number;
   responses: number;
   seriesTitle: string | null;
+  /** null = the site owner */
+  author: { name: string; handle: string | null; image: string | null } | null;
 };
 
 /** Published, or scheduled with a publish time in the past (no cron needed). */
@@ -37,6 +39,7 @@ const cardSelect = {
   publishedAt: true, scheduledAt: true, status: true, readingMinutes: true, tags: true,
   featured: true, content: true,
   series: { select: { title: true } },
+  author: { select: { name: true, handle: true, image: true } },
   _count: { select: { comments: { where: { status: 'VISIBLE' as const } } } },
 } satisfies Prisma.PostSelect;
 
@@ -72,6 +75,7 @@ async function toCards(rows: CardRow[]): Promise<PostCard[]> {
     claps: claps.get(r.id) ?? 0,
     responses: r._count.comments,
     seriesTitle: r.series?.title ?? null,
+    author: r.author ?? null,
   }));
 }
 
@@ -82,9 +86,11 @@ export async function listPosts(opts: {
   take?: number;
   skip?: number;
   excludeIds?: string[];
+  authorId?: string;
 } = {}): Promise<PostCard[]> {
-  const { tag, q, sort = 'latest', take = 20, skip = 0, excludeIds } = opts;
+  const { tag, q, sort = 'latest', take = 20, skip = 0, excludeIds, authorId } = opts;
   const and: Prisma.PostWhereInput[] = [visibleWhere()];
+  if (authorId) and.push({ authorId });
   if (tag) and.push({ tags: { has: tag } });
   if (excludeIds?.length) and.push({ id: { notIn: excludeIds } });
   if (q?.trim()) {
@@ -153,6 +159,7 @@ export async function getPostBySlug(slug: string, { includeDrafts = false } = {}
   const post = await prisma.post.findUnique({
     where: { slug },
     include: {
+      author: { select: { id: true, name: true, handle: true, image: true, bio: true, stripeChargesEnabled: true } },
       series: {
         include: {
           posts: {

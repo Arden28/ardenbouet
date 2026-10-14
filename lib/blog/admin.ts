@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { docStats, firstParagraph, isDoc, slugify, type PMNode } from './doc';
 
 /** Static routes under /blog that a post slug must not shadow. */
-export const RESERVED_SLUGS = new Set(['search', 'subscribe', 'reading-list', 'tag', 'series', 'rss.xml', 'new']);
+export const RESERVED_SLUGS = new Set(['search', 'subscribe', 'reading-list', 'tag', 'series', 'author', 'rss.xml', 'new']);
 
 export type EditorPost = Omit<Post, 'createdAt' | 'updatedAt' | 'publishedAt' | 'scheduledAt' | 'newsletterSentAt'> & {
   createdAt: string;

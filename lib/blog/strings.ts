@@ -94,6 +94,8 @@ const en = {
   contents: 'Contents',
   views: '{n} views',
   free: 'Free',
+  writtenBy: 'Written by {name}',
+  storiesBy: 'Stories by {name}',
 } as const;
 
 export type BlogStringKey = keyof typeof en;
@@ -188,6 +190,8 @@ const fr: Record<BlogStringKey, string> = {
   contents: 'Sommaire',
   views: '{n} vues',
   free: 'Gratuit',
+  writtenBy: 'Écrit par {name}',
+  storiesBy: 'Articles de {name}',
 };
 
 const dicts: Record<BlogLocale, Record<BlogStringKey, string>> = { en, fr };

@@ -4,15 +4,28 @@ import { Sparkles, MessageCircle } from 'lucide-react';
 import type { PostCard } from '@/lib/blog/queries';
 import { fmtCount, fmtDate, type BlogLocale, type BlogT } from '@/lib/blog/strings';
 import { SaveButton } from './SaveButton';
+import { localizeHref } from '@/lib/i18n/config';
 
-export function AuthorChip({ size = 20 }: { size?: number }) {
-  return (
-    <span className="flex items-center gap-2 text-[13px] text-[#242424]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/me.png" alt="" width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
-      Arden BOUET
-    </span>
+type Author = PostCard['author'];
+
+/** A story's author; null author = the site owner. */
+export function AuthorChip({ author, size = 20, locale = 'en' }: { author?: Author; size?: number; locale?: BlogLocale }) {
+  const name = author?.name ?? 'Arden BOUET';
+  const image = author ? author.image : '/images/me.png';
+  const inner = (
+    <>
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt="" width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
+      ) : (
+        <span className="inline-flex items-center justify-center rounded-full bg-[#242424] text-[10px] uppercase text-white" style={{ width: size, height: size }}>{name[0]}</span>
+      )}
+      {name}
+    </>
   );
+  return author?.handle
+    ? <Link href={localizeHref(`/blog/author/${author.handle}`, locale)} className="flex items-center gap-2 text-[13px] text-[#242424] hover:underline">{inner}</Link>
+    : <span className="flex items-center gap-2 text-[13px] text-[#242424]">{inner}</span>;
 }
 
 export function ClapIcon({ className = 'h-[18px] w-[18px]', filled = false }: { className?: string; filled?: boolean }) {
@@ -24,11 +37,11 @@ export function ClapIcon({ className = 'h-[18px] w-[18px]', filled = false }: { 
 }
 
 export function FeedRow({ post, locale, t, priority = false }: { post: PostCard; locale: BlogLocale; t: BlogT; priority?: boolean }) {
-  const href = `/blog/${post.slug}`;
+  const href = localizeHref(`/blog/${post.slug}`, locale);
   return (
     <article className="border-b border-[#f2f2f2] py-6 sm:py-8">
       <div className="mb-2 flex items-center gap-2">
-        <AuthorChip />
+        <AuthorChip author={post.author} locale={locale} />
         {post.seriesTitle && <span className="truncate text-[13px] text-[#6b6b6b]">in {post.seriesTitle}</span>}
       </div>
       <div className="flex gap-6 sm:gap-14">
@@ -53,7 +66,7 @@ export function FeedRow({ post, locale, t, priority = false }: { post: PostCard;
             )}
             <span className="ml-auto flex items-center gap-1">
               {post.tags[0] && (
-                <Link href={`/blog/tag/${encodeURIComponent(post.tags[0])}`} className="hidden rounded-full bg-[#f2f2f2] px-2.5 py-1 text-[12px] text-[#242424] sm:inline">
+                <Link href={localizeHref(`/blog/tag/${encodeURIComponent(post.tags[0])}`, locale)} className="hidden rounded-full bg-[#f2f2f2] px-2.5 py-1 text-[12px] text-[#242424] sm:inline">
                   {post.tags[0]}
                 </Link>
               )}
@@ -80,8 +93,8 @@ export function FeedRow({ post, locale, t, priority = false }: { post: PostCard;
 export function CompactRow({ post, locale }: { post: PostCard; locale: BlogLocale }) {
   return (
     <li className="py-3">
-      <div className="mb-1.5"><AuthorChip size={16} /></div>
-      <Link href={`/blog/${post.slug}`} className="block text-[16px] font-bold leading-5 tracking-[-0.01em] text-[#242424] line-clamp-2 hover:underline">
+      <div className="mb-1.5"><AuthorChip author={post.author} size={16} locale={locale} /></div>
+      <Link href={localizeHref(`/blog/${post.slug}`, locale)} className="block text-[16px] font-bold leading-5 tracking-[-0.01em] text-[#242424] line-clamp-2 hover:underline">
         {post.title}
       </Link>
       <div className="mt-1.5 flex items-center gap-2 text-[13px] text-[#6b6b6b]">
@@ -92,13 +105,13 @@ export function CompactRow({ post, locale }: { post: PostCard; locale: BlogLocal
   );
 }
 
-export function TopicPills({ tags, active }: { tags: { tag: string; count: number }[]; active?: string }) {
+export function TopicPills({ tags, active, locale = 'en' }: { tags: { tag: string; count: number }[]; active?: string; locale?: BlogLocale }) {
   return (
     <div className="flex flex-wrap gap-2">
       {tags.map(({ tag }) => (
         <Link
           key={tag}
-          href={`/blog/tag/${encodeURIComponent(tag)}`}
+          href={localizeHref(`/blog/tag/${encodeURIComponent(tag)}`, locale)}
           className={`rounded-full px-4 py-2 text-[14px] transition-colors ${
             active === tag ? 'bg-[#242424] text-white' : 'bg-[#f2f2f2] text-[#242424] hover:bg-[#e6e6e6]'
           }`}
@@ -113,14 +126,14 @@ export function TopicPills({ tags, active }: { tags: { tag: string; count: numbe
 export function GridCard({ post, locale, t }: { post: PostCard; locale: BlogLocale; t: BlogT }) {
   return (
     <article className="flex flex-col">
-      <Link href={`/blog/${post.slug}`} className="group block">
+      <Link href={localizeHref(`/blog/${post.slug}`, locale)} className="group block">
         <div className="aspect-[16/9] w-full overflow-hidden bg-[#f2f2f2]">
           {post.coverUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={post.coverUrl} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
           )}
         </div>
-        <div className="mt-4"><AuthorChip /></div>
+        <div className="mt-4"><AuthorChip author={post.author} locale={locale} /></div>
         <h3 className="mt-2 text-[20px] font-bold leading-6 tracking-[-0.016em] text-[#242424] line-clamp-2">{post.title}</h3>
         {(post.subtitle || post.excerpt) && (
           <p className="mt-2 text-[16px] leading-[22px] text-[#6b6b6b] line-clamp-2">{post.subtitle || post.excerpt}</p>

@@ -22,7 +22,7 @@ export function Avatar({ name, image, size = 32 }: { name: string; image: string
 
 /** Paths where the site chrome steps aside (they bring their own). */
 export function hideChrome(path: string) {
-  return path.startsWith('/admin') || path === '/signin';
+  return path.startsWith('/admin') || path.startsWith('/write') || path === '/signin';
 }
 
 export function SiteHeader() {
@@ -105,7 +105,7 @@ export function SiteHeader() {
             <CalendarDays className="h-4 w-4" strokeWidth={1.6} /> {ui('nav.book')}
           </Link>
           {(isAdmin || isWriter) && (
-            <Link href={isAdmin ? '/admin/blog/new' : href('/me/stories/new')} className="hidden items-center gap-2 p-2 text-[14px] text-[#6b6b6b] hover:text-[#242424] md:flex">
+            <Link href={isAdmin ? '/admin/blog/new' : '/write/new'} className="hidden items-center gap-2 p-2 text-[14px] text-[#6b6b6b] hover:text-[#242424] md:flex">
               <PenSquare className="h-[22px] w-[22px]" strokeWidth={1.3} /> {ui('nav.write')}
             </Link>
           )}
