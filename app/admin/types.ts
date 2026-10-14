@@ -19,6 +19,8 @@ export type Project = {
   metric?: string;
   language?: 'en' | 'fr' | 'both';
   caseFile?: CaseFile;
+  /** French overrides, merged at render time (lib/i18n/content.ts). */
+  translations?: { fr?: Partial<Omit<Project, 'id' | 'translations'>> };
 };
 
 export type Experience = {
@@ -34,6 +36,8 @@ export type Experience = {
   tags?: string[];
   poster?: string;
   language?: 'en' | 'fr' | 'both';
+  /** French overrides, merged at render time (lib/i18n/content.ts). */
+  translations?: { fr?: Partial<Omit<Experience, 'id' | 'translations'>> };
 };
 
 export type JourneyItem = {
@@ -45,6 +49,8 @@ export type JourneyItem = {
   url?: string;
   note?: string;
   language?: 'en' | 'fr' | 'both';
+  /** French overrides, merged at render time (lib/i18n/content.ts). */
+  translations?: { fr?: Partial<Omit<JourneyItem, 'id' | 'translations'>> };
 };
 
 export type Note = {
@@ -94,6 +100,8 @@ export type ShopProduct = {
   buyUrl?: string;
   media?: ProductMediaItem[];
   discountCodes?: DiscountCode[];
+  /** French overrides, merged at render time (lib/i18n/content.ts). */
+  translations?: { fr?: Partial<Omit<ShopProduct, 'id' | 'translations'>> };
 };
 
 export type OrderStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
