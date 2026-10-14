@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { resolveEmbed, displayHost } from '@/lib/blog/embeds';
 import type { ContentCardKind } from '@/lib/blog/doc';
-import { pickFiles, uploadToR2 } from './upload';
+import { getMedia } from './media';
 import { useEmbeddables } from './embeddables';
 import { ContentPickerDialog } from './ContentPicker';
 
@@ -67,16 +67,13 @@ function CaptionInput({ value, onChange, placeholder = 'Type caption for image (
 
 // ─── Figure ──────────────────────────────────────────────────────────────────
 
-function FigureView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
+function FigureView({ node, updateAttributes, deleteNode, selected, editor }: NodeViewProps) {
   const { src, alt, caption, layout, uploading } = node.attrs as { src: string; alt: string; caption: string; layout: string; uploading?: boolean };
   const [editAlt, setEditAlt] = useState(false);
 
   const replace = async () => {
-    const [file] = await pickFiles();
-    if (!file) return;
-    updateAttributes({ uploading: true, src: URL.createObjectURL(file) });
-    try { updateAttributes({ src: await uploadToR2(file), uploading: false }); }
-    catch (e) { alert((e as Error).message); updateAttributes({ uploading: false }); }
+    const [url] = await getMedia(editor).pickImages(false).catch(e => { alert((e as Error).message); return []; });
+    if (url) updateAttributes({ src: url, uploading: false });
   };
 
   return (
@@ -145,16 +142,14 @@ export const Figure = Node.create({
 
 // ─── Gallery ─────────────────────────────────────────────────────────────────
 
-function GalleryView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
+function GalleryView({ node, updateAttributes, deleteNode, selected, editor }: NodeViewProps) {
   const images = (node.attrs.images ?? []) as { src: string; alt?: string }[];
   const [busy, setBusy] = useState(false);
 
   const add = async () => {
-    const files = await pickFiles('image/*', true);
-    if (!files.length) return;
     setBusy(true);
     try {
-      const urls = await Promise.all(files.map(f => uploadToR2(f)));
+      const urls = await getMedia(editor).pickImages(true);
       updateAttributes({ images: [...images, ...urls.map(src => ({ src, alt: '' }))].slice(0, 8) });
     } catch (e) { alert((e as Error).message); }
     setBusy(false);

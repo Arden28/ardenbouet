@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { splitLocale } from '@/lib/i18n/config';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
@@ -144,7 +145,8 @@ export const Footer = () => {
   }, []);
 
   // The blog renders its own footer (app/blog/layout.tsx).
-  if (pathname?.startsWith('/blog') || pathname?.startsWith('/admin/blog')) return null;
+  const bare = splitLocale(pathname || '/').path;
+  if (bare.startsWith('/blog') || bare.startsWith('/admin')) return null;
 
   return (
     /*

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { X, ImagePlus, Loader2, Calendar, Send, RotateCcw, Trash2, Archive, EyeOff, Plus, History } from 'lucide-react';
 import type { EditorPost } from '@/lib/blog/admin';
 import { slugify } from '@/lib/blog/doc';
-import { pickFiles, uploadToR2 } from './upload';
+import { useEditorMedia } from './media';
 
 type Patch = (p: Partial<EditorPost> & Record<string, unknown>, immediate?: boolean) => Promise<boolean>;
 
@@ -38,13 +38,12 @@ function toLocalInput(iso: string | null) {
 // ─── Cover picker ────────────────────────────────────────────────────────────
 
 export function CoverPicker({ value, onChange, fallback }: { value: string | null; onChange: (v: string | null) => void; fallback?: string }) {
+  const media = useEditorMedia();
   const [busy, setBusy] = useState(false);
   const shown = value || fallback;
   const upload = async () => {
-    const [f] = await pickFiles();
-    if (!f) return;
     setBusy(true);
-    try { onChange(await uploadToR2(f)); } catch (e) { alert((e as Error).message); }
+    try { const [url] = await media.pickImages(false); if (url) onChange(url); } catch (e) { alert((e as Error).message); }
     setBusy(false);
   };
   return (
@@ -53,7 +52,7 @@ export function CoverPicker({ value, onChange, fallback }: { value: string | nul
       {shown && <img src={shown} alt="" className="h-full w-full object-cover" />}
       <div className={`absolute inset-0 flex items-center justify-center gap-2 ${shown ? 'bg-black/0 opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100' : ''}`}>
         <button type="button" onClick={upload} className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] text-[#242424] shadow">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />} {shown ? 'Change' : 'Upload cover'}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />} {shown ? 'Change' : 'Choose cover'}
         </button>
         {value && <button type="button" onClick={() => onChange(null)} className="rounded-full bg-white px-4 py-2 text-[13px] text-[#242424] shadow">Remove</button>}
       </div>

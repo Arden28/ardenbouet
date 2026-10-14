@@ -26,15 +26,17 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       { href: '/admin?tab=projects', label: 'Portfolio content', icon: LayoutDashboard },
       { href: '/admin?tab=shop', label: 'Shop', icon: ShoppingBag },
       { href: '/admin?tab=crm', label: 'CRM', icon: Users },
-      { href: '/admin?tab=media', label: 'Media', icon: ImageIcon },
+      { href: '/admin/media', label: 'Media library', icon: ImageIcon },
       { href: '/admin?tab=settings', label: 'Settings', icon: Settings },
     ],
   },
 ];
 
-export function AdminShell({ children, title, actions, badges }: {
+export function AdminShell({ children, title, actions, badges, flush = false }: {
   children: ReactNode;
   title: string;
+  /** No page padding (full-bleed tools like the media library). */
+  flush?: boolean;
   actions?: ReactNode;
   badges?: Record<string, number>;
 }) {
@@ -111,7 +113,7 @@ export function AdminShell({ children, title, actions, badges }: {
           <h1 className="text-[18px] font-semibold tracking-[-0.01em] text-[#242424]">{title}</h1>
           <div className="ml-auto flex items-center gap-2">{actions}</div>
         </header>
-        <main className="px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className={flush ? '' : 'px-4 py-6 sm:px-8 sm:py-8'}>{children}</main>
       </div>
     </div>
   );

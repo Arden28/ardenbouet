@@ -7,13 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Download } from 'lucide-react';
 
 import type { ContentBundle, Order } from './types';
-import { scanBundleUrls } from '@/lib/scanBundleUrls';
 import ProjectsEditor   from './components/ProjectsEditor';
 import ExperienceEditor from './components/ExperienceEditor';
 import JourneyEditor    from './components/JourneyEditor';
 import ShopEditor       from './components/ShopEditor';
 import OrdersEditor     from './components/OrdersEditor';
-import MediaLibrary     from './components/MediaLibrary';
+import MediaLibrary     from '@/components/admin/media/MediaLibrary';
 import SettingsEditor   from './components/SettingsEditor';
 import CrmEditor        from './components/crm/CrmEditor';
 import { Toggle, downloadJSON } from './components/atoms';
@@ -249,7 +248,6 @@ export default function AdminPage() {
   };
 
   // ── Counts ────────────────────────────────────────────────────────────────
-  const usedUrls = useMemo(() => bundle ? scanBundleUrls(bundle) : new Set<string>(), [bundle]);
 
   const counts = useMemo(() => ({
     projects:   bundle?.projects.length    ?? 0,
@@ -462,7 +460,7 @@ export default function AdminPage() {
                   onChange={v => setBundle(b => ({ ...b!, journey: v }))}
                 />
               )}
-              {tab === 'media'      && <MediaLibrary usedUrls={usedUrls} />}
+              {tab === 'media'      && <div className="h-[calc(100vh-180px)] overflow-hidden rounded-lg border border-zinc-200"><MediaLibrary /></div>}
               {tab === 'settings'   && (
                 <SettingsEditor
                   value={bundle.settings ?? {}}

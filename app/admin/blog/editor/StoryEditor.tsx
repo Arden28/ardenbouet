@@ -26,6 +26,7 @@ import { SelectionBubble, BlockInserter, TableMenu } from './EditorMenus';
 import { PublishDialog, SettingsDrawer, RevisionsDrawer } from './Panels';
 import { usePostSaver, type SaveState } from './usePostSaver';
 import { loadEmbeddables } from './embeddables';
+import { adminMedia, EditorMediaContext, MediaAdapter, type EditorMedia } from './media';
 import '@/app/blog/story.css';
 
 const lowlight = createLowlight(common);
@@ -108,7 +109,7 @@ const SHORTCUTS: [string, string][] = [
   ['**text** / _text_', 'Markdown shortcuts work as you type'], ['---', 'Separator'], ['```', 'Code block'],
 ];
 
-export default function StoryEditor({ id }: { id: string }) {
+export default function StoryEditor({ id, media = adminMedia }: { id: string; media?: EditorMedia }) {
   const router = useRouter();
   const [post, setPost] = useState<EditorPost | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -183,6 +184,7 @@ export default function StoryEditor({ id }: { id: string }) {
       Markdown.configure({ html: false, tightLists: true, transformPastedText: true }),
       Figure, Gallery, Embed, Callout, PullQuote, ContentCard, StoryButton,
       SlashCommands,
+      MediaAdapter.configure({ media }),
     ],
     editorProps: {
       attributes: { class: 'outline-none min-h-[50vh] pb-[40vh]', spellcheck: 'true' },
@@ -285,6 +287,7 @@ export default function StoryEditor({ id }: { id: string }) {
   }
 
   return (
+    <EditorMediaContext.Provider value={media}>
     <div className="blog-ui min-h-screen bg-white">
       {/* ── Top bar ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-[60] border-b border-[#f2f2f2] bg-white/95 backdrop-blur">
@@ -392,5 +395,6 @@ export default function StoryEditor({ id }: { id: string }) {
         </div>
       )}
     </div>
+    </EditorMediaContext.Provider>
   );
 }

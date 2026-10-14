@@ -3,6 +3,7 @@ import '../i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePathname } from 'next/navigation';
+import { splitLocale } from '@/lib/i18n/config';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -141,7 +142,8 @@ export const Header = () => {
   };
 
   // The blog renders its own Medium-style chrome (app/blog/layout.tsx).
-  if (pathname?.startsWith('/blog') || pathname?.startsWith('/admin/blog')) return null;
+  const bare = splitLocale(pathname || '/').path;
+  if (bare.startsWith('/blog') || bare.startsWith('/admin')) return null;
 
   // ── Shared chrome classes ─────────────────────────────────────────────────
   const chromeCls = scrolled

@@ -6,9 +6,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, FolderOpen } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { openMediaPicker } from '@/components/admin/media/MediaPicker';
 
-const MediaPicker = dynamic(() => import('./MediaPicker'), { ssr: false });
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
 const EXPO = [0.16, 1, 0.3, 1] as const;
@@ -476,9 +475,8 @@ export interface MediaPickerFieldProps {
 }
 
 export function MediaPickerField({
-  label, value, onChange, placeholder, hint,
+  label, value, onChange, placeholder, hint, accept,
 }: MediaPickerFieldProps) {
-  const [pickerOpen,  setPickerOpen]  = useState(false);
   const [imgError,    setImgError]    = useState(false);
   const prevValue = useRef(value);
 
@@ -505,7 +503,10 @@ export function MediaPickerField({
         />
         <button
           type="button"
-          onClick={() => setPickerOpen(true)}
+          onClick={async () => {
+            const picked = await openMediaPicker({ accept: accept === '*' ? undefined : accept, title: `Choose ${label.toLowerCase()}` });
+            if (picked?.[0]) onChange(picked[0].url);
+          }}
           className="flex shrink-0 items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-zinc-500 hover:border-[#2467AC] hover:text-[#2467AC] transition-colors"
           title="Browse media library"
         >
@@ -528,12 +529,6 @@ export function MediaPickerField({
       {hint && (
         <p className="mt-1 font-mono text-[9px] text-zinc-400">{hint}</p>
       )}
-
-      <MediaPicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={url => { onChange(url); setPickerOpen(false); }}
-      />
     </div>
   );
 }
