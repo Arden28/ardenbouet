@@ -146,7 +146,7 @@ export const Footer = () => {
 
   // The blog renders its own footer (app/blog/layout.tsx).
   const bare = splitLocale(pathname || '/').path;
-  if (bare.startsWith('/blog') || bare.startsWith('/admin')) return null;
+  if (bare.startsWith('/blog') || bare.startsWith('/admin') || bare === '/signin') return null;
 
   return (
     /*

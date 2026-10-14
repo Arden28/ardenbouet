@@ -25,7 +25,8 @@ import { SlashCommands, insertUploadedImages } from './commands';
 import { SelectionBubble, BlockInserter, TableMenu } from './EditorMenus';
 import { PublishDialog, SettingsDrawer, RevisionsDrawer } from './Panels';
 import { usePostSaver, type SaveState } from './usePostSaver';
-import { loadEmbeddables } from './embeddables';
+import { loadEmbeddables, setEmbeddablesUrl } from './embeddables';
+import { ADMIN_ENV, EditorEnvContext, type EditorEnv } from './env';
 import { adminMedia, EditorMediaContext, MediaAdapter, type EditorMedia } from './media';
 import '@/app/blog/story.css';
 
@@ -98,6 +99,7 @@ function SaveIndicator({ state, error, onRetry }: { state: SaveState; error: str
 const STATUS_CHIP: Record<string, string> = {
   DRAFT: 'bg-[#f2f2f2] text-[#6b6b6b]',
   SCHEDULED: 'bg-[#fdf6e7] text-[#7a5a00]',
+  REVIEW: 'bg-[#eef4fb] text-[#2467ac]',
   PUBLISHED: 'bg-[#eef7ee] text-[#1a8917]',
   ARCHIVED: 'bg-[#f2f2f2] text-[#9b9b9b]',
 };
@@ -109,7 +111,8 @@ const SHORTCUTS: [string, string][] = [
   ['**text** / _text_', 'Markdown shortcuts work as you type'], ['---', 'Separator'], ['```', 'Code block'],
 ];
 
-export default function StoryEditor({ id, media = adminMedia }: { id: string; media?: EditorMedia }) {
+export default function StoryEditor({ id, media = adminMedia, env = ADMIN_ENV }: { id: string; media?: EditorMedia; env?: EditorEnv }) {
+  setEmbeddablesUrl(env.embeddablesApi);
   const router = useRouter();
   const [post, setPost] = useState<EditorPost | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -127,7 +130,7 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
       return next;
     });
   }, []);
-  const { state: saveState, error: saveError, queue, flush } = usePostSaver(post, onSaved);
+  const { state: saveState, error: saveError, queue, flush } = usePostSaver(post, onSaved, env.postsApi);
 
   const patch = useCallback((p: Record<string, unknown>, immediate = false) => {
     const { status: _s, scheduledAt: _sa, ...optimistic } = p;
@@ -137,20 +140,20 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
 
   // ── Load ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch(`/api/admin/blog/posts/${id}`, { cache: 'no-store' })
+    fetch(`${env.postsApi}/${id}`, { cache: 'no-store' })
       .then(async r => { if (!r.ok) throw new Error(r.status === 404 ? 'Story not found' : `Error ${r.status}`); return r.json(); })
       .then(d => setPost(d.post))
       .catch(e => setLoadError(e.message));
-    fetch('/api/admin/blog/posts').then(r => r.json()).then(d => {
+    if (env.role === 'admin') fetch('/api/admin/blog/posts').then(r => r.json()).then(d => {
       const counts = new Map<string, number>();
       for (const p of d.posts ?? []) for (const t of p.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
       setTagSuggestions(Array.from(counts).sort((a, b) => b[1] - a[1]).map(([t]) => t));
     }).catch(() => {});
-    fetch('/api/admin/blog/subscribers').then(r => r.json()).then(d => {
+    if (env.role === 'admin') fetch('/api/admin/blog/subscribers').then(r => r.json()).then(d => {
       setSubscriberCount((d.subscribers ?? []).filter((s: { status: string }) => s.status === 'ACTIVE').length);
     }).catch(() => setSubscriberCount(0));
     loadEmbeddables();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Editor ──────────────────────────────────────────────────────────────
   const editor = useEditor({
@@ -263,7 +266,7 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
 
   const restore = async (r: { title: string; subtitle: string; content: unknown; bodyMd: string | null }) => {
     if (!editor || !post) return;
-    await fetch(`/api/admin/blog/posts/${post.id}/revisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'Before restore' }) });
+    await fetch(`${env.postsApi}/${post.id}/revisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'Before restore' }) });
     if (r.content) editor.commands.setContent(r.content as object, { emitUpdate: false });
     else editor.commands.setContent(r.bodyMd ?? '', { emitUpdate: false });
     patch({ title: r.title, subtitle: r.subtitle, content: editor.getJSON() }, true);
@@ -274,25 +277,27 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
     if (!post) return 'Publish';
     if (post.status === 'PUBLISHED') return 'Update';
     if (post.status === 'SCHEDULED') return 'Scheduled';
-    return 'Publish';
-  }, [post]);
+    if (post.status === 'REVIEW') return 'In review';
+    return env.canPublish ? 'Publish' : 'Submit';
+  }, [post, env.canPublish]);
 
   if (loadError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 font-sans">
         <p className="text-[#6b6b6b]">{loadError}</p>
-        <Link href="/admin/blog" className="rounded-full bg-[#242424] px-4 py-2 text-sm text-white">Back to stories</Link>
+        <Link href={env.homeHref} className="rounded-full bg-[#242424] px-4 py-2 text-sm text-white">Back to stories</Link>
       </div>
     );
   }
 
   return (
+    <EditorEnvContext.Provider value={env}>
     <EditorMediaContext.Provider value={media}>
     <div className="blog-ui min-h-screen bg-white">
       {/* ── Top bar ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-[60] border-b border-[#f2f2f2] bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-[57px] max-w-[1192px] items-center gap-3 px-4 font-sans sm:px-6">
-          <Link href="/admin/blog" onClick={() => { flush(); }} className="flex items-center gap-2 rounded-full p-1.5 text-[#6b6b6b] hover:bg-[#f2f2f2] hover:text-[#242424]" aria-label="Back to stories">
+          <Link href={env.homeHref} onClick={() => { flush(); }} className="flex items-center gap-2 rounded-full p-1.5 text-[#6b6b6b] hover:bg-[#f2f2f2] hover:text-[#242424]" aria-label="Back to stories">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <span className="font-story text-[22px] font-bold text-[#242424]">Arden</span>
@@ -373,7 +378,7 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
           post={post}
           patch={patch}
           onClose={() => setPanel(null)}
-          onDeleted={() => router.push('/admin/blog')}
+          onDeleted={() => router.push(env.homeHref)}
           fallbackCover={stats.cover}
           tagSuggestions={tagSuggestions}
         />
@@ -396,5 +401,6 @@ export default function StoryEditor({ id, media = adminMedia }: { id: string; me
       )}
     </div>
     </EditorMediaContext.Provider>
+    </EditorEnvContext.Provider>
   );
 }

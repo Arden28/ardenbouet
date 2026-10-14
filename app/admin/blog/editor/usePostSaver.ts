@@ -6,7 +6,7 @@ import type { EditorPost } from '@/lib/blog/admin';
 
 export type SaveState = 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
 
-export function usePostSaver(post: EditorPost | null, onSaved: (p: EditorPost) => void, delay = 1200) {
+export function usePostSaver(post: EditorPost | null, onSaved: (p: EditorPost) => void, postsApi = '/api/admin/blog/posts', delay = 1200) {
   const [state, setState] = useState<SaveState>('saved');
   const [error, setError] = useState('');
   const pending = useRef<Record<string, unknown>>({});
@@ -30,7 +30,7 @@ export function usePostSaver(post: EditorPost | null, onSaved: (p: EditorPost) =
 
     const run = (async () => {
       try {
-        const res = await fetch(`/api/admin/blog/posts/${id}`, {
+        const res = await fetch(`${postsApi}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...patch, baseUpdatedAt: base.current }),
@@ -65,7 +65,7 @@ export function usePostSaver(post: EditorPost | null, onSaved: (p: EditorPost) =
     inflight.current = null;
     if (ok && Object.keys(pending.current).length) timer.current = setTimeout(flush, delay);
     return ok;
-  }, [id, delay]);
+  }, [id, delay, postsApi]);
 
   const queue = useCallback((patch: Record<string, unknown>, immediate = false) => {
     pending.current = { ...pending.current, ...patch };

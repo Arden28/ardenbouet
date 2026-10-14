@@ -66,6 +66,7 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.language !== undefined) data.language = ['en', 'fr', 'both'].includes(String(body.language)) ? String(body.language) : 'en';
   if (body.featured !== undefined) data.featured = !!body.featured;
   if (body.commentsOpen !== undefined) data.commentsOpen = !!body.commentsOpen;
+  if (body.donationsEnabled !== undefined) data.donationsEnabled = !!body.donationsEnabled;
   if (body.tags !== undefined) {
     const tags = Array.isArray(body.tags) ? body.tags : [];
     data.tags = Array.from(new Set(tags.map(t => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))).slice(0, 5);

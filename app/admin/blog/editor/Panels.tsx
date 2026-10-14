@@ -6,6 +6,7 @@ import { X, ImagePlus, Loader2, Calendar, Send, RotateCcw, Trash2, Archive, EyeO
 import type { EditorPost } from '@/lib/blog/admin';
 import { slugify } from '@/lib/blog/doc';
 import { useEditorMedia } from './media';
+import { useEditorEnv } from './env';
 
 type Patch = (p: Partial<EditorPost> & Record<string, unknown>, immediate?: boolean) => Promise<boolean>;
 
@@ -111,14 +112,17 @@ function TagInput({ value, onChange, suggestions }: { value: string[]; onChange:
 export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggestions, subscriberCount }: {
   post: EditorPost; patch: Patch; onClose: () => void; fallbackCover?: string; tagSuggestions: string[]; subscriberCount: number | null;
 }) {
+  const env = useEditorEnv();
   const live = post.status === 'PUBLISHED';
+  const review = !env.canPublish;
+  const [donations, setDonations] = useState(post.donationsEnabled);
   const [mode, setMode] = useState<'now' | 'schedule'>(post.status === 'SCHEDULED' ? 'schedule' : 'now');
   const [when, setWhen] = useState(toLocalInput(post.scheduledAt));
   const [title, setTitle] = useState(post.title);
   const [subtitle, setSubtitle] = useState(post.subtitle);
   const [tags, setTags] = useState(post.tags);
   const [cover, setCover] = useState(post.coverUrl);
-  const [notify, setNotify] = useState(!post.newsletterSentAt && !live);
+  const [notify, setNotify] = useState(env.role === 'admin' && !post.newsletterSentAt && !live);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -126,7 +130,7 @@ export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggesti
     if (!title.trim()) { setError('Add a title before publishing.'); return; }
     setBusy(true);
     setError('');
-    const base = { title, subtitle, tags, coverUrl: cover };
+    const base = { title, subtitle, tags, coverUrl: cover, donationsEnabled: donations };
     const ok = mode === 'schedule'
       ? await patch({ ...base, status: 'SCHEDULED', scheduledAt: new Date(when).toISOString() }, true)
       : await patch({ ...base, status: 'PUBLISHED' }, true);
@@ -161,7 +165,7 @@ export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggesti
             <TagInput value={tags} onChange={setTags} suggestions={tagSuggestions} />
           </div>
 
-          {!live && (
+          {!live && !review && (
             <div className="mt-6">
               <span className={label}>When</span>
               <div className="flex gap-2">
@@ -177,7 +181,19 @@ export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggesti
             </div>
           )}
 
-          {!post.newsletterSentAt && mode === 'now' && (
+          <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-md border border-[#e6e6e6] p-3">
+            <input type="checkbox" checked={donations} disabled={!env.donationsReady} onChange={e => setDonations(e.target.checked)} className="mt-1 h-4 w-4 accent-[#1a8917]" />
+            <span className="text-[14px] text-[#242424]">
+              Accept donations on this story
+              <span className="block text-[12px] text-[#9b9b9b]">
+                {env.donationsReady ? 'Readers can support the writer with a one-time tip at the end of the story.' : 'Connect Stripe in Account → Earnings to accept donations.'}
+              </span>
+            </span>
+          </label>
+
+          {review && <p className="mt-6 rounded-md bg-[#fdf6e7] px-3 py-2.5 text-[13px] text-[#7a5a00]">Your stories are reviewed before they go live. You’ll get an email once it’s published.</p>}
+
+          {env.role === 'admin' && !post.newsletterSentAt && mode === 'now' && (
             <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-md border border-[#e6e6e6] p-3">
               <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} className="mt-1 h-4 w-4 accent-[#1a8917]" />
               <span className="text-[14px] text-[#242424]">
@@ -188,13 +204,13 @@ export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggesti
               </span>
             </label>
           )}
-          {post.newsletterSentAt && <p className="mt-6 text-[13px] text-[#6b6b6b]">Newsletter already sent on {new Date(post.newsletterSentAt).toLocaleDateString()}.</p>}
+          {env.role === 'admin' && post.newsletterSentAt && <p className="mt-6 text-[13px] text-[#6b6b6b]">Newsletter already sent on {new Date(post.newsletterSentAt).toLocaleDateString()}.</p>}
 
           {error && <p className="mt-4 text-[13px] text-[#c94a4a]">{error}</p>}
           <div className="mt-auto flex items-center gap-3 pt-10">
             <button type="button" onClick={submit} disabled={busy} className="flex items-center gap-2 rounded-full bg-[#1a8917] px-5 py-2.5 text-[14px] text-white hover:bg-[#156d12] disabled:opacity-60">
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {live ? 'Update story' : mode === 'schedule' ? 'Schedule' : 'Publish now'}
+              {live ? 'Update story' : review ? (post.status === 'REVIEW' ? 'Update submission' : 'Submit for review') : mode === 'schedule' ? 'Schedule' : 'Publish now'}
             </button>
             <button type="button" onClick={onClose} className="rounded-full px-4 py-2.5 text-[14px] text-[#242424] hover:bg-[#f2f2f2]">Cancel</button>
           </div>
@@ -211,12 +227,14 @@ type Series = { id: string; title: string; posts: { id: string }[] };
 export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover, tagSuggestions }: {
   post: EditorPost; patch: Patch; onClose: () => void; onDeleted: () => void; fallbackCover?: string; tagSuggestions: string[];
 }) {
+  const env = useEditorEnv();
+  const isAdmin = env.role === 'admin';
   const [slug, setSlug] = useState(post.slug);
   const [slugErr, setSlugErr] = useState('');
   const [series, setSeries] = useState<Series[] | null>(null);
   const [newSeries, setNewSeries] = useState('');
 
-  useEffect(() => { fetch('/api/admin/blog/series').then(r => r.json()).then(d => setSeries(d.series ?? [])).catch(() => setSeries([])); }, []);
+  useEffect(() => { if (!isAdmin) return; fetch('/api/admin/blog/series').then(r => r.json()).then(d => setSeries(d.series ?? [])).catch(() => setSeries([])); }, []);
 
   const saveSlug = async () => {
     const s = slugify(slug);
@@ -274,7 +292,7 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
           <textarea id="st-excerpt" rows={3} value={post.excerpt} onChange={e => patch({ excerpt: e.target.value })} placeholder="Auto-generated from the first paragraph if empty" className={input} />
         </section>
 
-        <section>
+        {isAdmin && <section>
           <span className={label}>Series</span>
           <select
             value={post.seriesId ?? ''}
@@ -295,7 +313,7 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
             <input value={newSeries} onChange={e => setNewSeries(e.target.value)} placeholder="New series title" className={input} onKeyDown={e => e.key === 'Enter' && createSeries()} />
             <button type="button" onClick={createSeries} className="flex shrink-0 items-center gap-1 rounded-md border border-[#e6e6e6] px-3 text-[13px] hover:border-[#242424]"><Plus className="h-4 w-4" /> Create</button>
           </div>
-        </section>
+        </section>}
 
         <section>
           <span className={label}>Search & social</span>
@@ -307,15 +325,16 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
           <input value={post.seoTitle ?? ''} onChange={e => patch({ seoTitle: e.target.value })} placeholder="SEO title (defaults to the story title)" className={`${input} mt-2`} />
           <textarea rows={2} value={post.seoDescription ?? ''} onChange={e => patch({ seoDescription: e.target.value })} placeholder="SEO description (defaults to the subtitle)" className={`${input} mt-2`} />
           <p className={help}>{(post.seoDescription || seoDesc || '').length}/160 characters</p>
-          <input value={post.canonicalUrl ?? ''} onChange={e => patch({ canonicalUrl: e.target.value })} placeholder="Canonical URL (if first published elsewhere)" className={`${input} mt-2`} />
+          {isAdmin && <input value={post.canonicalUrl ?? ''} onChange={e => patch({ canonicalUrl: e.target.value })} placeholder="Canonical URL (if first published elsewhere)" className={`${input} mt-2`} />}
         </section>
 
         <section className="space-y-3">
           <span className={label}>Options</span>
           {([
-            ['featured', 'Feature this story', 'Pinned in the “Featured” sidebar and marked with a star.'],
-            ['commentsOpen', 'Allow responses', 'Readers can respond and reply to each other.'],
-          ] as const).map(([key, title, desc]) => (
+            ...(isAdmin ? [['featured', 'Feature this story', 'Pinned in the “Featured” sidebar and marked with a star.'] as const] : []),
+            ['commentsOpen', 'Allow responses', 'Readers can respond and reply to each other.'] as const,
+            ...(env.donationsReady ? [['donationsEnabled', 'Accept donations', 'Show a “Support the writer” button at the end of the story.'] as const] : []),
+          ]).map(([key, title, desc]) => (
             <label key={key} className="flex cursor-pointer items-start gap-3">
               <input type="checkbox" checked={!!post[key]} onChange={e => patch({ [key]: e.target.checked })} className="mt-1 h-4 w-4 accent-[#1a8917]" />
               <span className="text-[14px] text-[#242424]">{title}<span className="block text-[12px] text-[#9b9b9b]">{desc}</span></span>
@@ -344,7 +363,7 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
             type="button"
             onClick={async () => {
               if (!confirm('Delete this story permanently? Responses, claps and highlights are deleted too.')) return;
-              await fetch(`/api/admin/blog/posts/${post.id}`, { method: 'DELETE' });
+              await fetch(`${env.postsApi}/${post.id}`, { method: 'DELETE' });
               onDeleted();
             }}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[14px] text-[#c94a4a] hover:bg-[#fdf1f1]"
@@ -375,15 +394,16 @@ function revisionText(content: unknown): string {
 export function RevisionsDrawer({ postId, onRestore, onClose }: {
   postId: string; onRestore: (r: Revision) => void; onClose: () => void;
 }) {
+  const env = useEditorEnv();
   const [revs, setRevs] = useState<Revision[] | null>(null);
   const [active, setActive] = useState<string | null>(null);
-  const load = () => fetch(`/api/admin/blog/posts/${postId}/revisions`).then(r => r.json()).then(d => setRevs(d.revisions ?? [])).catch(() => setRevs([]));
+  const load = () => fetch(`${env.postsApi}/${postId}/revisions`).then(r => r.json()).then(d => setRevs(d.revisions ?? [])).catch(() => setRevs([]));
   useEffect(() => { load(); }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveNow = async () => {
     const lbl = window.prompt('Name this version', 'Saved version');
     if (lbl === null) return;
-    await fetch(`/api/admin/blog/posts/${postId}/revisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: lbl }) });
+    await fetch(`${env.postsApi}/${postId}/revisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: lbl }) });
     load();
   };
   const selected = useMemo(() => revs?.find(r => r.id === active), [revs, active]);

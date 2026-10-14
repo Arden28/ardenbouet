@@ -143,7 +143,7 @@ export const Header = () => {
 
   // The blog renders its own Medium-style chrome (app/blog/layout.tsx).
   const bare = splitLocale(pathname || '/').path;
-  if (bare.startsWith('/blog') || bare.startsWith('/admin')) return null;
+  if (bare.startsWith('/blog') || bare.startsWith('/admin') || bare === '/signin') return null;
 
   // ── Shared chrome classes ─────────────────────────────────────────────────
   const chromeCls = scrolled

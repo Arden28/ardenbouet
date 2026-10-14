@@ -22,6 +22,7 @@ export async function GET(req: Request) {
       publishedAt: true, scheduledAt: true, updatedAt: true, createdAt: true, tags: true, featured: true,
       readingMinutes: true, wordCount: true, views: true, newsletterSentAt: true,
       series: { select: { title: true } },
+      author: { select: { name: true, handle: true, image: true } },
       _count: { select: { comments: { where: { status: 'VISIBLE' } }, highlights: true, bookmarks: true } },
     },
     orderBy: [{ updatedAt: 'desc' }],
