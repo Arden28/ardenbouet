@@ -6,6 +6,7 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { Button, Field, PageIntro, SaveStatus, Spinner, inputCls } from '@/components/admin/ui';
 import type { SiteSettings } from '@/app/admin/types';
 import '@/app/blog/story.css';
+import { BackupCard } from './BackupCard';
 
 type Integration = { key: string; name: string; ok: boolean; detail: string; env: string };
 
@@ -66,6 +67,8 @@ export default function SettingsPage() {
                 </div>
               </section>
             ))}
+
+            <BackupCard />
 
             <section className="rounded-2xl border border-[#f0f0f0] bg-white p-6">
               <h2 className="text-[15px] font-semibold text-[#242424]">Integrations</h2>
