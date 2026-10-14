@@ -8,6 +8,7 @@ import { Search, PenSquare, ChevronDown, LogOut, User, Bookmark, FileText, Shiel
 import { splitLocale } from '@/lib/i18n/config';
 import { LanguageSwitcher } from '@/app/components/LanguageSwitcher';
 import { useReader, useSite } from './SiteProviders';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Avatar({ name, image, size = 32 }: { name: string; image: string | null; size?: number }) {
   return image ? (
@@ -106,6 +107,7 @@ export function SiteHeader() {
               <PenSquare className="h-[22px] w-[22px]" strokeWidth={1.3} /> {ui('nav.write')}
             </Link>
           )}
+          <ThemeToggle />
           <div className="hidden md:block"><LanguageSwitcher /></div>
 
           {loading ? (

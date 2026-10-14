@@ -126,14 +126,17 @@ export function TopicPills({ tags, active, locale = 'en' }: { tags: { tag: strin
 export function GridCard({ post, locale, t }: { post: PostCard; locale: BlogLocale; t: BlogT }) {
   return (
     <article className="flex flex-col">
-      <Link href={localizeHref(`/blog/${post.slug}`, locale)} className="group block">
+      <Link href={localizeHref(`/blog/${post.slug}`, locale)} className="group block" tabIndex={-1} aria-hidden>
         <div className="aspect-[16/9] w-full overflow-hidden bg-[#f2f2f2]">
           {post.coverUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={post.coverUrl} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
           )}
         </div>
-        <div className="mt-4"><AuthorChip author={post.author} locale={locale} /></div>
+      </Link>
+      {/* The author chip can be a link itself, so it sits outside the card links (no nested <a>). */}
+      <div className="mt-4"><AuthorChip author={post.author} locale={locale} /></div>
+      <Link href={localizeHref(`/blog/${post.slug}`, locale)} className="group block">
         <h3 className="mt-2 text-[20px] font-bold leading-6 tracking-[-0.016em] text-[#242424] line-clamp-2">{post.title}</h3>
         {(post.subtitle || post.excerpt) && (
           <p className="mt-2 text-[16px] leading-[22px] text-[#6b6b6b] line-clamp-2">{post.subtitle || post.excerpt}</p>

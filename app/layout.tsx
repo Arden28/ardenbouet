@@ -10,6 +10,8 @@ import { isAdminRequest } from "@/lib/apiUtil";
 import { readerProviderIds } from "@/lib/readerAuth";
 import "./globals.css";
 import "./blog/story.css";
+import "./dark.css";
+import { themeInitScript } from "@/lib/theme";
 
 const serif = Source_Serif_4({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-serif", display: "swap" });
 
@@ -26,8 +28,9 @@ export default async function RootLayout({
   const locale = getLocale();
   const isAdmin = await isAdminRequest();
   return (
-    <html lang={locale} className={serif.variable}>
+    <html lang={locale} className={serif.variable} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <link rel="icon" href="/images/me.png" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -1,490 +1,206 @@
 'use client';
-// app/admin/page.tsx
+// /admin — dashboard: range filter, quick actions, KPIs, charts, queues and activity.
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  PenSquare, Package, FolderKanban, UserPlus, Upload, Receipt, CalendarCog, ArrowUpRight, ArrowDownRight,
+  ShoppingBag, MessageCircle, CalendarDays, Mail, Feather, Users, Eye, AlertCircle,
+} from 'lucide-react';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { BarChart } from '@/components/admin/BarChart';
+import { Spinner } from '@/components/admin/ui';
+import { openMediaPicker } from '@/components/admin/media/MediaPicker';
+import '@/app/blog/story.css';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Download } from 'lucide-react';
-
-import type { ContentBundle, Order } from './types';
-import ProjectsEditor   from './components/ProjectsEditor';
-import ExperienceEditor from './components/ExperienceEditor';
-import JourneyEditor    from './components/JourneyEditor';
-import ShopEditor       from './components/ShopEditor';
-import OrdersEditor     from './components/OrdersEditor';
-import MediaLibrary     from '@/components/admin/media/MediaLibrary';
-import SettingsEditor   from './components/SettingsEditor';
-import CrmEditor        from './components/crm/CrmEditor';
-import { Toggle, downloadJSON } from './components/atoms';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-type Tab    = 'projects' | 'experience' | 'journey' | 'notes' | 'media' | 'shop' | 'orders' | 'crm' | 'settings';
-type Status = 'idle' | 'dirty' | 'saving' | 'error' | 'loaded' | 'loading';
-
-const STORAGE_KEY = 'arden_cms_v2';
-const EXPO        = [0.16, 1, 0.3, 1] as const;
-
-// ─── Status dot ──────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<Status, { color: string; label: string; pulse?: boolean }> = {
-  loading: { color: 'bg-zinc-600',   label: 'Loading…'  },
-  idle:    { color: 'bg-zinc-600',   label: 'Ready'      },
-  dirty:   { color: 'bg-amber-400',  label: 'Unsaved',   pulse: true },
-  saving:  { color: 'bg-blue-400',   label: 'Saving…',   pulse: true },
-  loaded:  { color: 'bg-[#2467AC]',  label: 'All saved'  },
-  error:   { color: 'bg-red-500',    label: 'Save error', pulse: true },
+type Dash = {
+  range: string; unit: 'day' | 'month';
+  kpis: {
+    revenue: { value: number; delta: number | null; orders: number; donations: number };
+    pendingOrders: number;
+    audience: { readers: number; readersDelta: number | null; subscribers: number; subscribersDelta: number | null; activeSubscribers: number };
+    blog: { posts: number; published: number; views: number; claps: number; responses: number; responsesDelta: number | null; hidden: number; review: number };
+    bookings: { upcoming: number; created: number };
+    messages: { unread: number; created: number };
+    crm: { activeProjects: number; pipeline: number; openInvoices: number; openAmount: number; overdue: number };
+    writerRequests: number;
+  };
+  series: { revenue: { key: string; value: number }[]; audience: { key: string; value: number }[] };
+  topStories: { id: string; title: string; slug: string; views: number; responses: number }[];
+  activity: { type: string; at: string; title: string; meta: string; href: string; unread?: boolean }[];
 };
 
-function StatusDot({ status }: { status: Status }) {
-  const cfg = STATUS_CONFIG[status];
+const RANGES = [['7d', '7 days'], ['30d', '30 days'], ['90d', '90 days'], ['12m', '12 months'], ['all', 'All time']] as const;
+const money = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n >= 1000 ? 0 : 2 }).format(n);
+const compact = (n: number) => new Intl.NumberFormat('en-US', { notation: n >= 10_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
+const ago = (iso: string) => {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))}m`;
+  if (s < 86400) return `${Math.round(s / 3600)}h`;
+  return `${Math.round(s / 86400)}d`;
+};
+
+function Delta({ v }: { v: number | null }) {
+  if (v === null || v === 0) return null;
+  const up = v > 0;
   return (
-    <div className="flex items-center gap-2">
-      <span className="relative flex h-1.5 w-1.5">
-        {cfg.pulse && (
-          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${cfg.color} opacity-75`} />
-        )}
-        <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${cfg.color}`} />
-      </span>
-      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-400">
-        {cfg.label}
-      </span>
-    </div>
+    <span className={`inline-flex items-center gap-0.5 text-[12px] font-medium ${up ? 'text-[#1a6b17]' : 'text-[#c94a4a]'}`}>
+      {up ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}{Math.abs(v)}%
+    </span>
   );
 }
 
-// ─── Nav item ─────────────────────────────────────────────────────────────────
-function NavItem({
-  label,
-  count,
-  active,
-  onClick,
-  hint,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-  hint?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'group relative flex w-full items-center gap-3 px-4 py-2.5',
-        'transition-colors duration-150 focus-visible:outline-none',
-        active ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300',
-      ].join(' ')}
-    >
-      <span
-        className={[
-          'absolute left-0 h-full w-[2px] bg-[#2467AC]',
-          'transition-opacity duration-150',
-          active ? 'opacity-100' : 'opacity-0',
-        ].join(' ')}
-        aria-hidden
-      />
-      <span className="flex-1 text-left font-mono text-[10px] uppercase tracking-widest">{label}</span>
-      <div className="flex items-center gap-1.5">
-        {hint && count > 0 && (
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" aria-label={`${count} ${hint}`} />
-        )}
-        <span className={['font-mono text-[9px] tabular-nums', active ? 'text-zinc-400' : 'text-zinc-700'].join(' ')}>
-          {count}
-        </span>
+function Kpi({ label, value, sub, delta, href, icon: Icon }: { label: string; value: string; sub?: string; delta?: number | null; href?: string; icon: typeof Eye }) {
+  const inner = (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-[13px] text-[#6b6b6b]"><Icon className="h-4 w-4" strokeWidth={1.6} /> {label}</span>
+        {delta !== undefined && <Delta v={delta} />}
       </div>
-    </button>
+      <p className="mt-3 text-[30px] font-semibold tabular-nums tracking-[-0.02em] text-[#242424]">{value}</p>
+      {sub && <p className="mt-0.5 text-[12px] text-[#9b9b9b]">{sub}</p>}
+    </>
   );
+  const cls = 'block rounded-2xl border border-[#f0f0f0] bg-white p-5 transition-colors';
+  return href ? <Link href={href} className={`${cls} hover:border-[#d4d4d4]`}>{inner}</Link> : <div className={cls}>{inner}</div>;
 }
 
-// ─── Sidebar action button ────────────────────────────────────────────────────
-function SidebarAction({
-  onClick,
-  icon: Icon,
-  label,
-  children,
-}: {
-  onClick?: () => void;
-  icon?: React.ElementType;
-  label: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'group flex w-full items-center gap-2 px-3 py-2',
-        'font-mono text-[9px] uppercase tracking-widest',
-        'text-zinc-500 hover:text-zinc-200',
-        'transition-colors duration-150 focus-visible:outline-none',
-      ].join(' ')}
-    >
-      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
-      <span>{label}</span>
-      {children}
-    </button>
-  );
-}
+const ACTIVITY_ICON: Record<string, typeof Eye> = { order: ShoppingBag, response: MessageCircle, booking: CalendarDays, message: Mail, writer: Feather, subscriber: Users };
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-// Matches the final layout exactly — no layout shift when bundle loads.
-function Skeleton() {
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="hidden w-[220px] shrink-0 flex-col bg-zinc-900 lg:flex" />
-      <div className="flex flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-        <div className="flex h-14 items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 px-6">
-          <div className="h-3 w-24 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-3 w-32 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
-        </div>
-        <div className="flex-1 p-6">
-          <div className="grid grid-cols-1 border-l border-t border-zinc-200 dark:border-zinc-800 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 animate-pulse border-b border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50" />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-export default function AdminPage() {
-  const router = useRouter();
-
-  const [tab,        setTab]        = useState<Tab>('projects');
-  const [bundle,     setBundle]     = useState<ContentBundle | null>(null);
-  const [orders,     setOrders]     = useState<Order[]>([]);
-  const [status,     setStatus]     = useState<Status>('loading');
-  const [autosave,   setAutosave]   = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Deep links from the new admin shell: /admin?tab=shop etc. Notes moved to /admin/blog.
+export default function Dashboard() {
+  const [range, setRange] = useState<string>('30d');
+  const [d, setD] = useState<Dash | null>(null);
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get('tab') as Tab | null;
-    if (wanted === 'notes') router.replace('/admin/blog');
-    else if (wanted) setTab(wanted);
-  }, [router]);
-
-  // ── Initial load ──────────────────────────────────────────────────────────
+    try { const saved = localStorage.getItem('admin_dash_range'); if (saved) setRange(saved); } catch { /* ignore */ }
+  }, []);
   useEffect(() => {
-    setStatus('loading');
-    setLoadFailed(false);
-    (async () => {
-      try {
-        const res = await fetch('/api/admin/content', {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-        });
-        if (res.status === 401) { router.push('/admin/login?next=/admin'); return; }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
-        const json = await res.json() as any;
-        setBundle({
-          projects:    json.projects    ?? [],
-          experiences: json.experiences ?? [],
-          journey:     json.journey     ?? [],
-          notes:       json.notes       ?? [],
-          products:    json.products    ?? [],
-          settings:    json.settings    ?? {},
-        });
-        setLoadFailed(false);
-        setStatus('loaded');
-        // Load orders in parallel (separate model, non-blocking)
-        fetch('/api/admin/orders', { credentials: 'same-origin', cache: 'no-store' })
-          .then(r => r.ok ? r.json() : [])
-          .then((data: Order[]) => setOrders(Array.isArray(data) ? data : []))
-          .catch(() => {});
-      } catch {
-        setLoadFailed(true);
-        setStatus('error');
-      }
-    })();
-  }, [router, retryCount]);
+    try { localStorage.setItem('admin_dash_range', range); } catch { /* ignore */ }
+    setD(null);
+    fetch(`/api/admin/dashboard?range=${range}`, { cache: 'no-store' }).then(r => r.json()).then(setD);
+  }, [range]);
 
-  // ── Autosave + localStorage ───────────────────────────────────────────────
-  useEffect(() => {
-    if (!bundle || loadFailed) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bundle));
-    setStatus(prev => prev === 'saving' || prev === 'loaded' ? prev : 'dirty');
-    if (autosave) {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => { void saveServer(); }, 1500);
-    }
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, autosave, loadFailed]);
-
-  // ── Server save ───────────────────────────────────────────────────────────
-  async function saveServer() {
-    if (!bundle) return;
-    try {
-      setStatus('saving');
-      await fetch('/api/admin/content', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(bundle),
-      });
-      setStatus('loaded');
-    } catch {
-      setStatus('error');
-    }
-  }
-
-  // ── Import / export ───────────────────────────────────────────────────────
-  const onImport = async (file: File | null) => {
-    if (!file) return;
-    try {
-      setBundle(JSON.parse(await file.text()));
-    } catch { alert('Invalid JSON file.'); }
-  };
-
-  const exportAll = () => {
-    if (bundle) downloadJSON('content.json', bundle);
-  };
-
-  // ── Counts ────────────────────────────────────────────────────────────────
-
-  const counts = useMemo(() => ({
-    projects:   bundle?.projects.length    ?? 0,
-    experience: bundle?.experiences.length ?? 0,
-    journey:    bundle?.journey.length     ?? 0,
-    notes:      bundle?.notes.length       ?? 0,
-    shop:       bundle?.products.length    ?? 0,
-    orders:     orders.filter(o => o.status === 'PENDING').length, // show pending count
-  }), [bundle, orders]);
-
-  if (!bundle && !loadFailed) return <Skeleton />;
-  if (loadFailed && !bundle) return (
-    <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
-          Failed to load content
-        </p>
-        <button
-          type="button"
-          onClick={() => setRetryCount(c => c + 1)}
-          className="border border-zinc-900 dark:border-zinc-100 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-50 dark:hover:text-zinc-900 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-  if (!bundle) return null; // TypeScript narrowing: bundle is ContentBundle past this point
-
-  const NAV: { key: Tab; label: string; count: number; hint?: string }[] = [
-    { key: 'projects',   label: 'Projects',   count: counts.projects   },
-    { key: 'experience', label: 'Experience', count: counts.experience },
-    { key: 'journey',    label: 'Journey',    count: counts.journey    },
-    { key: 'notes',      label: 'Blog ↗',     count: 0                 },
-    { key: 'media',      label: 'Media',      count: 0                 },
-    { key: 'shop',       label: 'Shop',       count: counts.shop       },
-    { key: 'orders',     label: 'Orders',     count: counts.orders,    hint: counts.orders > 0 ? 'pending' : undefined },
-    { key: 'crm',        label: 'CRM',        count: 0                 },
-    { key: 'settings',   label: 'Settings',   count: 0                 },
+  const actions = [
+    { label: 'Write a story', href: '/admin/blog/new', icon: PenSquare },
+    { label: 'New product', href: '/admin/products?new=1', icon: Package },
+    { label: 'New project', href: '/admin/projects?new=1', icon: FolderKanban },
+    { label: 'Invite a writer', href: '/admin/users?tab=invites', icon: UserPlus },
+    { label: 'Create invoice', href: '/admin/crm?tab=invoices&new=1', icon: Receipt },
+    { label: 'Availability', href: '/admin/bookings/settings', icon: CalendarCog },
   ];
 
+  const k = d?.kpis;
+  const attention = k ? [
+    k.blog.review ? { label: `${k.blog.review} ${k.blog.review === 1 ? 'story' : 'stories'} waiting for review`, href: '/admin/blog' } : null,
+    k.writerRequests ? { label: `${k.writerRequests} writer ${k.writerRequests === 1 ? 'request' : 'requests'}`, href: '/admin/users?tab=requests' } : null,
+    k.messages.unread ? { label: `${k.messages.unread} unread ${k.messages.unread === 1 ? 'message' : 'messages'}`, href: '/admin/messages' } : null,
+    k.pendingOrders ? { label: `${k.pendingOrders} pending ${k.pendingOrders === 1 ? 'order' : 'orders'}`, href: '/admin/orders' } : null,
+    k.crm.overdue ? { label: `${k.crm.overdue} overdue ${k.crm.overdue === 1 ? 'invoice' : 'invoices'}`, href: '/admin/crm?tab=invoices' } : null,
+    k.blog.hidden ? { label: `${k.blog.hidden} hidden ${k.blog.hidden === 1 ? 'response' : 'responses'}`, href: '/admin/blog/comments' } : null,
+  ].filter((x): x is { label: string; href: string } => !!x) : [];
+
   return (
-    <div className="flex h-screen overflow-hidden">
-
-      {/* ── SIDEBAR ──────────────────────────────────────────────────── */}
-      {/*
-        Dark sidebar — authoritative, permanent.
-        bg-zinc-900 creates strong contrast with the light content area.
-      */}
-      <aside className="hidden w-[220px] shrink-0 flex-col bg-zinc-900 lg:flex">
-
-        {/* Brand */}
-        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-800 px-4">
-          <div
-            className={[
-              'inline-flex h-8 w-8 shrink-0 items-center justify-center',
-              'border border-zinc-700',
-              'font-heading text-[10px] font-black text-zinc-100',
-            ].join(' ')}
-          >
-            AB
-          </div>
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">
-            Admin CMS
-          </span>
-        </div>
-
-        {/* Status */}
-        <div className="shrink-0 border-b border-zinc-800 px-4 py-3">
-          <StatusDot status={status} />
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 py-2" aria-label="Admin sections">
-          {NAV.map(item => (
-            <NavItem
-              key={item.key}
-              label={item.label}
-              count={item.count}
-              active={tab === item.key}
-              onClick={() => (item.key === 'notes' ? router.push('/admin/blog') : setTab(item.key))}
-            />
+    <AdminShell
+      title="Dashboard"
+      actions={
+        <div className="flex rounded-full bg-[#f2f2f2] p-0.5 text-[13px]" role="tablist" aria-label="Date range">
+          {RANGES.map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={range === key} onClick={() => setRange(key)}
+              className={`rounded-full px-3 py-1.5 transition-colors ${range === key ? 'bg-white font-medium text-[#242424] shadow-sm' : 'text-[#6b6b6b] hover:text-[#242424]'}`}>
+              <span className="hidden sm:inline">{label}</span><span className="sm:hidden">{key}</span>
+            </button>
           ))}
-        </nav>
-
-        {/* Sidebar footer */}
-        <div className="shrink-0 border-t border-zinc-800 py-2">
-          {/* Autosave toggle */}
-          <div className="flex items-center justify-between px-4 py-2">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500">
-              Autosave
-            </span>
-            <Toggle checked={autosave} onChange={setAutosave} />
-          </div>
-
-          <div className="h-px mx-4 bg-zinc-800 my-1" />
-
-          {/* Import */}
-          <SidebarAction icon={Upload} label="Import JSON" onClick={() => document.getElementById('admin-import')?.click()}>
-            <input
-              id="admin-import"
-              type="file"
-              hidden
-              accept=".json"
-              onChange={e => onImport(e.target.files?.[0] ?? null)}
-            />
-          </SidebarAction>
-
-          {/* Export */}
-          <SidebarAction icon={Download} label="Export JSON" onClick={exportAll} />
-
-          <div className="h-px mx-4 bg-zinc-800 my-1" />
-
-          {/* Save */}
-          <div className="px-3 py-2 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={saveServer}
-              disabled={status === 'saving' || status === 'loading' || loadFailed}
-              className={[
-                'w-full py-2',
-                'font-mono text-[10px] uppercase tracking-widest',
-                'border transition-colors duration-150 focus-visible:outline-none',
-                'disabled:opacity-40 disabled:cursor-not-allowed',
-                status === 'dirty' || status === 'error'
-                  ? 'border-zinc-100 bg-zinc-100 text-zinc-900 hover:bg-zinc-200'
-                  : 'border-zinc-700 bg-transparent text-zinc-500 hover:border-zinc-400 hover:text-zinc-300',
-              ].join(' ')}
-            >
-              {status === 'saving' ? 'Saving…' : 'Save Changes'}
-            </button>
-            {loadFailed && (
-              <button
-                type="button"
-                onClick={() => setRetryCount(c => c + 1)}
-                className="w-full py-2 border border-red-500/40 bg-transparent font-mono text-[10px] uppercase tracking-widest text-red-400 hover:border-red-400 hover:text-red-300 transition-colors focus-visible:outline-none"
-              >
-                Retry Load
-              </button>
-            )}
-          </div>
         </div>
-      </aside>
+      }
+    >
+      <div className="mx-auto max-w-[1200px]">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {actions.map(a => (
+            <Link key={a.label} href={a.href} className="flex shrink-0 items-center gap-2 rounded-full border border-[#e6e6e6] bg-white px-4 py-2 text-[13px] text-[#242424] transition-colors hover:border-[#242424]">
+              <a.icon className="h-4 w-4" strokeWidth={1.6} /> {a.label}
+            </Link>
+          ))}
+          <button type="button" onClick={() => openMediaPicker({ title: 'Media library' })} className="flex shrink-0 items-center gap-2 rounded-full border border-[#e6e6e6] bg-white px-4 py-2 text-[13px] text-[#242424] transition-colors hover:border-[#242424]">
+            <Upload className="h-4 w-4" strokeWidth={1.6} /> Upload media
+          </button>
+        </div>
 
-      {/* ── CONTENT AREA ─────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-
-        {/* Mobile top bar (tablet / mobile) */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 lg:hidden">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-7 w-7 items-center justify-center border border-zinc-900 dark:border-zinc-100 font-heading text-[9px] font-black">
-              AB
+        {!d || !k ? <Spinner /> : (
+          <>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Kpi icon={ShoppingBag} label="Revenue" value={money(k.revenue.value)} delta={k.revenue.delta} sub={`${k.revenue.orders} orders · ${k.revenue.donations} donations`} href="/admin/orders" />
+              <Kpi icon={Users} label="New readers" value={compact(k.audience.readers)} delta={k.audience.readersDelta} sub={`${k.audience.subscribers} new subscribers · ${k.audience.activeSubscribers} total`} href="/admin/users" />
+              <Kpi icon={MessageCircle} label="Responses" value={compact(k.blog.responses)} delta={k.blog.responsesDelta} sub={`${compact(k.blog.claps)} claps · ${compact(k.blog.views)} views all-time`} href="/admin/blog/comments" />
+              <Kpi icon={CalendarDays} label="Upcoming calls" value={String(k.bookings.upcoming)} sub={`${k.bookings.created} booked in range`} href="/admin/bookings" />
+              <Kpi icon={Receipt} label="Outstanding invoices" value={money(k.crm.openAmount)} sub={`${k.crm.openInvoices} open${k.crm.overdue ? ` · ${k.crm.overdue} overdue` : ''}`} href="/admin/crm?tab=invoices" />
+              <Kpi icon={FolderKanban} label="CRM pipeline" value={money(k.crm.pipeline)} sub={`${k.crm.activeProjects} active projects`} href="/admin/crm?tab=projects" />
+              <Kpi icon={PenSquare} label="Stories" value={String(k.blog.posts)} sub={`${k.blog.published} published in range`} href="/admin/blog" />
+              <Kpi icon={Mail} label="Messages" value={String(k.messages.created)} sub={`${k.messages.unread} unread`} href="/admin/messages" />
             </div>
-            <StatusDot status={status} />
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Mobile tab selector */}
-            <select
-              value={tab}
-              onChange={e => (e.target.value === 'notes' ? router.push('/admin/blog') : setTab(e.target.value as Tab))}
-              className={[
-                'border border-zinc-200 dark:border-zinc-800',
-                'bg-white dark:bg-zinc-900',
-                'px-2 py-1.5 font-mono text-[10px] uppercase tracking-widest',
-                'text-zinc-700 dark:text-zinc-300',
-                'focus:outline-none',
-              ].join(' ')}
-            >
-              {NAV.map(n => (
-                <option key={n.key} value={n.key}>{n.label} ({n.count})</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={saveServer}
-              disabled={status === 'saving'}
-              className="border border-zinc-900 dark:border-zinc-100 px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-50 dark:hover:text-zinc-900 transition-colors disabled:opacity-40"
-            >
-              Save
-            </button>
-          </div>
-        </header>
 
-        {/* Main editor content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: EXPO }}
-            >
-              {tab === 'projects'   && (
-                <ProjectsEditor
-                  value={bundle.projects}
-                  onChange={v => setBundle(b => ({ ...b!, projects: v }))}
-                />
-              )}
-              {tab === 'experience' && (
-                <ExperienceEditor
-                  value={bundle.experiences}
-                  onChange={v => setBundle(b => ({ ...b!, experiences: v }))}
-                />
-              )}
-              {tab === 'journey'    && (
-                <JourneyEditor
-                  value={bundle.journey}
-                  onChange={v => setBundle(b => ({ ...b!, journey: v }))}
-                />
-              )}
-              {tab === 'media'      && <div className="h-[calc(100vh-180px)] overflow-hidden rounded-lg border border-zinc-200"><MediaLibrary /></div>}
-              {tab === 'settings'   && (
-                <SettingsEditor
-                  value={bundle.settings ?? {}}
-                  onChange={v => setBundle(b => ({ ...b!, settings: v }))}
-                />
-              )}
-              {tab === 'shop'       && (
-                <ShopEditor
-                  value={bundle.products}
-                  onChange={v => setBundle(b => ({ ...b!, products: v }))}
-                />
-              )}
-              {tab === 'orders'     && (
-                <OrdersEditor
-                  orders={orders}
-                  products={bundle.products}
-                  onOrdersChange={setOrders}
-                />
-              )}
-              {tab === 'crm'        && <CrmEditor />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+            <div className="mt-6 grid gap-3 lg:grid-cols-2">
+              <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+                <h3 className="text-[14px] font-semibold text-[#242424]">Revenue</h3>
+                <p className="mb-4 text-[12px] text-[#9b9b9b]">Paid orders + donations to you, per {d.unit}</p>
+                <BarChart data={d.series.revenue} format={money} label="Revenue" unit={d.unit} />
+              </section>
+              <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+                <h3 className="text-[14px] font-semibold text-[#242424]">Audience growth</h3>
+                <p className="mb-4 text-[12px] text-[#9b9b9b]">New readers + confirmed subscribers, per {d.unit}</p>
+                <BarChart data={d.series.audience} format={n => compact(n)} label="New people" unit={d.unit} />
+              </section>
+            </div>
+
+            <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr]">
+              <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+                <h3 className="flex items-center gap-2 text-[14px] font-semibold text-[#242424]"><AlertCircle className="h-4 w-4" /> Needs your attention</h3>
+                {attention.length === 0 ? <p className="mt-6 text-[14px] text-[#9b9b9b]">All clear. Nothing waiting on you.</p> : (
+                  <ul className="mt-3">
+                    {attention.map(a => (
+                      <li key={a.label}><Link href={a.href} className="flex items-center justify-between gap-3 border-b border-[#f6f6f6] py-2.5 text-[14px] text-[#242424] last:border-0 hover:text-[#1a8917]">{a.label} <ArrowUpRight className="h-4 w-4 text-[#9b9b9b]" /></Link></li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+                <h3 className="text-[14px] font-semibold text-[#242424]">Top stories</h3>
+                <ol className="mt-3">
+                  {d.topStories.length === 0 && <li className="mt-3 text-[14px] text-[#9b9b9b]">Publish a story to see it here.</li>}
+                  {d.topStories.map((s, i) => (
+                    <li key={s.id} className="flex items-baseline gap-3 border-b border-[#f6f6f6] py-2.5 last:border-0">
+                      <span className="font-story text-[18px] text-[#c4c4c4]">{i + 1}</span>
+                      <Link href={`/admin/blog/${s.id}`} className="min-w-0 flex-1 truncate text-[14px] text-[#242424] hover:underline">{s.title || 'Untitled'}</Link>
+                      <span className="flex shrink-0 items-center gap-1 text-[12px] tabular-nums text-[#6b6b6b]"><Eye className="h-3.5 w-3.5" /> {compact(s.views)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+                <h3 className="text-[14px] font-semibold text-[#242424]">Recent activity</h3>
+                <ul className="mt-3">
+                  {d.activity.length === 0 && <li className="mt-3 text-[14px] text-[#9b9b9b]">No activity yet.</li>}
+                  {d.activity.map((a, i) => {
+                    const Icon = ACTIVITY_ICON[a.type] ?? Eye;
+                    const meta = a.type === 'booking' ? `Call on ${new Date(a.meta.replace(/^cancelled · /, '')).toLocaleString()}${a.meta.startsWith('cancelled') ? ' · cancelled' : ''}` : a.meta;
+                    return (
+                      <li key={i}>
+                        <Link href={a.href} className="flex items-start gap-3 border-b border-[#f6f6f6] py-2.5 last:border-0">
+                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f6f6f6] text-[#6b6b6b]"><Icon className="h-3.5 w-3.5" /></span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5 truncate text-[13px] text-[#242424]">{a.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1a8917]" />}{a.title}</span>
+                            <span className="block truncate text-[12px] text-[#9b9b9b]">{meta}</span>
+                          </span>
+                          <span className="shrink-0 text-[12px] text-[#9b9b9b]">{ago(a.at)}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </AdminShell>
   );
 }

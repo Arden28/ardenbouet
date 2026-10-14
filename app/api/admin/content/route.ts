@@ -76,3 +76,30 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
 }
+const SECTIONS = ['projects', 'experiences', 'journey', 'notes', 'products', 'settings'] as const;
+
+/**
+ * PATCH { section, value } — replace ONE section of the content bundle. Read-modify-write on the
+ * server, so separate admin pages (projects, products, settings…) never overwrite each other.
+ */
+export async function PATCH(req: Request) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const { section, value } = await req.json();
+    if (!SECTIONS.includes(section)) return NextResponse.json({ error: 'Unknown section' }, { status: 400 });
+    if (section === 'settings' ? typeof value !== 'object' || Array.isArray(value) || !value : !Array.isArray(value)) {
+      return NextResponse.json({ error: 'Invalid value' }, { status: 400 });
+    }
+    const updated = await prisma.$transaction(async tx => {
+      const row = await tx.content.findUnique({ where: { id: 1 } });
+      const data = { ...((row?.data as Record<string, unknown>) ?? DEFAULT_CONTENT), [section]: value };
+      return tx.content.upsert({ where: { id: 1 }, create: { id: 1, data }, update: { data } });
+    });
+    return NextResponse.json({ ok: true, updatedAt: updated.updatedAt });
+  } catch (err) {
+    console.error('PATCH /api/admin/content failed', err);
+    return NextResponse.json({ error: 'Save failed' }, { status: 500 });
+  }
+}

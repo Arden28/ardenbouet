@@ -4,9 +4,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { X } from 'lucide-react';
-import { AuthPanel } from '@/components/auth/AuthPanel';
-import { BookingModal } from '@/components/booking/BookingModal';
-import { authCopy } from '@/app/signin/SignInClient';
+import dynamic from 'next/dynamic';
+
+// Heavy dialogs load on first open only, not with every page.
+const AuthPanel = dynamic(() => import('@/components/auth/AuthPanel').then(m => m.AuthPanel), { ssr: false });
+const BookingModal = dynamic(() => import('@/components/booking/BookingModal').then(m => m.BookingModal), { ssr: false });
+import { authCopy } from '@/components/auth/authCopy';
 import { blogT, type BlogLocale, type BlogT } from '@/lib/blog/strings';
 import { uiT, type UiT } from '@/lib/i18n/ui';
 import { localizeHref } from '@/lib/i18n/config';
@@ -81,7 +84,8 @@ function Inner({ children, locale, isAdmin, providers }: { children: ReactNode; 
   const [dialog, setDialog] = useState<{ open: boolean; reason?: string }>({ open: false });
   const [me, setMe] = useState<MeSummary>(null);
   const [booking, setBooking] = useState<{ open: boolean; type?: string }>({ open: false });
-  const openBooking = useCallback((type?: string) => setBooking({ open: true, type }), []);
+  const [bookingLoaded, setBookingLoaded] = useState(false);
+  const openBooking = useCallback((type?: string) => { setBookingLoaded(true); setBooking({ open: true, type }); }, []);
   // ?book=1 (e.g. from a cancellation email) opens the booking modal.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
@@ -103,7 +107,7 @@ function Inner({ children, locale, isAdmin, providers }: { children: ReactNode; 
   return (
     <SiteCtx.Provider value={value}>
       {children}
-      <BookingModal open={booking.open} initialType={booking.type} locale={locale} onClose={() => setBooking(b => ({ ...b, open: false }))} />
+      {(booking.open || bookingLoaded) && <BookingModal open={booking.open} initialType={booking.type} locale={locale} onClose={() => setBooking(b => ({ ...b, open: false }))} />}
       <SignInDialog open={dialog.open} reason={dialog.reason} onClose={() => setDialog({ open: false })} providers={providers} locale={locale} />
     </SiteCtx.Provider>
   );
