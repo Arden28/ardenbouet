@@ -63,7 +63,8 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
-export const readerProviderIds = providers.map(p => p.id);
+// Credentials providers report id 'credentials' at the top level; the configured id lives in options.
+export const readerProviderIds = providers.map(p => (p as { options?: { id?: string } }).options?.id ?? p.id);
 
 export const readerAuthOptions: NextAuthOptions = {
   providers,
