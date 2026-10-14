@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import type { CrmStats } from '@/app/admin/crm-types';
@@ -11,7 +12,7 @@ const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 async function isAuthed() {
   try {
     const store = await cookies();
-    return store.get(COOKIE_NAME)?.value === '1';
+    return verifyAdminToken(store.get(COOKIE_NAME)?.value);
   } catch { return false; }
 }
 

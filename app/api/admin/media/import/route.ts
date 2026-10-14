@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getR2Config } from '@/lib/getR2Config';
@@ -22,7 +23,7 @@ function sanitize(name: string) {
 async function isAuthed() {
   try {
     const store = await cookies();
-    return store.get(COOKIE_NAME)?.value === '1';
+    return verifyAdminToken(store.get(COOKIE_NAME)?.value);
   } catch {
     return false;
   }

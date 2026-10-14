@@ -1,12 +1,11 @@
 // app/api/admin/login/route.ts
 import { NextResponse } from 'next/server';
+import { ADMIN_COOKIE_NAME, ADMIN_SESSION_MAX_AGE, createAdminToken } from '@/lib/adminSession';
 
 export const runtime = 'nodejs'; // ensure cookies are writable here
 
 const USER = process.env.ADMIN_USER || '';
 const PASS = process.env.ADMIN_PASS || '';
-const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
-const MAX_AGE = 60 * 60 * 8; // 8h
 
 export async function POST(req: Request) {
   try {
@@ -23,13 +22,13 @@ export async function POST(req: Request) {
     if (username === USER && password === PASS) {
       const res = NextResponse.json({ ok: true }, { status: 200 });
       res.cookies.set({
-        name: COOKIE_NAME,
-        value: '1',
+        name: ADMIN_COOKIE_NAME,
+        value: await createAdminToken(),
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
         path: '/',
-        maxAge: MAX_AGE,
+        maxAge: ADMIN_SESSION_MAX_AGE,
       });
       return res;
     }

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run dev          # Start dev server
 npm run build        # prisma generate + migrate deploy + next build
-npm run lint         # Next.js ESLint
+npm run lint         # Next.js ESLint (not configured yet: prompts interactively — use `npx tsc --noEmit` to type-check)
 npm run prisma:seed  # Seed DB with default content (tsx prisma/seed.ts)
 npx prisma studio    # Visual DB browser
 npx prisma migrate dev   # Apply/create migrations against the DATABASE_URL Postgres DB
@@ -73,7 +73,7 @@ Content CRUD is at `/api/admin/content` (GET + PUT). Auth routes are `/api/admin
 
 ### Authentication
 
-[middleware.ts](middleware.ts) protects `/admin/*` and the listed `/api/admin/*` routes by checking the `admin_session` cookie (name configurable via `ADMIN_COOKIE_NAME`, value `"1"`). Login flow: `/admin/login` page → POST `/api/admin/login` (checks `ADMIN_PASSWORD`) → sets httpOnly cookie → redirect.
+[middleware.ts](middleware.ts) guards every `/admin/*` page (redirect to login) and every `/api/admin/*` route (401), except login/logout. The `admin_session` cookie (name via `ADMIN_COOKIE_NAME`) holds an HMAC-signed, expiring token from [lib/adminSession.ts](lib/adminSession.ts) (Web Crypto, so it runs in Edge middleware too); routes also re-check it with `verifyAdminToken()`. Login flow: `/admin/login` → POST `/api/admin/login` (checks `ADMIN_USER` + `ADMIN_PASS`) → sets the signed httpOnly cookie (8 h).
 
 ### Markdown
 
@@ -112,7 +112,8 @@ Order lifecycle: an `Order` row is created as `PENDING` on checkout initiation, 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Prisma DB connection |
-| `ADMIN_PASSWORD` | Plain-text password checked by `/api/admin/login` |
+| `ADMIN_USER` / `ADMIN_PASS` | Admin credentials checked by `/api/admin/login` |
+| `ADMIN_SESSION_SECRET` | HMAC key for admin session tokens (falls back to `ADMIN_PASS`) |
 | `ADMIN_COOKIE_NAME` | Session cookie name (default `admin_session`) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | Cloudflare R2 credentials for the media library |
 | `NEXT_PUBLIC_R2_PUBLIC_URL` | Public CDN URL for the R2 bucket |
