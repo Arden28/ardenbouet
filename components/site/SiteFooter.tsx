@@ -10,7 +10,7 @@ import { hideChrome } from './SiteHeader';
 import { useSite } from './SiteProviders';
 
 export function SiteFooter() {
-  const { ui, href } = useSite();
+  const { ui, href, openBooking } = useSite();
   const path = splitLocale(usePathname() || '/').path;
   if (hideChrome(path)) return null;
 
@@ -40,7 +40,7 @@ export function SiteFooter() {
             <li><Link href={href('/#work')} className={col}>{ui('nav.work')}</Link></li>
             <li><Link href={href('/blog')} className={col}>{ui('nav.writing')}</Link></li>
             <li><Link href={href('/shop')} className={col}>{ui('nav.shop')}</Link></li>
-            <li><Link href={href('/book')} className={col}>{ui('nav.book')}</Link></li>
+            <li><button type="button" onClick={() => openBooking()} className={col}>{ui('nav.book')}</button></li>
           </ul>
         </div>
         <div>

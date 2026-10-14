@@ -88,9 +88,10 @@ export function AuthPanel({ providers, callbackUrl, copy, initialMode = 'join', 
   const [pending, setPending] = useState<string | null>(null);
   const [devName, setDevName] = useState('');
 
-  const go = (provider: string, extra?: Record<string, string>) => {
+  // Credentials (dev) take their fields in the options object; OAuth providers take none.
+  const go = (provider: string, credentials?: Record<string, string>) => {
     setPending(provider);
-    signIn(provider, { callbackUrl }, extra).catch(() => setPending(null));
+    signIn(provider, { callbackUrl, ...credentials }).catch(() => setPending(null));
   };
   const social = providers.filter(p => p !== 'dev');
 

@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { SessionProvider, useSession } from 'next-auth/react';
 import { X } from 'lucide-react';
 import { AuthPanel } from '@/components/auth/AuthPanel';
+import { BookingModal } from '@/components/booking/BookingModal';
 import { authCopy } from '@/app/signin/SignInClient';
 import { blogT, type BlogLocale, type BlogT } from '@/lib/blog/strings';
 import { uiT, type UiT } from '@/lib/i18n/ui';
@@ -28,6 +29,8 @@ type Ctx = {
   openSignIn: (reason?: string) => void;
   me: MeSummary;
   refreshMe: () => void;
+  /** Opens the Calendly-style booking modal (optionally preselecting a meeting type slug). */
+  openBooking: (type?: string) => void;
 };
 
 const SiteCtx = createContext<Ctx | null>(null);
@@ -77,6 +80,13 @@ function SignInDialog({ open, onClose, reason, providers, locale }: {
 function Inner({ children, locale, isAdmin, providers }: { children: ReactNode; locale: BlogLocale; isAdmin: boolean; providers: string[] }) {
   const [dialog, setDialog] = useState<{ open: boolean; reason?: string }>({ open: false });
   const [me, setMe] = useState<MeSummary>(null);
+  const [booking, setBooking] = useState<{ open: boolean; type?: string }>({ open: false });
+  const openBooking = useCallback((type?: string) => setBooking({ open: true, type }), []);
+  // ?book=1 (e.g. from a cancellation email) opens the booking modal.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.has('book')) openBooking(sp.get('book') && sp.get('book') !== '1' ? sp.get('book')! : undefined);
+  }, [openBooking]);
   const { reader } = useReader();
   const openSignIn = useCallback((reason?: string) => setDialog({ open: true, reason }), []);
 
@@ -87,12 +97,13 @@ function Inner({ children, locale, isAdmin, providers }: { children: ReactNode; 
 
   const value = useMemo<Ctx>(() => ({
     locale, t: blogT(locale), ui: uiT(locale), href: (p: string) => localizeHref(p, locale),
-    isAdmin, providers, openSignIn, me, refreshMe,
-  }), [locale, isAdmin, providers, openSignIn, me, refreshMe]);
+    isAdmin, providers, openSignIn, me, refreshMe, openBooking,
+  }), [locale, isAdmin, providers, openSignIn, me, refreshMe, openBooking]);
 
   return (
     <SiteCtx.Provider value={value}>
       {children}
+      <BookingModal open={booking.open} initialType={booking.type} locale={locale} onClose={() => setBooking(b => ({ ...b, open: false }))} />
       <SignInDialog open={dialog.open} reason={dialog.reason} onClose={() => setDialog({ open: false })} providers={providers} locale={locale} />
     </SiteCtx.Provider>
   );

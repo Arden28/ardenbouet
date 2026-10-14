@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { Search, PenSquare, ChevronDown, LogOut, User, Bookmark, FileText, Shield, Menu, X, Feather, CalendarDays } from 'lucide-react';
+import { Search, PenSquare, ChevronDown, LogOut, User, Bookmark, FileText, Shield, Menu, X , Feather } from 'lucide-react';
 import { splitLocale } from '@/lib/i18n/config';
 import { LanguageSwitcher } from '@/app/components/LanguageSwitcher';
 import { useReader, useSite } from './SiteProviders';
@@ -101,9 +101,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Link href={href('/book')} className="hidden items-center gap-2 rounded-full border border-[#242424] px-3.5 py-1.5 text-[14px] text-[#242424] transition-colors hover:bg-[#242424] hover:text-white sm:flex">
-            <CalendarDays className="h-4 w-4" strokeWidth={1.6} /> {ui('nav.book')}
-          </Link>
           {(isAdmin || isWriter) && (
             <Link href={isAdmin ? '/admin/blog/new' : '/write/new'} className="hidden items-center gap-2 p-2 text-[14px] text-[#6b6b6b] hover:text-[#242424] md:flex">
               <PenSquare className="h-[22px] w-[22px]" strokeWidth={1.3} /> {ui('nav.write')}
@@ -158,7 +155,7 @@ export function SiteHeader() {
             <Search className="h-4 w-4 text-[#6b6b6b]" />
             <input value={q} onChange={e => setQ(e.target.value)} placeholder={ui('nav.search')} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" />
           </form>
-          {[...nav, { href: '/book', label: ui('nav.book'), active: path === '/book' }].map(n => (
+          {nav.map(n => (
             <Link key={n.href} href={href(n.href)} className="block border-b border-[#f6f6f6] py-3.5 font-story text-[22px] text-[#242424]">{n.label}</Link>
           ))}
           <div className="mt-5 flex items-center justify-between">
