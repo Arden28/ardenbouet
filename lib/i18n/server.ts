@@ -1,10 +1,16 @@
 // lib/i18n/server.ts — server-side translation + localized links.
 import 'server-only';
-import i18n from '@/app/i18n';
+// Server-side i18next instance: same resources as the client, but no react-i18next
+// (it calls createContext at import, which server components don't allow).
+import i18next from 'i18next';
 import { getLocale, getPathname } from '@/lib/serverT';
 import { LOCALES, localizeHref, type Locale } from './config';
+import { resources } from './resources';
 
 export { getLocale, getPathname };
+
+const i18n = i18next.createInstance();
+i18n.init({ lng: 'en', initAsync: false, resources, fallbackLng: 'en', supportedLngs: ['en', 'fr'], interpolation: { escapeValue: false } });
 
 /** i18next `t` fixed to the request locale (same resources as client components). */
 export function getT(locale: Locale = getLocale()) {
