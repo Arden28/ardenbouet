@@ -1,135 +1,84 @@
 'use client';
-// app/checkout/CheckoutClient.tsx
+// app/checkout/CheckoutClient.tsx — one-page checkout: details → payment method (accordion) → confirmation.
+// Payment flows (Stripe Elements, Paystack inline, M-Pesa STK push + polling, PayPal buttons) all stay on-page.
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Lock, ChevronLeft, AlertCircle, CreditCard, Tag, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, CreditCard, Download, Loader2, Lock, Mail, ShieldCheck, Smartphone, Tag, X } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import type { ShopProduct, DiscountCode } from '@/app/admin/types';
-import { formatPrice, CURRENCIES, LS_KEY } from '@/lib/currency';
-import type { CurrencyCode } from '@/lib/currency';
+import { formatPrice, CURRENCIES, LS_KEY, type CurrencyCode } from '@/lib/currency';
+import { useSite } from '@/components/site/SiteProviders';
+import type { UiKey, UiT } from '@/lib/i18n/ui';
+import { OWNER } from '@/lib/site';
 
-// ─── Stripe singleton ──────────────────────────────────────────────────────────
+export type MethodId = 'stripe' | 'paystack' | 'mpesa' | 'paypal';
+type PayProps = { product: ShopProduct; name: string; email: string; finalPrice: number; display: CurrencyCode; ui: UiT; onSuccess: (ref: string) => void };
+
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 let _stripePromise: ReturnType<typeof loadStripe> | null = null;
 function getStripe() {
   if (!_stripePromise) _stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
   return _stripePromise;
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-type MethodId = 'stripe' | 'paystack' | 'mpesa' | 'paypal';
+const isDark = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 
-const METHODS: { id: MethodId; name: string; detail: string; reach: string }[] = [
-  // { id: 'stripe',   name: 'Card',     detail: 'Visa · Mastercard · Amex',      reach: 'Worldwide' },
-  { id: 'paystack', name: 'Paystack', detail: 'Card · Bank Transfer · USSD',   reach: 'Africa'    },
-  // { id: 'mpesa',    name: 'M-Pesa',   detail: 'STK Push · Lipa na M-Pesa',    reach: 'Kenya'     },
-  { id: 'paypal',   name: 'PayPal',   detail: 'PayPal Balance · Bank · Card',  reach: 'Worldwide' },
-];
+// ─── Atoms ─────────────────────────────────────────────────────────────────────
+const inputCls = 'w-full rounded-xl border border-[#e6e6e6] bg-transparent px-4 py-3 text-[15px] text-[#242424] outline-none transition-colors placeholder:text-[#b3b3b3] focus:border-[#242424]';
 
-// ─── Design atoms ──────────────────────────────────────────────────────────────
-function Rule() {
-  return <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />;
-}
-
-function SectionLabel({ n, children }: { n: number; children: React.ReactNode }) {
+function PayButton({ onClick, disabled, loading, children }: { onClick?: () => void; disabled?: boolean; loading?: boolean; children: React.ReactNode }) {
   return (
-    <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-      {n} · {children}
-    </p>
-  );
-}
-
-function FieldInput({
-  label, type = 'text', value, onChange, placeholder, autoComplete,
-}: {
-  label: string; type?: string; value: string;
-  onChange: (v: string) => void; placeholder?: string; autoComplete?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500">
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 font-mono text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-zinc-900 dark:focus:border-zinc-100 focus:outline-none transition-colors duration-150"
-      />
-    </div>
-  );
-}
-
-function PayBtn({
-  onClick, disabled, loading, children,
-}: {
-  onClick?: () => void; disabled?: boolean; loading?: boolean; children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled || loading}
-      className="mt-4 flex w-full items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-50 px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-    >
-      {loading && (
-        <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-        </svg>
-      )}
+    <button type="button" onClick={onClick} disabled={disabled || loading}
+      className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#1a8917] px-6 py-3.5 text-[15px] font-medium text-white transition-colors hover:bg-[#156d12] disabled:cursor-not-allowed disabled:opacity-50">
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
       {children}
     </button>
   );
 }
 
-function ErrMsg({ msg }: { msg: string }) {
+function ErrorNote({ msg }: { msg: string }) {
   return (
-    <div className="mt-3 flex items-start gap-2 border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/20 px-3 py-2.5">
-      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
-      <p className="text-sm leading-snug text-red-600 dark:text-red-400">{msg}</p>
-    </div>
+    <p role="alert" className="mt-3 flex items-start gap-2 rounded-xl bg-[#fdf1f1] px-3.5 py-3 text-[14px] leading-5 text-[#c94a4a]">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {msg}
+    </p>
   );
 }
 
-function AmountNote({ label, value }: { label: string; value: string }) {
+function ChargeNote({ children }: { children: React.ReactNode }) {
+  return <p className="rounded-xl bg-[#fafafa] px-4 py-3 text-[14px] text-[#6b6b6b]">{children}</p>;
+}
+
+/** Brand marks sit on a fixed white chip so they read the same in light and dark mode. */
+function ProviderMark({ id }: { id: MethodId }) {
   return (
-    <div className="mb-4 border border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-900 px-4 py-3">
-      <p className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
-        {label} <span className="font-bold text-zinc-900 dark:text-zinc-50">{value}</span>
-      </p>
-    </div>
+    <span className="flex h-11 w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#ececec] bg-[#ffffff] sm:w-[132px]">
+      {id === 'stripe' ? (
+        <span className="flex items-center gap-1.5 text-[15px] font-semibold text-[#3c3c3c]"><CreditCard className="h-6 w-6" /> Card</span>
+      ) : id === 'paystack' ? (
+        // The source image is a padded square — crop to the wordmark band.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src="/images/paystack.png" alt="Paystack" className="h-[124px] w-[124px] max-w-none object-cover" />
+      ) : id === 'mpesa' ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src="/images/mpesa.png" alt="M-Pesa" className="h-10 w-auto object-contain" />
+      ) : (
+        <span className="flex items-center gap-1 text-[17px] font-bold italic tracking-[-0.02em]">
+          <PayPalGlyph /><span className="text-[#003087]">Pay</span><span className="-ml-1 text-[#009CDE]">Pal</span>
+        </span>
+      )}
+    </span>
   );
 }
 
-// ─── Payment provider logos ────────────────────────────────────────────────────
-function ProviderLogo({ id }: { id: MethodId }) {
-  if (id === 'stripe') {
-    return <CreditCard className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />;
-  }
-  if (id === 'paystack') {
-    return (
-      <Image src="/images/paystack.png" alt="Paystack" width={120} height={20}
-        className="w-auto object-contain" />
-    );
-  }
-  if (id === 'mpesa') {
-    return (
-      <Image src="/images/mpesa.png" alt="M-Pesa" width={120} height={36}
-        className="h-7 w-auto object-contain" />
-    );
-  }
-  // PayPal
+function PayPalGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" aria-label="PayPal" fill="none">
+    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden fill="none">
       <path fill="#003087" d="M7.5 3h5.6c2.5 0 4.1 1.7 3.6 4.1-.6 3-2.7 4.4-5.5 4.4H9.5l-1 6H5.3L7.5 3z" />
       <path fill="#009CDE" d="M9.8 5.5H15c2.3 0 3.8 1.5 3.3 3.8-.5 2.8-2.5 4.1-5 4.1h-1.5L10.7 20H7.5L9.8 5.5z" />
       <path fill="#012169" d="M12.1 8h4.7c2.1 0 3.5 1.4 3 3.5-.5 2.5-2.3 3.8-4.7 3.8h-1.3L12.9 22H10L12.1 8z" />
@@ -137,49 +86,17 @@ function ProviderLogo({ id }: { id: MethodId }) {
   );
 }
 
-// ─── Method card ───────────────────────────────────────────────────────────────
-function MethodCard({ m, selected, onClick }: { m: typeof METHODS[0]; selected: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'relative flex w-full items-center gap-4 border px-4 py-3.5 text-left transition-colors duration-150 focus-visible:outline-none',
-        selected
-          ? 'border-zinc-900 dark:border-zinc-50 bg-zinc-50 dark:bg-zinc-900'
-          : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600',
-      ].join(' ')}
-    >
-      {selected && <span className="absolute inset-y-0 left-0 w-[3px] bg-[#2467AC]" />}
+const METHOD_KEY: Record<MethodId, string> = { stripe: 'card', paystack: 'paystack', mpesa: 'mpesa', paypal: 'paypal' };
+const methodName = (ui: UiT, m: MethodId) => ui(`co.method.${METHOD_KEY[m]}` as UiKey);
+const methodDetail = (ui: UiT, m: MethodId) => ui(`co.method.${METHOD_KEY[m]}Detail` as UiKey);
 
-      {/* Logo — fixed-width container keeps alignment consistent */}
-      <div className="flex w-20 shrink-0 items-center">
-        <ProviderLogo id={m.id} />
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p className="font-heading text-sm font-bold leading-tight text-zinc-900 dark:text-zinc-50">{m.name}</p>
-        <p className="mt-0.5 truncate font-mono text-[9px] leading-snug text-zinc-500 dark:text-zinc-500">{m.detail}</p>
-      </div>
-
-      {/* Reach badge — pinned right */}
-      <span className="shrink-0 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-400">
-        {m.reach}
-      </span>
-    </button>
-  );
-}
-
-// ─── Stripe form ───────────────────────────────────────────────────────────────
-function StripeCardForm({ product, name, email, currency, finalPrice, onSuccess }: {
-  product: ShopProduct; name: string; email: string; currency: CurrencyCode;
-  finalPrice: number; onSuccess: (ref: string) => void;
-}) {
-  const stripe   = useStripe();
+// ─── Stripe ────────────────────────────────────────────────────────────────────
+function StripeCardForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+  const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const dark = isDark();
 
   const handlePay = async () => {
     if (!stripe || !elements) return;
@@ -189,22 +106,17 @@ function StripeCardForm({ product, name, email, currency, finalPrice, onSuccess 
       const res = await fetch('/api/checkout/stripe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: product.id, productTitle: product.title,
-          amount: finalPrice, currency: product.currency,
-          customerName: name, customerEmail: email,
-        }),
+        body: JSON.stringify({ productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
       });
       const { clientSecret, error: serverErr } = await res.json();
       if (serverErr) throw new Error(serverErr);
-
       const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement)!, billing_details: { name, email } },
       });
       if (stripeErr) throw new Error(stripeErr.message);
       if (paymentIntent?.status === 'succeeded') onSuccess(`stripe_${paymentIntent.id}`);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Payment failed. Please try again.');
+      setError(e instanceof Error ? e.message : ui('co.failed'));
     } finally {
       setLoading(false);
     }
@@ -212,32 +124,30 @@ function StripeCardForm({ product, name, email, currency, finalPrice, onSuccess 
 
   return (
     <div>
-      <div className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-4">
+      <div className="rounded-xl border border-[#e6e6e6] px-4 py-3.5">
         <CardElement options={{
           style: {
-            base: { fontSize: '14px', fontFamily: 'monospace', color: '#18181b', '::placeholder': { color: '#a1a1aa' } },
-            invalid: { color: '#ef4444' },
+            base: { fontSize: '15px', color: dark ? '#e6e6e6' : '#242424', '::placeholder': { color: dark ? '#6e6e6e' : '#b3b3b3' } },
+            invalid: { color: '#c94a4a' },
           },
           hidePostalCode: true,
         }} />
       </div>
-      {error && <ErrMsg msg={error} />}
-      <PayBtn onClick={handlePay} loading={loading} disabled={!stripe}>
-        Pay {formatPrice(finalPrice, product.currency, currency)} →
-      </PayBtn>
+      {error && <ErrorNote msg={error} />}
+      <PayButton onClick={handlePay} loading={loading} disabled={!stripe}>
+        {ui('co.pay', { amount: formatPrice(finalPrice, product.currency, display) })}
+      </PayButton>
     </div>
   );
 }
 
-// ─── Paystack form ─────────────────────────────────────────────────────────────
+// ─── Paystack ──────────────────────────────────────────────────────────────────
 const PAYSTACK_CURRENCY = process.env.NEXT_PUBLIC_PAYSTACK_CURRENCY ?? 'KES';
 const PAYSTACK_RATES: Record<string, number> = {
   NGN: Number(process.env.NEXT_PUBLIC_PAYSTACK_USD_TO_NGN) || 1600,
-  KES: Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES)    || 130,
+  KES: Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES) || 130,
 };
-const PAYSTACK_SYMBOLS: Record<string, string> = {
-  NGN: '₦', KES: 'KSh', GHS: '₵', ZAR: 'R',
-};
+const PAYSTACK_SYMBOLS: Record<string, string> = { NGN: '₦', KES: 'KSh', GHS: '₵', ZAR: 'R' };
 
 type PaystackPopType = { setup: (o: object) => { openIframe: () => void } };
 
@@ -255,107 +165,74 @@ function waitForPaystack(maxMs = 6000): Promise<PaystackPopType | null> {
   });
 }
 
-function PaystackForm({ product, name, email, finalPrice, onSuccess }: {
-  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
-}) {
-  const [loading,   setLoading]   = useState(false);
+function PaystackForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+  const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
-  const rate        = PAYSTACK_RATES[PAYSTACK_CURRENCY] ?? 1;
-  const symbol      = PAYSTACK_SYMBOLS[PAYSTACK_CURRENCY] ?? PAYSTACK_CURRENCY;
+  const [error, setError] = useState<string | null>(null);
+  const rate = PAYSTACK_RATES[PAYSTACK_CURRENCY] ?? 1;
+  const symbol = PAYSTACK_SYMBOLS[PAYSTACK_CURRENCY] ?? PAYSTACK_CURRENCY;
   const amountLocal = Math.round(finalPrice * rate);
 
   const handlePay = async () => {
     setLoading(true);
     setError(null);
-
     const pop = await waitForPaystack();
-    if (!pop) {
-      setLoading(false);
-      setError('Paystack could not be loaded. Please check your connection and try again.');
-      return;
-    }
+    if (!pop) { setLoading(false); setError(ui('co.paystack.unavailable')); return; }
 
     const ref = `arden_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const fail = (reference: string) => { setVerifying(false); setLoading(false); setError(ui('co.pending', { ref: reference })); };
 
-    // Retry verify up to 3 times with increasing delay — Paystack can lag behind
+    // Paystack can lag behind its own callback — retry verification with backoff.
     const verifyWithRetry = (reference: string, attempt = 0): void => {
+      const retry = () => (attempt < 2 ? setTimeout(() => verifyWithRetry(reference, attempt + 1), 1200 * (attempt + 1)) : fail(reference));
       fetch('/api/checkout/paystack/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reference,
-          productId: product.id, productTitle: product.title,
-          amount: product.price, currency: product.currency,
-          customerName: name, customerEmail: email,
-        }),
+        body: JSON.stringify({ reference, productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
       })
         .then(r => r.json())
         .then(data => {
-          if (data.ok) {
-            setVerifying(false);
-            setLoading(false);
-            onSuccess(`paystack_${reference}`);
-          } else if (attempt < 2) {
-            setTimeout(() => verifyWithRetry(reference, attempt + 1), 1200 * (attempt + 1));
-          } else {
-            setVerifying(false);
-            setLoading(false);
-            setError(`Verification pending — your ref is ${reference}. Contact us if you were charged.`);
-          }
+          if (data.ok) { setVerifying(false); setLoading(false); onSuccess(`paystack_${reference}`); } else retry();
         })
-        .catch(() => {
-          if (attempt < 2) {
-            setTimeout(() => verifyWithRetry(reference, attempt + 1), 1200 * (attempt + 1));
-          } else {
-            setVerifying(false);
-            setLoading(false);
-            setError(`Verification pending — your ref is ${reference}. Contact us if you were charged.`);
-          }
-        });
+        .catch(retry);
     };
 
     try {
-      const handler = pop.setup({
+      pop.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
         email, amount: amountLocal * 100, currency: PAYSTACK_CURRENCY, ref,
         metadata: { productId: product.id, productTitle: product.title, customerName: name },
-        callback: (response: { reference: string }) => {
-          setVerifying(true);
-          verifyWithRetry(response.reference);
-        },
+        callback: (response: { reference: string }) => { setVerifying(true); verifyWithRetry(response.reference); },
         onClose: () => { setLoading(false); setVerifying(false); },
-      });
-      handler.openIframe();
+      }).openIframe();
     } catch (e: unknown) {
       setLoading(false);
-      setError(e instanceof Error ? e.message : 'Failed to open Paystack. Please try again.');
+      setError(e instanceof Error ? e.message : ui('co.failed'));
     }
   };
 
-  const btnLabel = verifying ? 'Verifying payment…' : loading ? 'Opening Paystack…' : 'Pay with Paystack →';
-
   return (
     <div>
-      <AmountNote label="You'll be charged:" value={`${symbol} ${amountLocal.toLocaleString()} (≈ ${product.priceLabel})`} />
-      {error && <ErrMsg msg={error} />}
-      <PayBtn onClick={handlePay} loading={loading}>
-        {btnLabel}
-      </PayBtn>
+      <ChargeNote>
+        {ui('co.charged', { amount: `${symbol} ${amountLocal.toLocaleString()}` })}{' '}
+        <span className="text-[#9b9b9b]">({ui('co.approx', { amount: formatPrice(finalPrice, product.currency, display) })})</span>
+      </ChargeNote>
+      {error && <ErrorNote msg={error} />}
+      <PayButton onClick={handlePay} loading={loading}>
+        {verifying ? ui('co.paystack.verifying') : loading ? ui('co.paystack.open') : ui('co.paystack.cta')}
+      </PayButton>
     </div>
   );
 }
 
-// ─── M-Pesa form ───────────────────────────────────────────────────────────────
-function MpesaForm({ product, name, email, finalPrice, onSuccess }: {
-  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
-}) {
-  const [phone,   setPhone]   = useState('');
+// ─── M-Pesa ────────────────────────────────────────────────────────────────────
+function MpesaForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [waiting, setWaiting] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const rate      = Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES) || 130;
+  const rate = Number(process.env.NEXT_PUBLIC_MPESA_USD_TO_KES) || 130;
   const amountKes = Math.ceil(finalPrice * rate);
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
@@ -364,21 +241,14 @@ function MpesaForm({ product, name, email, finalPrice, onSuccess }: {
 
   const handleInitiate = async () => {
     const normalized = normalize(phone);
-    if (!/^254\d{9}$/.test(normalized)) {
-      setError('Enter a valid Kenyan number (e.g. 0712 345 678 or +254 712 345 678)');
-      return;
-    }
+    if (!/^254\d{9}$/.test(normalized)) { setError(ui('co.mpesa.invalid')); return; }
     setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/checkout/mpesa/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: normalized, productId: product.id, productTitle: product.title,
-          amount: product.price, amountKes, currency: product.currency,
-          customerName: name, customerEmail: email,
-        }),
+        body: JSON.stringify({ phone: normalized, productId: product.id, productTitle: product.title, amount: finalPrice, amountKes, currency: product.currency, customerName: name, customerEmail: email }),
       });
       const { checkoutRequestId, error: initErr } = await res.json();
       if (initErr) throw new Error(initErr);
@@ -390,19 +260,15 @@ function MpesaForm({ product, name, email, finalPrice, onSuccess }: {
         if (attempts > 40) {
           clearInterval(pollRef.current!);
           setWaiting(false);
-          setError('Payment timed out. If you entered your PIN, please contact us.');
+          setError(ui('co.mpesa.timeout'));
           return;
         }
-        const st = await fetch(`/api/checkout/mpesa/status?requestId=${checkoutRequestId}`).then(r => r.json());
+        const st = await fetch(`/api/checkout/mpesa/status?requestId=${checkoutRequestId}`).then(r => r.json()).catch(() => ({}));
         if (st.confirmed) { clearInterval(pollRef.current!); onSuccess(`mpesa_${checkoutRequestId}`); }
-        else if (st.failed) {
-          clearInterval(pollRef.current!);
-          setWaiting(false);
-          setError('Payment was not completed. Please try again.');
-        }
+        else if (st.failed) { clearInterval(pollRef.current!); setWaiting(false); setError(ui('co.mpesa.failed')); }
       }, 3000);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to send STK push.');
+      setError(e instanceof Error ? e.message : ui('co.failed'));
     } finally {
       setLoading(false);
     }
@@ -410,532 +276,403 @@ function MpesaForm({ product, name, email, finalPrice, onSuccess }: {
 
   if (waiting) {
     return (
-      <div className="py-8 text-center">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center border-2 border-[#2467AC]">
-          <Image src="/images/mpesa.png" alt="M-Pesa" width={48} height={48} className="h-8 w-auto object-contain" />
-        </div>
-        <p className="font-heading text-base font-bold text-zinc-900 dark:text-zinc-50">Check your phone</p>
-        <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-          Enter your M-Pesa PIN on the prompt sent to <span className="font-mono">{phone}</span>
-        </p>
-        <p className="mt-5 font-mono text-[9px] uppercase tracking-widest text-zinc-400 animate-pulse">
-          Waiting for confirmation…
-        </p>
+      <div className="flex flex-col items-center py-6 text-center">
+        <span className="relative flex h-16 w-16 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#eef7ee]" />
+          <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#eef7ee]"><Smartphone className="h-7 w-7 text-[#1a8917]" /></span>
+        </span>
+        <p className="mt-5 text-[17px] font-semibold text-[#242424]">{ui('co.mpesa.check')}</p>
+        <p className="mt-1 max-w-xs text-[14px] text-[#6b6b6b]">{ui('co.mpesa.checkBody', { phone })}</p>
+        <p className="mt-4 flex items-center gap-2 text-[13px] text-[#9b9b9b]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {ui('co.mpesa.waiting')}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <AmountNote label="Amount:" value={`KES ${amountKes.toLocaleString()} (≈ ${product.priceLabel})`} />
-      <FieldInput
-        label="M-Pesa phone number"
-        type="tel"
-        value={phone}
-        onChange={setPhone}
-        placeholder="0712 345 678"
-        autoComplete="tel"
-      />
-      {error && <ErrMsg msg={error} />}
-      <PayBtn onClick={handleInitiate} loading={loading} disabled={!phone.trim()}>
-        {loading ? 'Sending prompt…' : 'Send M-Pesa prompt →'}
-      </PayBtn>
+      <ChargeNote>
+        {ui('co.charged', { amount: `KES ${amountKes.toLocaleString()}` })}{' '}
+        <span className="text-[#9b9b9b]">({ui('co.approx', { amount: formatPrice(finalPrice, product.currency, display) })})</span>
+      </ChargeNote>
+      <label className="mt-4 block text-[13px] font-medium text-[#242424]">{ui('co.mpesa.phone')}</label>
+      <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="0712 345 678" autoComplete="tel" className={`mt-1.5 ${inputCls}`} />
+      {error && <ErrorNote msg={error} />}
+      <PayButton onClick={handleInitiate} loading={loading} disabled={!phone.trim()}>
+        {loading ? ui('co.mpesa.sending') : ui('co.mpesa.send')}
+      </PayButton>
     </div>
   );
 }
 
-// ─── PayPal section ────────────────────────────────────────────────────────────
-function PayPalSection({ product, name, email, finalPrice, onSuccess }: {
-  product: ShopProduct; name: string; email: string; finalPrice: number; onSuccess: (ref: string) => void;
-}) {
+// ─── PayPal ────────────────────────────────────────────────────────────────────
+function PayPalSection({ product, name, email, finalPrice, ui, onSuccess }: PayProps) {
   const [error, setError] = useState<string | null>(null);
-
   return (
     <div>
-      {error && <ErrMsg msg={error} />}
-      <div className="mt-1">
-        <PayPalButtons
-          style={{ layout: 'vertical', color: 'black', shape: 'rect', label: 'pay', height: 48 }}
-          createOrder={async () => {
-            const res = await fetch('/api/checkout/paypal/create', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                amount: finalPrice,
-                currency: product.currency,
-                productTitle: product.title,
-                productId: product.id,
-                customerName: name,
-                customerEmail: email,
-              }),
-            });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            return data.id;
-          }}
-          onApprove={async (data: { orderID: string }) => {
-            const res = await fetch('/api/checkout/paypal/capture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                orderId: data.orderID,
-                productId: product.id, productTitle: product.title,
-                amount: product.price, currency: product.currency,
-                customerName: name, customerEmail: email,
-              }),
-            });
-            const result = await res.json();
-            if (result.ok) onSuccess(`paypal_${data.orderID}`);
-            else setError('Capture failed. Contact us with PayPal ref: ' + data.orderID);
-          }}
-          onError={() => setError('PayPal error. Please try a different payment method.')}
-        />
-      </div>
+      {error && <div className="mb-3"><ErrorNote msg={error} /></div>}
+      <PayPalButtons
+        style={{ layout: 'vertical', color: isDark() ? 'white' : 'black', shape: 'pill', label: 'pay', height: 48 }}
+        createOrder={async () => {
+          const res = await fetch('/api/checkout/paypal/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: finalPrice, currency: product.currency, productTitle: product.title, productId: product.id, customerName: name, customerEmail: email }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          return data.id;
+        }}
+        onApprove={async (data: { orderID: string }) => {
+          const res = await fetch('/api/checkout/paypal/capture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.orderID, productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
+          });
+          const result = await res.json();
+          if (result.ok) onSuccess(`paypal_${data.orderID}`);
+          else setError(ui('co.paypal.capture', { ref: data.orderID }));
+        }}
+        onError={() => setError(ui('co.paypal.error'))}
+      />
     </div>
   );
 }
 
-// ─── Success state ─────────────────────────────────────────────────────────────
-function SuccessState({
-  product, email, paymentRef, downloadToken,
-}: {
-  product: ShopProduct; email: string; paymentRef: string; downloadToken: string | null;
+// ─── Order summary ─────────────────────────────────────────────────────────────
+function Cover({ product, className }: { product: ShopProduct; className: string }) {
+  const src = product.cover || product.media?.find(m => m.kind === 'image')?.url;
+  const [broken, setBroken] = useState(false);
+  const ref = useRef<HTMLImageElement>(null);
+  // The image may fail before hydration attaches onError — check once mounted.
+  useEffect(() => { const i = ref.current; if (i?.complete && !i.naturalWidth) setBroken(true); }, []);
+  return src && !broken
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img ref={ref} src={src} alt="" onError={() => setBroken(true)} className={`${className} object-cover`} />
+    : <div className={`${className} flex items-center justify-center bg-[#f2f2f2] text-[22px] font-bold text-[#9b9b9b]`}>{product.title.slice(0, 1)}</div>;
+}
+
+function Summary({ product, display, setDisplay, finalPrice, discount, onApply, onRemove, ui }: {
+  product: ShopProduct; display: CurrencyCode; setDisplay: (c: CurrencyCode) => void; finalPrice: number;
+  discount: DiscountCode | null; onApply: (code: string) => boolean; onRemove: () => void; ui: UiT;
 }) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [bad, setBad] = useState(false);
   const isService = product.category === 'service';
+  const fmt = (n: number) => formatPrice(n, product.currency, display);
+  const apply = () => { if (!code.trim()) return; const ok = onApply(code); setBad(!ok); if (ok) setCode(''); };
+  const hasCodes = !!product.discountCodes?.length;
 
   return (
-    <main className="flex min-h-[65vh] flex-col items-center justify-center px-4 py-24 text-center">
-      <motion.div
-        initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="flex h-20 w-20 items-center justify-center border-2 border-[#2467AC]"
-      >
-        <Check className="h-9 w-9 text-[#2467AC]" />
-      </motion.div>
+    <div className="rounded-2xl border border-[#ececec] bg-white">
+      <div className="flex items-center justify-between px-6 pt-5">
+        <h2 className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#9b9b9b]">{ui('co.summary')}</h2>
+        <label className="flex items-center gap-1.5 text-[12px] text-[#9b9b9b]">
+          <span className="sr-only">{ui('co.display')}</span>
+          <select value={display} onChange={e => setDisplay(e.target.value as CurrencyCode)}
+            className="cursor-pointer rounded-full border border-[#ececec] bg-transparent px-2.5 py-1 text-[12px] text-[#242424] outline-none hover:border-[#c4c4c4]">
+            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+          </select>
+        </label>
+      </div>
 
-      <motion.div
-        initial={{ y: 16, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.15, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-8 max-w-sm mx-auto"
-      >
-        <h2 className="font-heading text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">
-          Payment confirmed
-        </h2>
+      <div className="flex gap-4 px-6 py-5">
+        <Cover product={product} className="h-[72px] w-[72px] shrink-0 rounded-xl" />
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-[#1a8917]">{ui(`shop.catOne.${product.category}` as UiKey)}</p>
+          <p className="mt-0.5 text-[16px] font-semibold leading-snug text-[#242424]">{product.title}</p>
+          <p className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-[#6b6b6b]">{product.tagline}</p>
+        </div>
+      </div>
 
-        {isService ? (
-          <p className="mt-3 text-zinc-500 dark:text-zinc-400">
-            We&apos;ll reach out to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong> within 24 hours to schedule your session.
+      {hasCodes && (
+        <div className="border-t border-[#f2f2f2] px-6 py-4">
+          {discount ? (
+            <div className="flex items-center gap-2 rounded-xl bg-[#eef7ee] px-3.5 py-2.5 text-[14px] text-[#1a6b17]">
+              <Tag className="h-4 w-4 shrink-0" />
+              <span className="flex-1"><strong className="font-semibold">{discount.code}</strong> · {ui('co.off', { value: discount.type === 'percent' ? `${discount.value}%` : fmt(discount.value) })}</span>
+              <button type="button" onClick={onRemove} aria-label="Remove code" className="rounded-full p-0.5 hover:opacity-70"><X className="h-4 w-4" /></button>
+            </div>
+          ) : (
+            <>
+              <button type="button" onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between text-[14px] text-[#242424]">
+                {ui('co.codeToggle')} <ChevronDown className={`h-4 w-4 text-[#9b9b9b] transition-transform ${open ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence initial={false}>
+                {open && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: EASE }} className="overflow-hidden">
+                    <div className="mt-3 flex gap-2">
+                      <input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setBad(false); }} onKeyDown={e => e.key === 'Enter' && apply()}
+                        placeholder={ui('co.codePh')} className="min-w-0 flex-1 rounded-full border border-[#e6e6e6] bg-transparent px-4 py-2 text-[14px] uppercase tracking-wide text-[#242424] outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-[#b3b3b3] focus:border-[#242424]" />
+                      <button type="button" onClick={apply} className="rounded-full border border-[#242424] px-4 py-2 text-[14px] text-[#242424] hover:bg-[#f9f9f9]">{ui('co.apply')}</button>
+                    </div>
+                    {bad && <p className="mt-2 text-[13px] text-[#c94a4a]">{ui('co.codeInvalid')}</p>}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+        </div>
+      )}
+
+      <dl className="space-y-2 border-t border-[#f2f2f2] px-6 py-4 text-[14px]">
+        <div className="flex justify-between"><dt className="text-[#6b6b6b]">{ui('co.subtotal')}</dt><dd className="tabular-nums text-[#242424]">{fmt(product.price)}</dd></div>
+        {discount && <div className="flex justify-between"><dt className="text-[#1a6b17]">{ui('co.discount')}</dt><dd className="tabular-nums text-[#1a6b17]">−{fmt(product.price - finalPrice)}</dd></div>}
+        <div className="flex justify-between"><dt className="text-[#6b6b6b]">{ui('co.fees')}</dt><dd className="text-[#9b9b9b]">{ui('co.included')}</dd></div>
+      </dl>
+      <div className="flex items-end justify-between border-t border-[#f2f2f2] px-6 py-5">
+        <div>
+          <p className="text-[15px] font-semibold text-[#242424]">{ui('co.total')}</p>
+          {display !== product.currency.toUpperCase() && <p className="text-[12px] text-[#9b9b9b]">{ui('co.chargedIn', { currency: product.currency.toUpperCase() })}</p>}
+        </div>
+        <motion.p key={`${finalPrice}-${display}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="text-[28px] font-semibold tracking-[-0.02em] tabular-nums text-[#242424]">{fmt(finalPrice)}</motion.p>
+      </div>
+
+      <ul className="space-y-2.5 rounded-b-2xl bg-[#fafafa] px-6 py-5 text-[13px] leading-5 text-[#6b6b6b]">
+        <li className="flex gap-2.5">{isService ? <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" /> : <Download className="mt-0.5 h-4 w-4 shrink-0" />}{isService ? ui('co.trust.service') : ui('co.trust.instant')}</li>
+        <li className="flex gap-2.5"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />{ui('co.trust.secure')}</li>
+        <li className="flex gap-2.5"><Mail className="mt-0.5 h-4 w-4 shrink-0" /><span>{ui('co.trust.support')}<a href={`mailto:${OWNER.supportEmail}`} className="underline decoration-[#c4c4c4] underline-offset-2 hover:text-[#242424]">{OWNER.supportEmail}</a></span></li>
+      </ul>
+    </div>
+  );
+}
+
+// ─── Confirmation ──────────────────────────────────────────────────────────────
+function Confirmation({ product, name, email, paymentRef, method, amount, token, fulfilled, ui }: {
+  product: ShopProduct; name: string; email: string; paymentRef: string; method: MethodId; amount: string;
+  token: string | null; fulfilled: boolean; ui: UiT;
+}) {
+  const { href, openBooking } = useSite();
+  const isService = product.category === 'service';
+  const hasFile = !isService && !!product.fileUrl;
+  const first = name.trim().split(/\s+/)[0] || name;
+
+  return (
+    <main className="blog-ui px-6 pb-24 pt-16 sm:pt-20">
+      <div className="mx-auto max-w-[560px] text-center">
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: EASE }}
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1a8917]">
+          <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="#ffffff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+            <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.25, duration: 0.45, ease: 'easeOut' }} />
+          </svg>
+        </motion.div>
+        <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15, duration: 0.5, ease: EASE }}>
+          <p className="mt-6 text-[13px] font-medium uppercase tracking-[0.12em] text-[#1a8917]">{ui('co.done.paid')}</p>
+          <h1 className="mt-2 text-[34px] font-bold leading-tight tracking-[-0.02em] text-[#242424] sm:text-[40px]">{ui('co.done.title', { name: first })}</h1>
+          <p className="mx-auto mt-3 max-w-md font-story text-[19px] leading-[1.55] text-[#6b6b6b]">
+            {isService ? ui('co.done.service', { email }) : token ? ui('co.done.ready', { email }) : hasFile && !fulfilled ? ui('co.done.preparing') : ui('co.done.mailed', { email })}
           </p>
-        ) : downloadToken ? (
-          <>
-            <p className="mt-3 text-zinc-500 dark:text-zinc-400">
-              Your file is ready. A copy has also been sent to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong>.
-            </p>
-            <Link
-              href={`/download/${downloadToken}`}
-              className="mt-6 flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-50 px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
-            >
-              Download now →
-            </Link>
-            <p className="mt-2 font-mono text-[9px] text-zinc-400 dark:text-zinc-600">
-              Link valid 48 h · 3 downloads max
-            </p>
-          </>
-        ) : (
-          <p className="mt-3 text-zinc-500 dark:text-zinc-400">
-            A confirmation and download link are on their way to <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong>.
-          </p>
+        </motion.div>
+      </div>
+
+      <motion.div initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, duration: 0.5, ease: EASE }}
+        className="mx-auto mt-10 max-w-[560px] rounded-2xl border border-[#ececec] bg-white">
+        <div className="flex items-center gap-4 p-6">
+          <Cover product={product} className="h-14 w-14 shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[16px] font-semibold text-[#242424]">{product.title}</p>
+            <p className="text-[13px] text-[#6b6b6b]">{ui(`shop.catOne.${product.category}` as UiKey)}</p>
+          </div>
+        </div>
+
+        {hasFile && (
+          <div className="px-6 pb-6">
+            {token ? (
+              <>
+                <Link href={`/download/${token}`} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1a8917] py-3.5 text-[15px] font-medium text-white hover:bg-[#156d12]">
+                  <Download className="h-4 w-4" /> {ui('co.done.download')}
+                </Link>
+                <p className="mt-2 text-center text-[12px] text-[#9b9b9b]">{ui('co.done.limits', { n: 3 })}</p>
+              </>
+            ) : !fulfilled ? (
+              <p className="flex items-center justify-center gap-2 rounded-full bg-[#fafafa] py-3.5 text-[14px] text-[#6b6b6b]"><Loader2 className="h-4 w-4 animate-spin" /> {ui('co.done.preparing')}</p>
+            ) : null}
+          </div>
+        )}
+        {isService && (
+          <div className="px-6 pb-6">
+            <button type="button" onClick={() => openBooking()} className="flex w-full items-center justify-center gap-2 rounded-full bg-[#242424] py-3.5 text-[15px] font-medium text-white hover:bg-black">
+              <CalendarDays className="h-4 w-4" /> {ui('co.done.book')}
+            </button>
+          </div>
         )}
 
-        <p className="mt-4 font-mono text-[10px] text-zinc-400 dark:text-zinc-600">
-          Ref: {paymentRef}
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/shop"
-            className="border border-zinc-200 dark:border-zinc-800 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-zinc-900 dark:hover:border-zinc-100 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-          >
-            ← Back to shop
-          </Link>
-          <Link
-            href="/"
-            className="bg-zinc-900 dark:bg-zinc-50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
-          >
-            Home →
-          </Link>
-        </div>
+        <dl className="grid grid-cols-1 gap-3 border-t border-[#f2f2f2] px-6 py-5 text-[14px] sm:grid-cols-3">
+          <div><dt className="text-[12px] text-[#9b9b9b]">{ui('co.done.paidAmount')}</dt><dd className="mt-0.5 font-medium tabular-nums text-[#242424]">{amount}</dd></div>
+          <div><dt className="text-[12px] text-[#9b9b9b]">{ui('co.done.method')}</dt><dd className="mt-0.5 font-medium text-[#242424]">{methodName(ui, method)}</dd></div>
+          <div className="min-w-0"><dt className="text-[12px] text-[#9b9b9b]">{ui('co.done.ref')}</dt><dd className="mt-0.5 truncate font-mono text-[12px] text-[#242424]" title={paymentRef}>{paymentRef}</dd></div>
+        </dl>
       </motion.div>
+
+      <div className="mx-auto mt-8 flex max-w-[560px] flex-wrap items-center justify-center gap-3">
+        <Link href={href('/shop')} className="rounded-full border border-[#242424] px-5 py-2.5 text-[14px] text-[#242424] hover:bg-[#f9f9f9]">{ui('co.done.continue')}</Link>
+        <Link href={href('/')} className="rounded-full px-5 py-2.5 text-[14px] text-[#6b6b6b] hover:text-[#242424]">{ui('co.done.home')}</Link>
+      </div>
     </main>
   );
 }
 
-// ─── Main export ───────────────────────────────────────────────────────────────
-export default function CheckoutClient() {
-  const params = useSearchParams();
-  const slug   = params.get('product');
+// ─── Page ──────────────────────────────────────────────────────────────────────
+function Step({ n, title, done, children }: { n: number; title: string; done?: boolean; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="mb-4 flex items-center gap-3">
+        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${done ? 'bg-[#1a8917] text-white' : 'bg-[#f2f2f2] text-[#242424]'}`}>
+          {done ? <Check className="h-4 w-4" strokeWidth={3} /> : n}
+        </span>
+        <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-[#242424]">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
 
-  const [product,  setProduct]  = useState<ShopProduct | null>(null);
-  const [fetching, setFetching] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+export default function CheckoutClient({ product, methods, promo }: { product: ShopProduct; methods: MethodId[]; promo: string }) {
+  const { ui, href, me, openBooking } = useSite();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [method, setMethod] = useState<MethodId | null>(methods[0] ?? null);
+  const [display, setDisplayState] = useState<CurrencyCode>((CURRENCIES.find(c => c.code === product.currency.toUpperCase())?.code ?? 'USD') as CurrencyCode);
+  const [discount, setDiscount] = useState<DiscountCode | null>(() => product.discountCodes?.find(d => d.code.toUpperCase() === promo) ?? null);
+  const [done, setDone] = useState<{ ref: string; method: MethodId } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [fulfilled, setFulfilled] = useState(false);
 
-  const [name,   setName]   = useState('');
-  const [email,  setEmail]  = useState('');
-  const [method, setMethod] = useState<MethodId>('stripe');
-
-  const [success,       setSuccess]       = useState(false);
-  const [paymentRef,    setPaymentRef]    = useState('');
-  const [downloadToken, setDownloadToken] = useState<string | null>(null);
-
-  const [currency, setCurrency] = useState<CurrencyCode>('USD');
   useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY) as CurrencyCode | null;
-    if (saved && CURRENCIES.some(c => c.code === saved)) setCurrency(saved);
+    try {
+      const saved = localStorage.getItem(LS_KEY) as CurrencyCode | null;
+      if (saved && CURRENCIES.some(c => c.code === saved)) setDisplayState(saved);
+    } catch { /* ignore */ }
   }, []);
+  useEffect(() => { if (me?.reader.name) setName(n => n || me.reader.name); }, [me]);
 
-  // ── Discount state ──────────────────────────────────────────────────────────
-  const [discountInput,    setDiscountInput]    = useState('');
-  const [appliedDiscount,  setAppliedDiscount]  = useState<DiscountCode | null>(null);
-  const [discountError,    setDiscountError]    = useState<string | null>(null);
-
-  const applyDiscount = () => {
-    const code = discountInput.trim().toUpperCase();
-    if (!code) return;
-    const match = product?.discountCodes?.find(d => d.code.toUpperCase() === code);
-    if (match) {
-      setAppliedDiscount(match);
-      setDiscountError(null);
-    } else {
-      setAppliedDiscount(null);
-      setDiscountError('Invalid code — please check and try again.');
-    }
-  };
-
-  const removeDiscount = () => {
-    setAppliedDiscount(null);
-    setDiscountInput('');
-    setDiscountError(null);
-  };
+  const setDisplay = (c: CurrencyCode) => { setDisplayState(c); try { localStorage.setItem(LS_KEY, c); } catch { /* ignore */ } };
 
   const finalPrice = useMemo(() => {
-    if (!product || !appliedDiscount) return product?.price ?? 0;
-    if (appliedDiscount.type === 'percent') {
-      return +(product.price * (1 - appliedDiscount.value / 100)).toFixed(2);
-    }
-    return +Math.max(0, product.price - appliedDiscount.value).toFixed(2);
-  }, [product, appliedDiscount]);
+    if (!discount) return product.price;
+    if (discount.type === 'percent') return +(product.price * (1 - discount.value / 100)).toFixed(2);
+    return +Math.max(0, product.price - discount.value).toFixed(2);
+  }, [product, discount]);
 
-  useEffect(() => {
-    if (!slug) { setNotFound(true); setFetching(false); return; }
-    fetch('/api/content')
-      .then(r => r.json())
-      .then(data => {
-        const p = (data.products ?? []).find(
-          (p: ShopProduct) => p.slug === slug && p.status === 'published',
-        );
-        if (p) {
-          setProduct(p);
-          // Auto-apply affiliate/promo code from URL (?ref=CODE or ?code=CODE)
-          const refCode = (params.get('ref') ?? params.get('code') ?? '').toUpperCase();
-          if (refCode) {
-            const match = p.discountCodes?.find((d: DiscountCode) => d.code.toUpperCase() === refCode);
-            if (match) { setAppliedDiscount(match); setDiscountInput(match.code); }
-          }
-        } else {
-          setNotFound(true);
-        }
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setFetching(false));
-  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  const applyCode = (raw: string) => {
+    const match = product.discountCodes?.find(d => d.code.toUpperCase() === raw.trim().toUpperCase());
+    if (match) setDiscount(match);
+    return !!match;
+  };
+
+  const detailsValid = name.trim().length >= 2 && /^\S+@\S+\.\S+$/.test(email.trim());
 
   const handleSuccess = (ref: string) => {
-    setPaymentRef(ref);
-    setSuccess(true);
+    setDone({ ref, method: method! });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     fetch('/api/checkout/fulfill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        paymentRef: ref,
-        productId: product!.id,
-        productTitle: product!.title,
-        customerName: name,
-        customerEmail: email,
-        amount: finalPrice,
-        currency: product!.currency,
-      }),
+      body: JSON.stringify({ paymentRef: ref, productId: product.id, productTitle: product.title, customerName: name.trim(), customerEmail: email.trim(), amount: finalPrice, currency: product.currency }),
     })
       .then(r => r.json())
-      .then(data => { if (data.downloadToken) setDownloadToken(data.downloadToken); })
-      .catch(() => {});
+      .then(data => { if (data.downloadToken) setToken(data.downloadToken); })
+      .catch(() => {})
+      .finally(() => setFulfilled(true));
   };
-  const isValid = name.trim().length >= 2 && /\S+@\S+\.\S+/.test(email);
 
-  if (fetching) {
-    return (
-      <main className="flex min-h-[50vh] items-center justify-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 animate-pulse">Loading…</p>
-      </main>
-    );
+  if (done) {
+    return <Confirmation product={product} name={name} email={email.trim()} paymentRef={done.ref} method={done.method} amount={formatPrice(finalPrice, product.currency, display)} token={token} fulfilled={fulfilled} ui={ui} />;
   }
 
-  if (notFound || !product) {
-    return (
-      <main className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
-        <p className="font-mono text-[11px] uppercase tracking-widest text-zinc-400">Product not found</p>
-        <Link href="/shop" className="mt-4 font-mono text-sm underline underline-offset-4 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-          Back to shop
-        </Link>
-      </main>
-    );
-  }
-
-  if (success) return <SuccessState product={product} email={email} paymentRef={paymentRef} downloadToken={downloadToken} />;
+  const payProps = { product, name: name.trim(), email: email.trim(), finalPrice, display, ui, onSuccess: handleSuccess };
 
   return (
     <>
-      <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
+      {methods.includes('paystack') && <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />}
 
-      <main className="min-h-screen bg-white dark:bg-zinc-950">
-        {/* Top bar */}
-        <div className="border-b border-zinc-200 dark:border-zinc-800">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-            <Link
-              href={`/shop/${product.slug}`}
-              className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-            >
-              <ChevronLeft className="h-3 w-3" /> Back
-            </Link>
-            <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-zinc-400">
-              <Lock className="h-3 w-3" /> Secure Checkout
-            </div>
-          </div>
+      <main className="blog-ui pb-24">
+        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-6 pt-8">
+          <Link href={href(`/shop/${product.slug}`)} className="inline-flex items-center gap-1.5 text-[14px] text-[#6b6b6b] hover:text-[#242424]"><ArrowLeft className="h-4 w-4" /> {ui('co.back')}</Link>
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-[#6b6b6b]"><Lock className="h-3.5 w-3.5" /> {ui('co.secure')}</span>
         </div>
 
-        {/* Body grid */}
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
+        <div className="mx-auto grid max-w-[1100px] gap-10 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
+          <div className="min-w-0">
+            <h1 className="text-[36px] font-bold tracking-[-0.025em] text-[#242424] sm:text-[44px]">{ui('co.title')}</h1>
 
-            {/* ── Left: form ─────────────────────────────────────────────── */}
-            <div className="space-y-10">
-
-              {/* Contact */}
-              <div>
-                <Rule />
-                <div className="py-6">
-                  <SectionLabel n={1}>Contact</SectionLabel>
-                  <div className="space-y-4">
-                    <FieldInput label="Full name" value={name} onChange={setName}
-                      placeholder="Your name" autoComplete="name" />
-                    <FieldInput label="Email address" type="email" value={email} onChange={setEmail}
-                      placeholder="you@example.com" autoComplete="email" />
-                  </div>
+            <div className="mt-10 space-y-12">
+              <Step n={1} title={ui('co.step.details')} done={detailsValid}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-[13px] font-medium text-[#242424]">{ui('co.name')}</span>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder={ui('co.namePh')} autoComplete="name" className={`mt-1.5 ${inputCls}`} />
+                  </label>
+                  <label className="block">
+                    <span className="text-[13px] font-medium text-[#242424]">{ui('co.email')}</span>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={ui('co.emailPh')} autoComplete="email" className={`mt-1.5 ${inputCls}`} />
+                  </label>
                 </div>
-                <Rule />
-              </div>
+                <p className="mt-2 text-[13px] text-[#9b9b9b]">{ui('co.emailHint')}</p>
+              </Step>
 
-              {/* Payment method */}
-              <div>
-                <SectionLabel n={2}>Payment method</SectionLabel>
-                <div className="flex flex-col gap-2">
-                  {METHODS.map(m => (
-                    <MethodCard key={m.id} m={m} selected={method === m.id} onClick={() => setMethod(m.id)} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Payment form (shown only when contact is valid) */}
-              <AnimatePresence mode="wait">
-                {isValid ? (
-                  <motion.div
-                    key={method}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    <Rule />
-                    <div className="pt-6">
-                      <SectionLabel n={3}>{METHODS.find(m => m.id === method)?.name}</SectionLabel>
-
-                      {method === 'stripe' && (
-                        <Elements stripe={getStripe()}>
-                          <StripeCardForm product={product} name={name} email={email} currency={currency} finalPrice={finalPrice} onSuccess={handleSuccess} />
-                        </Elements>
-                      )}
-
-                      {method === 'paystack' && (
-                        <PaystackForm product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
-                      )}
-
-                      {method === 'mpesa' && (
-                        <MpesaForm product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
-                      )}
-
-                      {method === 'paypal' && (
-                        <PayPalScriptProvider
-                          options={{
-                            clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? 'test',
-                            currency: 'USD',
-                            intent: 'capture',
-                          }}
-                        >
-                          <PayPalSection product={product} name={name} email={email} finalPrice={finalPrice} onSuccess={handleSuccess} />
-                        </PayPalScriptProvider>
-                      )}
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.p
-                    key="hint"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600"
-                  >
-                    Complete your contact details to continue.
-                  </motion.p>
-                )}
-              </AnimatePresence>
-
-              <p className="font-mono text-[9px] leading-relaxed text-zinc-400 dark:text-zinc-600">
-                By completing this purchase you agree to our terms. Payments are processed securely by the selected provider.
-                For support: laudbouetoumoussa@gmail.com
-              </p>
-            </div>
-
-            {/* ── Right: order summary ────────────────────────────────────── */}
-            <aside className="self-start lg:sticky lg:top-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-
-              {/* Cover */}
-              {product.cover && (
-                <div className="relative aspect-[16/9] overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
-                  <Image src={product.cover} alt={product.title} fill
-                    className="object-cover" sizes="340px" />
-                </div>
-              )}
-
-              {/* Product info */}
-              <div className={product.cover ? 'px-5 pt-4 pb-4' : 'px-5 pt-5 pb-4'}>
-                <span className="border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest text-zinc-400">
-                  {product.category}
-                </span>
-                <h2 className="mt-2 font-heading text-base font-black tracking-tight text-zinc-900 dark:text-zinc-50 leading-snug">
-                  {product.title}
-                </h2>
-                <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  {product.tagline}
-                </p>
-              </div>
-
-              {/* Divider */}
-              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
-
-              {/* Promo / affiliate code */}
-              <div className="px-5 py-4">
-                <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                  Promo or affiliate code
-                </p>
-                {appliedDiscount ? (
-                  <div className="flex items-center gap-2 border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span className="flex-1 font-mono text-[10px] uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
-                      <strong>{appliedDiscount.code}</strong>
-                      {appliedDiscount.type === 'percent'
-                        ? ` — ${appliedDiscount.value}% off`
-                        : ` — ${appliedDiscount.value} ${product.currency} off`}
-                    </span>
-                    <button type="button" onClick={removeDiscount}
-                      className="text-emerald-500 hover:text-emerald-700 transition-colors">
-                      <X className="h-3.5 w-3.5" />
+              <Step n={2} title={ui('co.step.payment')}>
+                {methods.length === 0 ? (
+                  <div className="rounded-2xl bg-[#fafafa] p-6">
+                    <p className="text-[15px] text-[#6b6b6b]">{ui('co.noMethods')}</p>
+                    <button type="button" onClick={() => openBooking()} className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#242424] px-5 py-2.5 text-[14px] font-medium text-white hover:bg-black">
+                      <CalendarDays className="h-4 w-4" /> {ui('home.book.cta')}
                     </button>
                   </div>
                 ) : (
-                  <>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={discountInput}
-                        onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(null); }}
-                        onKeyDown={e => e.key === 'Enter' && applyDiscount()}
-                        placeholder="SUMMER20"
-                        className="flex-1 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-[#2467AC] focus:outline-none transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={applyDiscount}
-                        className="flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:border-[#2467AC] hover:text-[#2467AC] transition-colors"
-                      >
-                        <Tag className="h-3 w-3" />
-                        Apply
-                      </button>
-                    </div>
-                    {discountError && (
-                      <p className="mt-1.5 font-mono text-[10px] text-red-500">{discountError}</p>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
-
-              {/* Price breakdown */}
-              <div className="px-5 py-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                    Subtotal
-                  </span>
-                  <span className={[
-                    'font-mono text-sm',
-                    appliedDiscount
-                      ? 'text-zinc-400 dark:text-zinc-600 line-through'
-                      : 'text-zinc-900 dark:text-zinc-100',
-                  ].join(' ')}>
-                    {formatPrice(product.price, product.currency, currency)}
-                  </span>
-                </div>
-                {appliedDiscount && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                      Discount
-                    </span>
-                    <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400">
-                      −{formatPrice(product.price - finalPrice, product.currency, currency)}
-                    </span>
+                  <div role="radiogroup" aria-label={ui('co.step.payment')} className="divide-y divide-[#ececec] overflow-hidden rounded-2xl border border-[#ececec]">
+                    {methods.map(m => {
+                      const selected = method === m;
+                      return (
+                        <div key={m} className={selected ? 'bg-[#fcfcfc]' : ''}>
+                          <button type="button" role="radio" aria-checked={selected} onClick={() => setMethod(m)}
+                            className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-[#fafafa]">
+                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${selected ? 'border-[#1a8917]' : 'border-[#d4d4d4]'}`}>
+                              <motion.span initial={false} animate={{ scale: selected ? 1 : 0 }} className="h-2.5 w-2.5 rounded-full bg-[#1a8917]" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[15px] font-medium text-[#242424]">{methodName(ui, m)}</span>
+                              <span className="block truncate text-[13px] text-[#6b6b6b]">{methodDetail(ui, m)}</span>
+                            </span>
+                            <ProviderMark id={m} />
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {selected && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: EASE }} className="overflow-hidden">
+                                <div className="px-5 pb-5 pt-1">
+                                  {!detailsValid ? (
+                                    <p className="rounded-xl bg-[#fafafa] px-4 py-3 text-[14px] text-[#6b6b6b]">{ui('co.fillFirst')}</p>
+                                  ) : m === 'stripe' ? (
+                                    <Elements stripe={getStripe()}><StripeCardForm {...payProps} /></Elements>
+                                  ) : m === 'paystack' ? (
+                                    <PaystackForm {...payProps} />
+                                  ) : m === 'mpesa' ? (
+                                    <MpesaForm {...payProps} />
+                                  ) : (
+                                    <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? 'test', currency: 'USD', intent: 'capture' }}>
+                                      <PayPalSection {...payProps} />
+                                    </PayPalScriptProvider>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                    Tax / Fees
-                  </span>
-                  <span className="font-mono text-sm text-zinc-400 dark:text-zinc-600">Included</span>
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="h-px w-full bg-zinc-200 dark:bg-zinc-800" />
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Total</span>
-                  <span className="font-mono text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-                    {formatPrice(finalPrice, product.currency, currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Security */}
-              <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800" />
-              <div className="px-5 py-3">
-                <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-600">
-                  <Lock className="h-3 w-3 shrink-0" />
-                  <p className="font-mono text-[9px] uppercase tracking-widest">End-to-end encrypted</p>
-                </div>
-              </div>
-            </aside>
+                <p className="mt-5 text-[12px] leading-5 text-[#9b9b9b]">{ui('co.terms')}</p>
+              </Step>
+            </div>
           </div>
+
+          <aside className="order-first lg:order-none">
+            <div className="lg:sticky lg:top-24">
+              <Summary product={product} display={display} setDisplay={setDisplay} finalPrice={finalPrice} discount={discount}
+                onApply={applyCode} onRemove={() => setDiscount(null)} ui={ui} />
+            </div>
+          </aside>
         </div>
       </main>
     </>

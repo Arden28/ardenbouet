@@ -6,6 +6,7 @@ export const OWNER = {
   location: 'Nairobi, Kenya',
   timezone: 'Africa/Nairobi',
   resume: '/files/cv-v6.pdf',
+  supportEmail: 'laudbouetoumoussa@gmail.com',
 } as const;
 
 export const PROFILES = {
