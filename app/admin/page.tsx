@@ -11,7 +11,6 @@ import { scanBundleUrls } from '@/lib/scanBundleUrls';
 import ProjectsEditor   from './components/ProjectsEditor';
 import ExperienceEditor from './components/ExperienceEditor';
 import JourneyEditor    from './components/JourneyEditor';
-import NotesEditor      from './components/NotesEditor';
 import ShopEditor       from './components/ShopEditor';
 import OrdersEditor     from './components/OrdersEditor';
 import MediaLibrary     from './components/MediaLibrary';
@@ -164,6 +163,13 @@ export default function AdminPage() {
   const [retryCount, setRetryCount] = useState(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Deep links from the new admin shell: /admin?tab=shop etc. Notes moved to /admin/blog.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+    if (wanted === 'notes') router.replace('/admin/blog');
+    else if (wanted) setTab(wanted);
+  }, [router]);
+
   // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
     setStatus('loading');
@@ -278,7 +284,7 @@ export default function AdminPage() {
     { key: 'projects',   label: 'Projects',   count: counts.projects   },
     { key: 'experience', label: 'Experience', count: counts.experience },
     { key: 'journey',    label: 'Journey',    count: counts.journey    },
-    { key: 'notes',      label: 'Notes',      count: counts.notes      },
+    { key: 'notes',      label: 'Blog ↗',     count: 0                 },
     { key: 'media',      label: 'Media',      count: 0                 },
     { key: 'shop',       label: 'Shop',       count: counts.shop       },
     { key: 'orders',     label: 'Orders',     count: counts.orders,    hint: counts.orders > 0 ? 'pending' : undefined },
@@ -325,7 +331,7 @@ export default function AdminPage() {
               label={item.label}
               count={item.count}
               active={tab === item.key}
-              onClick={() => setTab(item.key)}
+              onClick={() => (item.key === 'notes' ? router.push('/admin/blog') : setTab(item.key))}
             />
           ))}
         </nav>
@@ -404,7 +410,7 @@ export default function AdminPage() {
             {/* Mobile tab selector */}
             <select
               value={tab}
-              onChange={e => setTab(e.target.value as Tab)}
+              onChange={e => (e.target.value === 'notes' ? router.push('/admin/blog') : setTab(e.target.value as Tab))}
               className={[
                 'border border-zinc-200 dark:border-zinc-800',
                 'bg-white dark:bg-zinc-900',
@@ -454,12 +460,6 @@ export default function AdminPage() {
                 <JourneyEditor
                   value={bundle.journey}
                   onChange={v => setBundle(b => ({ ...b!, journey: v }))}
-                />
-              )}
-              {tab === 'notes'      && (
-                <NotesEditor
-                  value={bundle.notes}
-                  onChange={v => setBundle(b => ({ ...b!, notes: v }))}
                 />
               )}
               {tab === 'media'      && <MediaLibrary usedUrls={usedUrls} />}

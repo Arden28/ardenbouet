@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
@@ -134,12 +135,16 @@ const NAV = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export const Footer = () => {
+  const pathname = usePathname();
   const year = new Date().getFullYear();
 
   const scrollTop = useCallback(() => {
     if (typeof window === 'undefined') return;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  // The blog renders its own footer (app/blog/layout.tsx).
+  if (pathname?.startsWith('/blog') || pathname?.startsWith('/admin/blog')) return null;
 
   return (
     /*

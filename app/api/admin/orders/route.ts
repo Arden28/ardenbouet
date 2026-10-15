@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
@@ -10,7 +11,7 @@ const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 async function isAuthed() {
   try {
     const cookieStore = await cookies();
-    return cookieStore.get(COOKIE_NAME)?.value === '1';
+    return verifyAdminToken(cookieStore.get(COOKIE_NAME)?.value);
   } catch {
     return false;
   }

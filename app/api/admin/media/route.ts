@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { listFolderContents, deleteMediaFile, renameMediaFile, createVirtualFolder } from '@/lib/r2';
 import { getR2Config } from '@/lib/getR2Config';
@@ -11,7 +12,7 @@ const COOKIE_NAME = process.env.ADMIN_COOKIE_NAME || 'admin_session';
 async function isAuthed() {
   try {
     const store = await cookies();
-    return store.get(COOKIE_NAME)?.value === '1';
+    return verifyAdminToken(store.get(COOKIE_NAME)?.value);
   } catch {
     return false;
   }

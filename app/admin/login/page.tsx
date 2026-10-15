@@ -262,9 +262,12 @@ function LoginForm() {
       if (!res.ok) {
         /*
           Generic message: never reveal whether the username or password
-          was incorrect — that would confirm account existence.
+          was incorrect — that would confirm account existence. A 500 is a
+          server misconfiguration (ADMIN_USER / ADMIN_PASS unset), not bad input.
         */
-        fail('Invalid credentials. Please try again.');
+        fail(res.status === 500
+          ? 'Admin login is not configured on this server (set ADMIN_USER and ADMIN_PASS).'
+          : 'Invalid credentials. Please try again.');
         setLoading(false);
         return;
       }
