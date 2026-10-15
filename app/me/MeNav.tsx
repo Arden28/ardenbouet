@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Bookmark, FileText, Feather, Wallet, Settings } from 'lucide-react';
+import { User, Bookmark, FileText, Feather, Wallet, Settings, ShoppingBag } from 'lucide-react';
 import { splitLocale } from '@/lib/i18n/config';
 import { useSite } from '@/components/site/SiteProviders';
 import { Avatar } from '@/components/site/SiteHeader';
@@ -13,6 +13,7 @@ export function MeNav() {
   const items = [
     { href: '/me', label: ui('me.profile'), icon: User, exact: true },
     { href: '/me/library', label: ui('me.library'), icon: Bookmark },
+    { href: '/me/orders', label: ui('me.orders'), icon: ShoppingBag },
     ...(isWriter
       ? [{ href: '/me/stories', label: ui('me.stories'), icon: FileText }, { href: '/me/earnings', label: ui('me.earnings'), icon: Wallet }]
       : [{ href: '/me/writer', label: ui('me.writer'), icon: Feather }]),
