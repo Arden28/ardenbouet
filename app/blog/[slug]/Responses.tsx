@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Heart, MoreHorizontal, X, Pin, BadgeCheck } from 'lucide-react';
 import { useBlog, useReader } from '../_components/ReaderProvider';
-import { Avatar } from '../_components/BlogHeader';
+import { Avatar } from '@/components/site/SiteHeader';
 import { useStory } from './StoryClient';
 import type { BlogLocale } from '@/lib/blog/strings';
 

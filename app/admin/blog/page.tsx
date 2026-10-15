@@ -9,7 +9,8 @@ import '@/app/blog/story.css';
 
 type Row = {
   id: string; slug: string; title: string; subtitle: string; excerpt: string; coverUrl: string | null;
-  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
+  status: 'DRAFT' | 'REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
+  author: { name: string; handle: string | null; image: string | null } | null;
   publishedAt: string | null; scheduledAt: string | null; updatedAt: string; createdAt: string;
   tags: string[]; featured: boolean; readingMinutes: number; wordCount: number; views: number; claps: number;
   newsletterSentAt: string | null; series: { title: string } | null;
@@ -19,6 +20,7 @@ type Row = {
 const TABS = [
   { key: 'ALL', label: 'All' },
   { key: 'DRAFT', label: 'Drafts' },
+  { key: 'REVIEW', label: 'In review' },
   { key: 'SCHEDULED', label: 'Scheduled' },
   { key: 'PUBLISHED', label: 'Published' },
   { key: 'ARCHIVED', label: 'Archived' },
@@ -101,7 +103,7 @@ export default function StoriesPage() {
           <Stat label="Published" value={counts.PUBLISHED ?? 0} icon={<Sparkles className="h-4 w-4" />} />
           <Stat label="Views" value={totals.views} icon={<Eye className="h-4 w-4" />} />
           <Stat label="Claps · Responses" value={`${totals.claps.toLocaleString()} · ${totals.responses}`} icon={<ClapIcon className="h-4 w-4" />} />
-          <Stat label="Subscribers" value={subs ?? '—'} icon={<Mail className="h-4 w-4" />} />
+          <Stat label="Subscribers" value={subs ?? ''} icon={<Mail className="h-4 w-4" />} />
         </div>
 
         <div className="mt-8 flex flex-col gap-4 border-b border-[#f2f2f2] sm:flex-row sm:items-end sm:justify-between">
@@ -140,7 +142,9 @@ export default function StoriesPage() {
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[#9b9b9b]">
                   {r.status === 'PUBLISHED' && r.publishedAt && <span>Published {rel(r.publishedAt)}</span>}
                   {r.status === 'SCHEDULED' && r.scheduledAt && <span className="text-[#7a5a00]">Scheduled for {new Date(r.scheduledAt).toLocaleString()}</span>}
+                  {r.author && <span className="font-medium text-[#6b6b6b]">by {r.author.name}</span>}
                   {r.status === 'DRAFT' && <span>Last edited {rel(r.updatedAt)}</span>}
+                  {r.status === 'REVIEW' && <span className="text-[#2467ac]">Waiting for your review · {rel(r.updatedAt)}</span>}
                   {r.status === 'ARCHIVED' && <span>Archived</span>}
                   <span>{r.readingMinutes} min read ({r.wordCount.toLocaleString()} words)</span>
                   {r.series && <span>Series: {r.series.title}</span>}

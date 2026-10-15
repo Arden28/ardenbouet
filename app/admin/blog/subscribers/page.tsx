@@ -65,7 +65,7 @@ export default function SubscribersPage() {
                   <td className="px-4 py-3 text-[#242424]">{s.email}</td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[12px] ${CHIP[s.status]}`}>{s.status.toLowerCase()}</span></td>
                   <td className="px-4 py-3 text-[#6b6b6b]">{new Date(s.confirmedAt ?? s.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-[#9b9b9b]">{s.source ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#9b9b9b]">{s.source ?? ''}</td>
                   <td className="px-4 py-3 text-right">
                     <button type="button" onClick={() => remove(s)} className="rounded p-1 text-[#9b9b9b] hover:text-[#c94a4a]" aria-label={`Remove ${s.email}`}><Trash2 className="h-4 w-4" /></button>
                   </td>

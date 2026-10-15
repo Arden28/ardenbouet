@@ -1,278 +1,118 @@
-// app/shop/[slug]/page.tsx — Header provided by layout.tsx
+// app/shop/[slug]/page.tsx — product page in the story layout, with a sticky purchase card
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
-import type { ContentBundle, ShopProduct } from '@/app/admin/types';
-import { getLocale, makeT } from '@/lib/serverT';
-import PriceTag from './PriceTag';
-import MediaViewer from './MediaViewer';
+import { ArrowLeft, Check } from 'lucide-react';
+import { getContentBundle } from '@/lib/blog/queries';
+import { getLocale, lhref, alternates } from '@/lib/i18n/server';
+import { localize } from '@/lib/i18n/content';
+import { uiT, type UiKey } from '@/lib/i18n/ui';
+import { mdToSafeHtml } from '@/lib/mardown';
+import { Gallery } from '@/components/gallery/Gallery';
+import { BuyCard } from './BuyCard';
 
 export const dynamic = 'force-dynamic';
 
-async function getProduct(slug: string): Promise<ShopProduct | null> {
-  try {
-    const { prisma } = await import('@/lib/prisma');
-    const row = await prisma.content.findUnique({ where: { id: 1 } });
-    const bundle = row?.data as ContentBundle | null;
-    return bundle?.products?.find(p => p.slug === slug && p.status === 'published') ?? null;
-  } catch {
-    return null;
-  }
+async function getProduct(slug: string) {
+  const bundle = await getContentBundle();
+  const all = (bundle.products ?? []).filter(p => p.status === 'published');
+  const raw = all.find(p => p.slug === slug);
+  return raw ? { product: localize(raw, getLocale()), others: all.filter(p => p.id !== raw.id).slice(0, 3).map(p => localize(p, getLocale())) } : null;
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = await getProduct(params.slug);
-  if (!product) return {};
+  const r = await getProduct(params.slug);
+  if (!r) return {};
+  const cover = r.product.cover || r.product.media?.find(m => m.kind === 'image')?.url;
   return {
-    title: `${product.title} · Shop · Arden BOUET`,
-    description: product.tagline,
+    title: `${r.product.title} · Shop · Arden BOUET`,
+    description: r.product.tagline,
+    alternates: alternates(`/shop/${r.product.slug}`),
+    openGraph: { title: r.product.title, description: r.product.tagline, ...(cover ? { images: [{ url: cover }] } : {}) },
   };
 }
 
-function Rule({ className = '' }: { className?: string }) {
-  return <div className={`h-px w-full bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
-}
-
-
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const product = await getProduct(params.slug);
-  if (!product) notFound();
-
-  const isService = product.category === 'service';
-  const t = makeT(getLocale());
+  const r = await getProduct(params.slug);
+  if (!r) notFound();
+  const { product: p, others } = r;
+  const ui = uiT(getLocale());
+  const isService = p.category === 'service';
+  const gallery = (p.media ?? []).map(m => ({ src: m.url, alt: m.label, caption: m.description || m.label, kind: m.kind === 'video' ? 'video' as const : 'image' as const }));
+  const cover = p.cover || (gallery[0]?.kind === 'image' ? gallery[0].src : undefined);
 
   return (
-    <>
-      {/* ── DARK HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-zinc-950 text-white">
-        {/* Lime left-edge accent */}
-        <div className="absolute inset-y-0 left-0 w-[3px] bg-[#2467AC]" />
+    <main className="blog-ui pb-24">
+      <div className="mx-auto max-w-[1192px] px-6 pt-8">
+        <Link href={lhref('/shop')} className="inline-flex items-center gap-1.5 text-[14px] text-[#6b6b6b] hover:text-[#242424]"><ArrowLeft className="h-4 w-4" /> {ui('shop.back')}</Link>
+      </div>
 
-        <div className="mx-auto max-w-6xl px-6 pb-14 pt-10 sm:pt-16">
-          {/* Breadcrumb */}
-          <nav
-            aria-label="Breadcrumb"
-            className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-600"
-          >
-            <Link href="/shop" className="transition-colors duration-150 hover:text-zinc-300">
-              Shop
-            </Link>
-            <span aria-hidden>·</span>
-            <span className="text-zinc-400">{product.title}</span>
-          </nav>
+      <div className="mx-auto grid max-w-[1192px] gap-12 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16">
+        <article className="min-w-0">
+          <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-[#1a8917]">{ui(`shop.catOne.${p.category}` as UiKey)}</p>
+          <h1 className="mt-3 text-[38px] font-bold leading-[1.1] tracking-[-0.025em] text-[#242424] sm:text-[48px]">{p.title}</h1>
+          <p className="mt-4 font-story text-[22px] leading-[1.5] text-[#6b6b6b]">{p.tagline}</p>
+          {p.tags?.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">{p.tags.map(t => <span key={t} className="rounded-full bg-[#f2f2f2] px-3 py-1 text-[13px] text-[#242424]">{t}</span>)}</div>
+          )}
 
-          {/* Category + tags */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="border border-[#2467AC]/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[#2467AC]">
-              {product.category}
-            </span>
-            {product.language && (
-              <span className="border border-white/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-500">
-                {product.language === 'fr' ? '🇫🇷 fr' : product.language === 'both' ? '🌐 en+fr' : '🇬🇧 en'}
-              </span>
-            )}
-            {product.tags.slice(0, 4).map(tag => (
-              <span
-                key={tag}
-                className="border border-zinc-700 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-500"
-              >
-                {tag}
-              </span>
+          {cover && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cover} alt="" className="mt-10 aspect-[16/9] w-full rounded-3xl object-cover" />
+          )}
+
+          <section className="mt-12">
+            <h2 className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#9b9b9b]">{ui('shop.about')}</h2>
+            <div className="story mt-4 [&>*]:!mx-0 [&>*]:!max-w-none" dangerouslySetInnerHTML={{ __html: mdToSafeHtml(p.description ?? '') }} />
+          </section>
+
+          {p.features?.length > 0 && (
+            <section className="mt-12">
+              <h2 className="text-[13px] font-medium uppercase tracking-[0.12em] text-[#9b9b9b]">{ui('shop.included')}</h2>
+              <ul className="mt-5 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                {p.features.map(f => (
+                  <li key={f} className="flex gap-3 text-[16px] leading-6 text-[#242424]">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#eef7ee]"><Check className="h-3 w-3 text-[#1a8917]" strokeWidth={3} /></span>{f}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {gallery.length > 0 && (
+            <section className="mt-14">
+              <h2 className="mb-5 text-[13px] font-medium uppercase tracking-[0.12em] text-[#9b9b9b]">{ui('shop.gallery')}</h2>
+              <Gallery items={gallery} />
+            </section>
+          )}
+        </article>
+
+        <aside>
+          <div className="lg:sticky lg:top-24">
+            <BuyCard slug={p.slug} price={p.price} currency={p.currency} priceLabel={p.priceLabel} isService={isService} demoUrl={p.demoUrl} hasDiscounts={!!p.discountCodes?.length} />
+          </div>
+        </aside>
+      </div>
+
+      {others.length > 0 && (
+        <section className="mx-auto mt-24 max-w-[1192px] border-t border-[#f2f2f2] px-6 pt-12">
+          <h2 className="text-[20px] font-bold text-[#242424]">{ui('shop.more')}</h2>
+          <div className="mt-8 grid gap-8 sm:grid-cols-3">
+            {others.map(o => (
+              <Link key={o.id} href={lhref(`/shop/${o.slug}`)} className="group">
+                <div className="overflow-hidden rounded-2xl bg-[#f4f4f4]">
+                  {(o.cover || o.media?.find(m => m.kind === 'image')?.url)
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={o.cover || o.media?.find(m => m.kind === 'image')?.url} alt="" loading="lazy" className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+                    : <div className="aspect-[4/3]" />}
+                </div>
+                <p className="mt-3 text-[17px] font-bold text-[#242424]">{o.title}</p>
+                <p className="mt-1 text-[14px] text-[#6b6b6b] line-clamp-2">{o.tagline}</p>
+              </Link>
             ))}
           </div>
-
-          {/* Title */}
-          <h1 className="mt-5 font-heading text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            {product.title}
-          </h1>
-
-          {/* Tagline */}
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-zinc-400">
-            {product.tagline}
-          </p>
-
-          {/* CTA row */}
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <PriceTag
-              price={product.price}
-              baseCurrency={product.currency}
-              fallback={product.priceLabel}
-              className="font-mono text-2xl font-bold text-white"
-            />
-
-            <Link
-              href={`/checkout?product=${product.slug}`}
-              className="inline-flex items-center bg-[#2467AC] px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-950 transition-colors duration-150 hover:bg-white"
-            >
-              {isService ? t('shopDetail.bookNow') : t('shopDetail.buyNow')}
-            </Link>
-
-            {product.demoUrl && (
-              <a
-                href={product.demoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-[11px] uppercase tracking-widest text-zinc-500 transition-colors duration-150 hover:text-zinc-200"
-              >
-                {t('shopDetail.viewDemo')}
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── COVER IMAGE ──────────────────────────────────────────────────────── */}
-      {product.cover && (
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="relative aspect-[16/9] overflow-hidden border-x border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-            <Image
-              src={product.cover}
-              alt={product.title}
-              fill
-              className="object-cover"
-              sizes="(max-width:1024px) 100vw, 1152px"
-              priority
-            />
-          </div>
-        </div>
+        </section>
       )}
-
-      {/* ── BODY ─────────────────────────────────────────────────────────────── */}
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-14 sm:px-6">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_320px] lg:gap-16">
-
-          {/* Left: description + features */}
-          <div>
-            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-              {t('shopDetail.about')}
-            </p>
-            <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-300">
-              {product.description}
-            </p>
-
-            {product.features.length > 0 && (
-              <div className="mt-12">
-                <p className="mb-6 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  {t('shopDetail.included')}
-                </p>
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {product.features.map(f => (
-                    <li
-                      key={f}
-                      className="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300"
-                    >
-                      <span
-                        aria-hidden
-                        className="mt-0.5 shrink-0 font-bold text-[#2467AC]"
-                      >
-                        ✓
-                      </span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Media */}
-            {product.media && product.media.length > 0 && (
-              <div className="mt-14">
-                <p className="mb-6 font-mono text-[9px] uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-600">
-                  {t('shopDetail.media')}
-                </p>
-                <MediaViewer items={product.media} />
-              </div>
-            )}
-
-            {/* Back link — mobile only */}
-            <div className="mt-12 lg:hidden">
-              <Link
-                href="/shop"
-                className="font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
-              >
-                {t('shopDetail.back')}
-              </Link>
-            </div>
-          </div>
-
-          {/* Right: sticky purchase card */}
-          <div className="self-start space-y-4 lg:sticky lg:top-28">
-            <div className="divide-y divide-zinc-200 border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-              {/* Price */}
-              <div className="p-6">
-                <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                  {t('shopDetail.price')}
-                </p>
-                <PriceTag
-                  price={product.price}
-                  baseCurrency={product.currency}
-                  fallback={product.priceLabel}
-                  className="mt-1 block font-mono text-3xl font-bold text-zinc-900 dark:text-zinc-50"
-                />
-              </div>
-
-              {/* CTAs */}
-              <div className="space-y-3 p-6">
-                <Link
-                  href={`/checkout?product=${product.slug}`}
-                  className="flex w-full items-center justify-center bg-zinc-900 px-5 py-3 font-mono text-[11px] uppercase tracking-widest text-white transition-colors duration-150 hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >
-                  {isService ? t('shopDetail.bookNow') : t('shopDetail.buyNow')}
-                </Link>
-
-                {product.demoUrl && (
-                  <a
-                    href={product.demoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center border border-zinc-200 px-5 py-3 font-mono text-[11px] uppercase tracking-widest text-zinc-600 transition-colors duration-150 hover:border-zinc-900 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
-                  >
-                    {t('shopDetail.viewDemo')}
-                  </a>
-                )}
-              </div>
-
-              {/* Tags */}
-              {product.tags.length > 0 && (
-                <div className="p-6">
-                  <div className="flex flex-wrap gap-2">
-                    {product.tags.map(tag => (
-                      <span
-                        key={tag}
-                        className="border border-zinc-200 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-500 dark:border-zinc-700 dark:text-zinc-500"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Questions */}
-            <div className="border border-dashed border-zinc-200 p-4 dark:border-zinc-800">
-              <p className="mb-1 font-mono text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-                {t('shopDetail.questions')}
-              </p>
-              <a
-                href="mailto:laudbouetoumoussa@gmail.com"
-                className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-              >
-                laudbouetoumoussa@gmail.com
-              </a>
-            </div>
-
-            {/* Back link — desktop */}
-            <Link
-              href="/shop"
-              className="hidden font-mono text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100 lg:block"
-            >
-              {t('shopDetail.back')}
-            </Link>
-          </div>
-        </div>
-      </main>
-    </>
+    </main>
   );
 }

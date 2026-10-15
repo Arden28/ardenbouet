@@ -3,9 +3,10 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getLocale } from '@/lib/serverT';
 import { blogT } from '@/lib/blog/strings';
-import { countVisible, getFeatured, getTopTags, listPosts } from '@/lib/blog/queries';
+import { countVisible, getFeatured, getTopTags, listPosts, listSeries } from '@/lib/blog/queries';
 import { CompactRow, FeedRow, TopicPills } from './_components/PostList';
 import { SubscribeForm } from './_components/SubscribeForm';
+import { localizeHref } from '@/lib/i18n/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +25,12 @@ export default async function BlogHome({ searchParams }: { searchParams: { tab?:
   const tab = searchParams.tab === 'popular' ? 'popular' : 'latest';
   const page = Math.max(1, Number(searchParams.page) || 1);
 
-  const [posts, featured, tags, total] = await Promise.all([
+  const [posts, featured, tags, total, series] = await Promise.all([
     listPosts({ q, sort: tab, take: PAGE + 1, skip: (page - 1) * PAGE }),
     getFeatured(3),
     getTopTags(9),
     countVisible(),
+    listSeries(),
   ]);
   const hasMore = posts.length > PAGE;
   const shown = posts.slice(0, PAGE);
@@ -101,6 +103,34 @@ export default async function BlogHome({ searchParams }: { searchParams: { tab?:
             <section>
               <h2 className="text-[16px] font-bold text-[#242424]">{t('staffPicks')}</h2>
               <ul className="mt-3">{featured.map(p => <CompactRow key={p.id} post={p} locale={locale} />)}</ul>
+            </section>
+          )}
+
+          {series.length > 0 && (
+            <section>
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-[16px] font-bold text-[#242424]">{t('series')}</h2>
+                <Link href={localizeHref('/blog/series', locale)} className="text-[13px] text-[#1a8917] hover:text-[#156d12]">{t('seeAll')}</Link>
+              </div>
+              <ul className="mt-4 space-y-4">
+                {series.slice(0, 3).map(s => (
+                  <li key={s.id}>
+                    <Link href={localizeHref(`/blog/series/${s.slug}`, locale)} className="group flex items-center gap-3">
+                      <span className="relative h-12 w-16 shrink-0">
+                        <span aria-hidden className="absolute inset-x-1.5 -top-1 bottom-1 rounded-md bg-[#e6e6e6]" />
+                        {s.coverUrl
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={s.coverUrl} alt="" loading="lazy" className="relative h-full w-full rounded-md object-cover" />
+                          : <span className="relative block h-full w-full rounded-md bg-[#f2f2f2]" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-bold leading-5 text-[#242424] line-clamp-2 group-hover:underline">{s.title}</span>
+                        <span className="text-[12px] text-[#6b6b6b]">{s.count === 1 ? t('storyCount') : t('storiesCount', { n: s.count })}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

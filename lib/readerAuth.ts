@@ -5,8 +5,13 @@ import type { NextAuthOptions, Session } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
+import LinkedInProvider from 'next-auth/providers/linkedin';
+import DiscordProvider from 'next-auth/providers/discord';
+import TwitterProvider from 'next-auth/providers/twitter';
+import FacebookProvider from 'next-auth/providers/facebook';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
+import { uniqueHandle } from '@/lib/accounts';
 
 export type ReaderSession = Session & {
   reader?: { id: string; name: string; image: string | null };
@@ -14,11 +19,37 @@ export type ReaderSession = Session & {
 
 const providers: NextAuthOptions['providers'] = [];
 
-if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
-  providers.push(GitHubProvider({ clientId: process.env.GITHUB_ID, clientSecret: process.env.GITHUB_SECRET }));
+// Each provider is enabled only when its OAuth app credentials are set. Order = button order.
+// Values are trimmed and unquoted: a secret pasted into a hosting dashboard as `"abc…"` (copied from a .env
+// file) otherwise reaches the provider with the quotes, which fails the token exchange as OAuthCallback.
+const clean = (v: string | undefined) => v?.trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
+const env = new Proxy(process.env, { get: (target, key: string) => clean(target[key]) }) as Record<string, string | undefined>;
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+  providers.push(GoogleProvider({ clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }));
 }
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  providers.push(GoogleProvider({ clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }));
+if (env.GITHUB_ID && env.GITHUB_SECRET) {
+  providers.push(GitHubProvider({ clientId: env.GITHUB_ID, clientSecret: env.GITHUB_SECRET }));
+}
+if (env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET) {
+  // "Sign In with LinkedIn using OpenID Connect" (the legacy r_liteprofile API is retired).
+  providers.push(LinkedInProvider({
+    clientId: env.LINKEDIN_CLIENT_ID,
+    clientSecret: env.LINKEDIN_CLIENT_SECRET,
+    authorization: { params: { scope: 'openid profile email' } },
+    issuer: 'https://www.linkedin.com/oauth',
+    wellKnown: 'https://www.linkedin.com/oauth/.well-known/openid-configuration',
+    jwks_endpoint: 'https://www.linkedin.com/oauth/openid/jwks',
+    profile: p => ({ id: p.sub, name: p.name, email: p.email, image: p.picture }),
+  }));
+}
+if (env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET) {
+  providers.push(DiscordProvider({ clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET }));
+}
+if (env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET) {
+  providers.push(TwitterProvider({ clientId: env.TWITTER_CLIENT_ID, clientSecret: env.TWITTER_CLIENT_SECRET, version: '2.0' }));
+}
+if (env.FACEBOOK_CLIENT_ID && env.FACEBOOK_CLIENT_SECRET) {
+  providers.push(FacebookProvider({ clientId: env.FACEBOOK_CLIENT_ID, clientSecret: env.FACEBOOK_CLIENT_SECRET }));
 }
 // Local testing without OAuth apps: `next dev` only, never in production builds.
 if (process.env.NODE_ENV === 'development') {
@@ -35,19 +66,30 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
-export const readerProviderIds = providers.map(p => p.id);
+// Credentials providers report id 'credentials' at the top level; the configured id lives in options.
+export const readerProviderIds = providers.map(p => (p as { options?: { id?: string } }).options?.id ?? p.id);
 
 export const readerAuthOptions: NextAuthOptions = {
   providers,
   session: { strategy: 'jwt', maxAge: 60 * 60 * 24 * 60 },
   secret: process.env.NEXTAUTH_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS,
-  pages: { signIn: '/blog' },
+  pages: { signIn: '/signin', error: '/signin' },
   callbacks: {
+    // Banned readers can't sign back in (next-auth shows ?error=AccessDenied on /signin).
+    async signIn({ account }) {
+      if (!account) return true;
+      const existing = await prisma.reader.findUnique({
+        where: { provider_providerAccountId: { provider: account.provider, providerAccountId: account.providerAccountId } },
+        select: { banned: true },
+      });
+      return !existing?.banned;
+    },
     async jwt({ token, account, user }) {
       if (account && user) {
         const reader = await prisma.reader.upsert({
           where: { provider_providerAccountId: { provider: account.provider, providerAccountId: account.providerAccountId } },
           create: {
+            handle: await uniqueHandle(user.name || user.email?.split('@')[0] || 'reader'),
             provider: account.provider,
             providerAccountId: account.providerAccountId,
             name: user.name || 'Reader',

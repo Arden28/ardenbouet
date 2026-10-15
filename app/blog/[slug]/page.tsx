@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
-import { getLocale } from '@/lib/serverT';
+import { getLocale, lhref } from '@/lib/i18n/server';
 import { isAdminRequest } from '@/lib/apiUtil';
 import { SITE_URL } from '@/lib/mailer';
 import { mdToSafeHtml } from '@/lib/mardown';
@@ -15,6 +15,7 @@ import { GridCard } from '../_components/PostList';
 import { SubscribeForm } from '../_components/SubscribeForm';
 import { HighlightLayer, StoryActionBar, StoryProvider, TocRail } from './StoryClient';
 import { Responses } from './Responses';
+import { DonateCard } from './Donate';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const description = post.seoDescription || post.subtitle || post.excerpt;
   const url = `${SITE_URL}/blog/${post.slug}`;
   return {
-    title: `${title} · Arden BOUET`,
+    title: `${title} · ${post.author?.name ?? 'Arden BOUET'}`,
     description,
     alternates: { canonical: post.canonicalUrl || url },
     openGraph: {
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       url,
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
-      authors: ['Arden BOUET'],
+      authors: [post.author?.name ?? 'Arden BOUET'],
       tags: post.tags,
       ...(post.coverUrl ? { images: [{ url: post.coverUrl }] } : {}),
     },
@@ -66,7 +67,11 @@ export default async function StoryPage({ params }: { params: { slug: string } }
   const toc = doc ? collectHeadings(doc) : [];
   const published = effectiveDate(post);
   const isVisible = post.status === 'PUBLISHED' || (post.status === 'SCHEDULED' && !!post.scheduledAt && post.scheduledAt <= new Date());
-  const url = `${SITE_URL}/blog/${post.slug}`;
+  const url = `${SITE_URL}${lhref(`/blog/${post.slug}`)}`;
+  const authorName = post.author?.name ?? 'Arden BOUET';
+  const authorImage = post.author ? post.author.image : '/images/me.png';
+  const authorHref = post.author?.handle ? lhref(`/blog/author/${post.author.handle}`) : lhref('/');
+  const authorBio = post.author ? post.author.bio : t('aboutAuthor');
 
   const series = post.series;
   const seriesIndex = series ? series.posts.findIndex(p => p.id === post.id) : -1;
@@ -81,7 +86,7 @@ export default async function StoryPage({ params }: { params: { slug: string } }
     image: post.coverUrl || undefined,
     datePublished: published?.toISOString(),
     dateModified: post.updatedAt.toISOString(),
-    author: { '@type': 'Person', name: 'Arden BOUET', url: SITE_URL },
+    author: { '@type': 'Person', name: authorName, url: SITE_URL + authorHref },
     mainEntityOfPage: url,
     keywords: post.tags.join(', '),
     wordCount: post.wordCount || undefined,
@@ -102,8 +107,14 @@ export default async function StoryPage({ params }: { params: { slug: string } }
       <div className="px-6">
         <header className="mx-auto max-w-[680px] pt-10 sm:pt-14">
           {series && seriesIndex >= 0 && (
-            <Link href={`/blog/series/${series.slug}`} className="mb-6 block rounded-md bg-[#f9f9f9] px-4 py-3 text-[14px] text-[#6b6b6b] hover:bg-[#f2f2f2]">
-              {t('inSeries', { n: seriesIndex + 1, total: series.posts.length })} <span className="font-medium text-[#242424]">{series.title}</span>
+            <Link href={lhref(`/blog/series/${series.slug}`)} className="group mb-7 flex items-center gap-3 rounded-xl border border-[#ececec] px-4 py-3 hover:border-[#c4c4c4]">
+              <span className="flex shrink-0 gap-1" aria-hidden>
+                {series.posts.map((sp, i) => <span key={sp.id} className={`h-1.5 rounded-full ${i === seriesIndex ? 'w-5 bg-[#1a8917]' : i < seriesIndex ? 'w-1.5 bg-[#242424]' : 'w-1.5 bg-[#d4d4d4]'}`} />).slice(0, 12)}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#6b6b6b]">
+                {t('seriesPartOf', { n: seriesIndex + 1, total: series.posts.length })} · <span className="font-medium text-[#242424]">{series.title}</span>
+              </span>
+              <span className="shrink-0 text-[13px] text-[#9b9b9b] group-hover:text-[#242424]">{t('viewSeries')} →</span>
             </Link>
           )}
           <h1 className="text-[32px] font-bold leading-[40px] tracking-[-0.016em] text-[#242424] sm:text-[42px] sm:leading-[52px]">
@@ -115,12 +126,12 @@ export default async function StoryPage({ params }: { params: { slug: string } }
 
           <div className="mt-8 flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/me.png" alt="" className="h-11 w-11 rounded-full object-cover" />
+            {authorImage ? <img src={authorImage} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#242424] text-[18px] uppercase text-white">{authorName[0]}</span>}
             <div className="text-[14px] leading-5">
               <p className="flex items-center gap-2 text-[#242424]">
-                <Link href="/" className="hover:underline">Arden BOUET</Link>
+                <Link href={authorHref} className="hover:underline">{authorName}</Link>
                 <span className="text-[#6b6b6b]">·</span>
-                <Link href="/blog/subscribe" className="text-[#1a8917] hover:text-[#156d12]">{t('follow')}</Link>
+                <Link href={lhref('/blog/subscribe')} className="text-[#1a8917] hover:text-[#156d12]">{t('follow')}</Link>
               </p>
               <p className="text-[#6b6b6b]">
                 {t('minRead', { n: post.readingMinutes })}
@@ -156,7 +167,7 @@ export default async function StoryPage({ params }: { params: { slug: string } }
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {post.tags.map(tag => (
-                <Link key={tag} href={`/blog/tag/${encodeURIComponent(tag)}`} className="rounded-full bg-[#f2f2f2] px-4 py-2 text-[14px] text-[#242424] hover:bg-[#e6e6e6]">
+                <Link key={tag} href={lhref(`/blog/tag/${encodeURIComponent(tag)}`)} className="rounded-full bg-[#f2f2f2] px-4 py-2 text-[14px] text-[#242424] hover:bg-[#e6e6e6]">
                   {tag}
                 </Link>
               ))}
@@ -167,16 +178,48 @@ export default async function StoryPage({ params }: { params: { slug: string } }
             <StoryActionBar position="bottom" />
           </div>
 
+          {isVisible && post.donationsEnabled && <DonateCard slug={post.slug} />}
+
+          {series && seriesIndex >= 0 && (
+            <section className="mt-12 overflow-hidden rounded-2xl border border-[#ececec]" aria-label={t('inThisSeries')}>
+              <div className="flex items-baseline justify-between gap-4 bg-[#fafafa] px-5 py-4">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-[#1a8917]">{t('inThisSeries')}</p>
+                  <Link href={lhref(`/blog/series/${series.slug}`)} className="mt-0.5 block truncate text-[17px] font-bold text-[#242424] hover:underline">{series.title}</Link>
+                </div>
+                <span className="shrink-0 text-[13px] text-[#9b9b9b]">{t('seriesPartOf', { n: seriesIndex + 1, total: series.posts.length })}</span>
+              </div>
+              <ol className="divide-y divide-[#f2f2f2]">
+                {series.posts.map((sp, i) => {
+                  const current = sp.id === post.id;
+                  return (
+                    <li key={sp.id}>
+                      <Link href={lhref(`/blog/${sp.slug}`)} aria-current={current ? 'page' : undefined}
+                        className={`flex items-center gap-4 px-5 py-3.5 ${current ? 'bg-[#f3faf3]' : 'hover:bg-[#fafafa]'}`}>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${current ? 'bg-[#1a8917] text-white' : i < seriesIndex ? 'bg-[#242424] text-white' : 'border border-[#d4d4d4] text-[#6b6b6b]'}`}>{i + 1}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-[15px] ${current ? 'font-semibold text-[#242424]' : 'text-[#242424]'}`}>{sp.title}</span>
+                          {current && <span className="text-[12px] text-[#1a6b17]">{t('youAreHere')}</span>}
+                        </span>
+                        <span className="shrink-0 text-[12px] text-[#9b9b9b]">{t('minRead', { n: sp.readingMinutes })}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
           {(prev || next) && (
-            <nav className="mt-10 grid gap-3 sm:grid-cols-2" aria-label={t('series')}>
+            <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={t('series')}>
               {prev ? (
-                <Link href={`/blog/${prev.slug}`} className="rounded-md border border-[#e6e6e6] p-4 hover:border-[#c4c4c4]">
+                <Link href={lhref(`/blog/${prev.slug}`)} className="rounded-md border border-[#e6e6e6] p-4 hover:border-[#c4c4c4]">
                   <span className="text-[13px] text-[#6b6b6b]">← {t('previous')}</span>
                   <span className="mt-1 block font-bold text-[#242424] line-clamp-2">{prev.title}</span>
                 </Link>
               ) : <span />}
               {next && (
-                <Link href={`/blog/${next.slug}`} className="rounded-md border border-[#e6e6e6] p-4 text-right hover:border-[#c4c4c4]">
+                <Link href={lhref(`/blog/${next.slug}`)} className="rounded-md border border-[#e6e6e6] p-4 text-right hover:border-[#c4c4c4]">
                   <span className="text-[13px] text-[#6b6b6b]">{t('next')} →</span>
                   <span className="mt-1 block font-bold text-[#242424] line-clamp-2">{next.title}</span>
                 </Link>
@@ -190,11 +233,11 @@ export default async function StoryPage({ params }: { params: { slug: string } }
       <div className="mt-16 bg-[#f9f9f9] px-6 py-12">
         <div className="mx-auto max-w-[680px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/me.png" alt="" className="h-16 w-16 rounded-full object-cover" />
+          {authorImage ? <img src={authorImage} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#242424] text-[24px] uppercase text-white">{authorName[0]}</span>}
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-[24px] font-bold tracking-[-0.016em] text-[#242424]">Written by Arden BOUET</h2>
-              <p className="mt-2 max-w-[460px] text-[14px] leading-5 text-[#6b6b6b]">{t('aboutAuthor')}</p>
+              <h2 className="text-[24px] font-bold tracking-[-0.016em] text-[#242424]"><Link href={authorHref} className="hover:underline">{t('writtenBy', { name: authorName })}</Link></h2>
+              {authorBio && <p className="mt-2 max-w-[460px] text-[14px] leading-5 text-[#6b6b6b]">{authorBio}</p>}
             </div>
           </div>
           <div className="mt-6 max-w-[480px]"><SubscribeForm source={`post:${post.slug}`} /></div>
@@ -213,7 +256,7 @@ export default async function StoryPage({ params }: { params: { slug: string } }
               {related.map(p => <GridCard key={p.id} post={p} locale={locale} t={t} />)}
             </div>
             <div className="mt-12">
-              <Link href="/blog" className="inline-block rounded-full border border-[#242424] px-5 py-2 text-[14px] text-[#242424] hover:bg-[#f9f9f9]">
+              <Link href={lhref('/blog')} className="inline-block rounded-full border border-[#242424] px-5 py-2 text-[14px] text-[#242424] hover:bg-[#f9f9f9]">
                 {t('seeAll')}
               </Link>
             </div>

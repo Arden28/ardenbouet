@@ -17,7 +17,7 @@ export async function sendMail(opts: {
   headers?: Record<string, string>;
 }): Promise<boolean> {
   if (!MAILGUN_KEY || !MAILGUN_DOMAIN) {
-    console.warn(`[mailer] Mailgun not configured — skipped "${opts.subject}" to ${opts.to}`);
+    console.warn(`[mailer] Mailgun not configured, skipped "${opts.subject}" to ${opts.to}`);
     return false;
   }
   const form = new URLSearchParams({ from: MAILGUN_FROM, to: opts.to, subject: opts.subject, html: opts.html });
@@ -39,14 +39,14 @@ export async function sendPurchaseEmail(props: PurchaseEmailProps): Promise<void
   console.log('[mailer] MAILGUN_KEY set:', !!MAILGUN_KEY, '| MAILGUN_DOMAIN:', MAILGUN_DOMAIN || '(empty)');
 
   if (!MAILGUN_KEY || !MAILGUN_DOMAIN) {
-    console.warn('[mailer] MAILGUN_KEY or MAILGUN_DOMAIN not set — email skipped.');
+    console.warn('[mailer] MAILGUN_KEY or MAILGUN_DOMAIN not set, email skipped.');
     return;
   }
 
   const html    = await render(PurchaseEmail(props));
   const subject = props.isService
-    ? `Booking confirmed — ${props.productTitle}`
-    : `Your download is ready — ${props.productTitle}`;
+    ? `Booking confirmed, ${props.productTitle}`
+    : `Your download is ready, ${props.productTitle}`;
 
   const form = new URLSearchParams({
     from:    MAILGUN_FROM,

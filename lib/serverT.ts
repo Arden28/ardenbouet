@@ -1,4 +1,5 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { LOCALE_HEADER, PATH_HEADER } from '@/lib/i18n/config';
 
 type Locale = 'en' | 'fr';
 
@@ -37,7 +38,7 @@ const dict: Record<Locale, Record<string, Record<string, string>>> = {
       result: 'Result',
       gallery: 'Gallery',
       comingSoonTitle: 'Case study coming soon',
-      comingSoonBody: "The full write-up for this build isn't published yet — the live project and a quick chat can fill in the gaps.",
+      comingSoonBody: "The full write-up for this build isn't published yet, the live project and a quick chat can fill in the gaps.",
       quickFacts: 'Quick Facts',
       category: 'Category',
       stack: 'Stack',
@@ -80,7 +81,7 @@ const dict: Record<Locale, Record<string, Record<string, string>>> = {
       result: 'Résultat',
       gallery: 'Galerie',
       comingSoonTitle: 'Étude de cas à venir',
-      comingSoonBody: "Le compte-rendu complet de ce projet n'est pas encore publié — le site en ligne et un échange rapide peuvent combler les blancs en attendant.",
+      comingSoonBody: "Le compte-rendu complet de ce projet n'est pas encore publié, le site en ligne et un échange rapide peuvent combler les blancs en attendant.",
       quickFacts: 'En bref',
       category: 'Catégorie',
       stack: 'Stack',
@@ -91,12 +92,20 @@ const dict: Record<Locale, Record<string, Record<string, string>>> = {
   },
 };
 
+/** The request locale. The URL is authoritative (middleware sets x-locale from the /fr prefix). */
 export function getLocale(): Locale {
   try {
+    const fromUrl = headers().get(LOCALE_HEADER);
+    if (fromUrl === 'fr' || fromUrl === 'en') return fromUrl;
     const lang = cookies().get('arden_lang')?.value;
     if (lang === 'fr' || lang === 'en') return lang;
   } catch {}
   return 'en';
+}
+
+/** The current page path without the locale prefix (set by middleware). */
+export function getPathname(): string {
+  try { return headers().get(PATH_HEADER) || '/'; } catch { return '/'; }
 }
 
 export function makeT(locale: Locale) {

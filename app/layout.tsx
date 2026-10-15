@@ -1,23 +1,36 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { Header } from "./components/Header";
-import { Footer } from "./components/Footer";
+import { Suspense } from "react";
+import { Source_Serif_4 } from "next/font/google";
+import { I18nProvider } from "./I18nProvider";
+import { SiteProviders } from "@/components/site/SiteProviders";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { getLocale } from "@/lib/serverT";
+import { isAdminRequest } from "@/lib/apiUtil";
+import { readerProviderIds } from "@/lib/readerAuth";
 import "./globals.css";
+import "./blog/story.css";
+import "./dark.css";
+import { themeInitScript } from "@/lib/theme";
+
+const serif = Source_Serif_4({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-serif", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Arden BOUET · Portfolio",
-  description: "Full-stack Web developer",
+  title: "Arden BOUET · Software Engineer",
+  description: "Software engineer building mobility, travel and SaaS platforms.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const lang = cookies().get('arden_lang')?.value === 'fr' ? 'fr' : 'en';
+  const locale = getLocale();
+  const isAdmin = await isAdminRequest();
   return (
-    <html lang={lang}>
+    <html lang={locale} className={serif.variable} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <link rel="icon" href="/images/me.png" sizes="any" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -37,11 +50,17 @@ export default function RootLayout({
           });
         ` }} />
       </head>
-      
-      <body>
-        <Header/>
-        {children}
-        <Footer/>
+
+      <body className="bg-white">
+        <I18nProvider locale={locale}>
+          <SiteProviders locale={locale} isAdmin={isAdmin} providers={readerProviderIds}>
+            <Suspense fallback={<div className="h-[60px]" />}>
+              <SiteHeader />
+            </Suspense>
+            {children}
+            <SiteFooter />
+          </SiteProviders>
+        </I18nProvider>
       </body>
     </html>
   );

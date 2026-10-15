@@ -8,7 +8,7 @@ import {
   Type, Heading2, Heading3, Heading4, List, ListOrdered, ListChecks, Quote, MessageSquareQuote, Info, Code2, Minus,
   Image as ImageIcon, Images, Clapperboard, Table2, ShoppingBag, FolderKanban, Briefcase, FileText, MousePointerClick, Link2,
 } from 'lucide-react';
-import { pickFiles, uploadToR2 } from './upload';
+import { getMedia } from './media';
 
 export type BlockCommand = {
   id: string;
@@ -30,7 +30,7 @@ export async function insertUploadedImages(editor: Editor, files: File[], at?: n
     if (at !== undefined) editor.chain().focus().insertContentAt(at, content).run();
     else editor.chain().focus().insertContent(content).run();
     try {
-      const url = await uploadToR2(file);
+      const url = await getMedia(editor).upload(file);
       replaceFigureSrc(editor, blobUrl, { src: url, uploading: false });
     } catch (e) {
       replaceFigureSrc(editor, blobUrl, null);
@@ -64,22 +64,19 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   { id: 'pull', title: 'Pull quote', hint: 'Large centered quote', group: 'Basic', keywords: 'pullquote big emphasis', icon: MessageSquareQuote, run: (e, r) => chain(e, r).setPullQuote().run() },
   { id: 'divider', title: 'Separator', hint: 'Three-dot section break', group: 'Basic', keywords: 'hr divider rule break', icon: Minus, run: (e, r) => chain(e, r).setHorizontalRule().run() },
 
-  { id: 'image', title: 'Image', hint: 'Upload from your computer', group: 'Media', keywords: 'photo picture upload img', icon: ImageIcon,
-    run: async (e, r) => { if (r) e.chain().focus().deleteRange(r).run(); const files = await pickFiles('image/*', true); if (files.length) await insertUploadedImages(e, files); } },
+  { id: 'image', title: 'Image', hint: 'From your media library or computer', group: 'Media', keywords: 'photo picture upload img library', icon: ImageIcon,
+    run: async (e, r) => {
+      if (r) e.chain().focus().deleteRange(r).run();
+      const urls = await getMedia(e).pickImages(true);
+      if (urls.length) e.chain().focus().insertContent(urls.map(src => ({ type: 'figure', attrs: { src } }))).run();
+    } },
   { id: 'image-url', title: 'Image from URL', hint: 'Paste an image link', group: 'Media', keywords: 'photo link remote', icon: Link2,
     run: (e, r) => { const src = window.prompt('Image URL'); if (src) chain(e, r).setFigure({ src }).run(); else if (r) e.chain().focus().deleteRange(r).run(); } },
   { id: 'gallery', title: 'Gallery', hint: 'Grid of 2–8 images', group: 'Media', keywords: 'grid images photos', icon: Images,
     run: async (e, r) => {
       if (r) e.chain().focus().deleteRange(r).run();
-      const files = await pickFiles('image/*', true);
-      if (!files.length) return;
-      e.chain().focus().setGallery({ images: [] }).run();
-      const urls = await Promise.all(files.slice(0, 8).map(f => uploadToR2(f).catch(() => null)));
-      const images = urls.filter(Boolean).map(src => ({ src: src as string, alt: '' }));
-      const { state } = e;
-      let pos = -1;
-      state.doc.descendants((n, p) => { if (n.type.name === 'gallery' && !n.attrs.images.length) pos = p; });
-      if (pos >= 0) e.view.dispatch(state.tr.setNodeMarkup(pos, undefined, { images, caption: '' }));
+      const urls = await getMedia(e).pickImages(true);
+      if (urls.length) e.chain().focus().setGallery({ images: urls.slice(0, 8).map(src => ({ src, alt: '' })) }).run();
     } },
   { id: 'embed', title: 'Embed', hint: 'YouTube, Vimeo, Loom, CodePen, Figma…', group: 'Media', keywords: 'video youtube vimeo loom codepen sandbox figma spotify iframe link', icon: Clapperboard,
     run: (e, r) => chain(e, r).setEmbed({ url: '' }).run() },
