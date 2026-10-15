@@ -57,20 +57,23 @@ Types are defined in [app/admin/types.ts](app/admin/types.ts) (CRM types re-expo
 
 CRM data (`CrmClient`, `CrmProject`, `CrmInvoice`) and commerce data (`Order`, `DownloadToken`) live in their own Prisma tables, not inside the `Content` JSON blob — see [prisma/schema.prisma](prisma/schema.prisma).
 
-### Public project pages
+### Public site
 
-Each portfolio project has its own server-rendered detail page at `/projects/[id]` ([app/projects/[id]/page.tsx](app/projects/[id]/page.tsx), `force-dynamic`), which reads the project straight from the `Content` row via Prisma and renders `project.caseFile` (problem / approach / result / images). It replaced the old `CaseModal` — the "Case file" link in [app/components/Projects.tsx](app/components/Projects.tsx) is now a plain `<Link>`, shown for every project (projects without a `caseFile` get a "coming soon" state). Its strings live under the `projectDetail` namespace in [lib/serverT.ts](lib/serverT.ts). The `<Journey>` section is currently commented out in [app/page.tsx](app/page.tsx).
+The whole public site uses the Medium visual language of the blog: the root layout ([app/layout.tsx](app/layout.tsx)) renders `SiteHeader`/`SiteFooter` and wraps everything in `SiteProviders` ([components/site/SiteProviders.tsx](components/site/SiteProviders.tsx)), which exposes `useSite()` (locale, `ui()` strings, `href()` for localized links, the reader's `me` summary from `/api/me`, `openSignIn()`, `openBooking()`). The sign-in dialog and booking modal are lazy-loaded.
+
+- **Home** ([app/page.tsx](app/page.tsx), [components/home/](components/home/)): hero with profile buttons (links in [lib/site.ts](lib/site.ts)) and the booking action, work, experience, contact (`POST /api/contact` stores a `Message` and notifies `OWNER_EMAIL`).
+- **Projects** `/projects/[id]`: story-style case study with the bento + lightbox [components/gallery/Gallery.tsx](components/gallery/Gallery.tsx).
+- **Shop** `/shop`, `/shop/[slug]`, checkout (see below) and `/download/[token]`.
+- **Dark mode:** class-based (`.dark` on `<html>`, key `arden_theme`, no-flash script in [lib/theme.ts](lib/theme.ts), View Transitions reveal from the toggle). The UI uses a small fixed palette of arbitrary hex classes (`text-[#242424]`, `bg-[#f2f2f2]`, …); `.dark` overrides are **generated** into [app/dark.css](app/dark.css) by `npm run gen:dark` ([scripts/gen-dark-css.mjs](scripts/gen-dark-css.mjs)). After using a new hex class, add it to the script's `MAP` and rerun. Colours that must not change in dark mode (white chips behind brand logos, overlays) use values outside the map, e.g. `bg-[#ffffff]`.
+- **Copy:** no em dashes in user-facing text, use commas.
 
 ### Admin CMS
 
-[app/admin/page.tsx](app/admin/page.tsx) is a Master-Detail interface with:
-- Tabbed navigation (Projects / Experience / Journey / Shop / Media / Orders / CRM / Settings); the old Notes tab now links to `/admin/blog`, and `?tab=<key>` deep-links a tab
-- Drawer-based editing (opens over the list to preserve context)
-- Save states: `idle → dirty → saving → loaded → error`
-- Debounced autosave (1500 ms) that persists to LocalStorage (`arden_cms_v2`) and the server via `PUT /api/admin/content`
-- Export/import as JSON
+All admin pages live under the persistent frame in [app/admin/layout.tsx](app/admin/layout.tsx) (`AdminFrame` in [components/admin/AdminShell.tsx](components/admin/AdminShell.tsx): collapsible sidebar, state in localStorage `admin_sidebar_collapsed`, nav badges from `/api/admin/badges`). Each page renders `<AdminShell title actions>` for its header and content. Shared primitives are in [components/admin/ui.tsx](components/admin/ui.tsx).
 
-Each tab has a dedicated editor component under [app/admin/components/](app/admin/components/); CRM panels/drawers live under [app/admin/components/crm/](app/admin/components/crm/).
+- `/admin` is the dashboard (`/api/admin/dashboard`: metrics, filters, quick actions).
+- Projects / experience / journey / products are schema-driven [components/admin/collection/CollectionManager.tsx](components/admin/collection/CollectionManager.tsx) pages that save one section of the Content bundle with `PATCH /api/admin/content {section, value}`, with EN/FR tabs for translatable fields.
+- Orders, CRM, messages, bookings, users/writers, blog and settings have their own pages. Settings includes **backup & restore** ([lib/backup.ts](lib/backup.ts), `/api/admin/backup`): JSON export of content/blog/CRM/booking, and import with a dry-run preview and merge or replace mode.
 
 ### CRM (admin-only)
 
@@ -78,7 +81,11 @@ Relational, not part of the content bundle. `CrmClient` has many `CrmProject` an
 
 ### Media Library (Cloudflare R2)
 
-Media is stored in an S3-compatible Cloudflare R2 bucket, organized by key prefixes as pseudo-folders (e.g. `photos/paris/image.jpg`). [lib/r2.ts](lib/r2.ts) wraps the S3 client; [lib/getR2Config.ts](lib/getR2Config.ts) resolves config with env vars (`R2_*`) taking precedence over the R2 fields stored in `ContentBundle.settings` (DB fallback, useful when env vars aren't set). Routes: `/api/admin/media` (list/delete/rename/move), `/api/admin/media/upload`, `/api/admin/media/import` (fetch a remote URL into the bucket). [lib/scanBundleUrls.ts](lib/scanBundleUrls.ts) scans the content bundle for referenced media URLs to power the "in use" badge in the library UI.
+Media is stored in an S3-compatible Cloudflare R2 bucket under `media/`, organized by key prefixes as pseudo-folders (a folder exists via a `.keep` object). [lib/r2.ts](lib/r2.ts) wraps the S3 client and accepts both `R2_*` and `CLOUDFLARE_R2_*` env names; [lib/getR2Config.ts](lib/getR2Config.ts) falls back to the R2 fields in `ContentBundle.settings` when env vars are absent.
+
+Routes: `/api/admin/media` (GET list / `?search=` / `?all=1`; POST `createFolder` or `copy`; PATCH rename/move a file or a whole folder via `oldPrefix`/`newPrefix`; DELETE files or a folder prefix), `/api/admin/media/upload` (presigned PUT), `/api/admin/media/import`, `/api/admin/media/usage` (which site content references each URL, for the "In use" badge).
+
+The UI is a Drive-style file manager in [components/admin/media/](components/admin/media/): `MediaLibrary` (left nav + folder tree, Recent and type views, context menus via `Menu`, keyboard shortcuts, drag to move, folder upload), `Preview` (full-screen viewer), `Details` (right panel), dialogs in `shared.tsx`. Every admin upload goes through it: `openMediaPicker({ accept, multiple })` from `MediaPicker.tsx` opens the same library in pick mode, and `MediaField` wraps that for forms. Writers (non-admins) upload through `/api/me/upload` instead.
 
 ### API routes
 
@@ -95,7 +102,9 @@ Posts are relational, **not** in the Content bundle: `Post` (+ `PostRevision`, `
 - **Body format:** `Post.content` is TipTap/ProseMirror JSON. [lib/blog/render.tsx](lib/blog/render.tsx) renders it server-side to React, and the editor's custom nodes live in [app/admin/blog/editor/nodes.tsx](app/admin/blog/editor/nodes.tsx). **Any new node type must be added to both, with the same attrs.** `contentCard` nodes embed products, projects, experiences or other posts by id; they are resolved at render time from the Content bundle / Post table ([lib/blog/queries.ts](lib/blog/queries.ts) `resolveEmbeds`), so deleted or unpublished items silently drop out. Iframe embeds only come from the provider allow-list in [lib/blog/embeds.ts](lib/blog/embeds.ts).
 - **Typography:** [app/blog/story.css](app/blog/story.css) is shared by the public `.story` article and the editor (`.story-editor`), so the editor is WYSIWYG. The serif comes from `next/font` as `--font-serif` on a wrapper element (blog layout / admin blog layout); reference it where used, never via a `:root` variable.
 - **Visibility:** always filter with `visibleWhere()` — `PUBLISHED`, or `SCHEDULED` whose `scheduledAt` has passed (scheduling needs no cron). Admins (`isAdminRequest()`) can open drafts at `/blog/<slug>` as a preview.
-- **Readers:** next-auth (JWT, no adapter) in [lib/readerAuth.ts](lib/readerAuth.ts); providers are enabled only when `GITHUB_ID/SECRET` / `GOOGLE_CLIENT_ID/SECRET` are set, plus a `dev` credentials provider under `next dev` only. `getReader()` returns null for banned readers. This is separate from the admin session.
+- **Readers:** next-auth (JWT, no adapter) in [lib/readerAuth.ts](lib/readerAuth.ts), social-only sign-in at `/signin` (and the `AuthPanel` dialog). Each provider (Google, GitHub, LinkedIn, Discord, X, Facebook) is enabled only when its env pair is set, plus a `dev` credentials provider under `next dev` only. `getReader()` returns null for banned readers. This is separate from the admin session.
+- **Accounts & writers:** `/me/*` is the reader's account (profile, library, stories, writer status, earnings, settings). Writing needs a `WriterGrant` (scope `UNLIMITED`, `LIMITED` count or `SPECIFIC` posts, optional expiry; without `canPublish` a submit goes to `REVIEW`). Grants come from admin invites (`/api/admin/invites`, accepted at `/join/writer`) or approved writer requests. Writers use the same editor at `/write/[id]` through an environment adapter ([app/admin/blog/editor/env.ts](app/admin/blog/editor/env.ts)) and a writer media adapter.
+- **Donations:** Medium-style tips on posts with `donationsEnabled`, paid through Stripe and routed to the writer's Stripe Connect account ([lib/stripe.ts](lib/stripe.ts), `settleDonation()` is idempotent; `/api/webhooks/stripe` handles donation intents and `account.updated`).
 - **Claps** are keyed by `visitorKey` (`r:<readerId>` or `a:<ab_vid cookie>`), max 50 per visitor. Comments nest at most 3 levels, are rate-limited to 5 per minute per reader, are formatted by the escaping mini-formatter `formatComment()` (never raw HTML), and are soft-deleted by readers.
 - **Newsletter:** double opt-in (`/api/blog/subscribe` → emailed confirm link). The admin sends a published post to `ACTIVE` subscribers from the publish dialog (`POST /api/admin/blog/posts/[id]/newsletter`, once per post). Email goes through `sendMail()` in [lib/mailer.ts](lib/mailer.ts); with Mailgun unset it logs and skips, and in dev it logs the confirm link.
 - **Admin:** `/admin/blog` (stories), `/admin/blog/[id]` (editor), `/admin/blog/{comments,subscribers,series}`, all wrapped in [components/admin/AdminShell.tsx](components/admin/AdminShell.tsx). The site `Header`/`Footer` return null on `/blog*` and `/admin/blog*`. Editor autosave goes through `usePostSaver` (one request in flight at a time, 409 on stale `baseUpdatedAt`). `PUT /api/admin/blog/posts/[id]` derives word count, reading time, excerpt, publish timestamps and (for untitled drafts) the slug server-side. A revision is snapshotted on publish and at most every 10 minutes of autosave.
@@ -113,17 +122,21 @@ Contact messages and posts migrated from the old notes (`Post.bodyMd`, until re-
 - Utility helper: `cn()` from [lib/utils.ts](lib/utils.ts) (clsx + tailwind-merge)
 - Shadcn components live in [components/ui/](components/ui/); add new ones with `npx shadcn@latest add <component>`
 
-### i18n
+### i18n (EN / FR)
 
-There are two separate i18n mechanisms sharing the same `arden_lang` cookie:
-- **Client components:** [app/i18n.tsx](app/i18n.tsx) configures react-i18next with EN/FR resource dictionaries, auto-detected via `i18next-browser-languagedetector` (cookie → localStorage → navigator) and persisted back to both. The `<LanguageSwitcher>` component in the header toggles it.
-- **Server components:** [lib/serverT.ts](lib/serverT.ts) reads the `arden_lang` cookie directly (via `next/headers`) and looks up strings from its own small EN/FR dictionary through `makeT(locale)`. Its key namespaces (`blog`, `noteDetail`, `shopDetail`, …) are independent from — and not a full mirror of — the client-side i18next resources, so adding a server-rendered string requires adding it to `serverT.ts` specifically, not `app/i18n.tsx`.
+- **Routing:** French lives under `/fr/*`. [middleware.ts](middleware.ts) rewrites `/fr/...` to the unprefixed route and passes the locale in `x-locale`. The `arden_lang` cookie remembers the choice (`?lang=en` skips the French redirect). Helpers are in [lib/i18n/config.ts](lib/i18n/config.ts) (`localizeHref`, `splitLocale`). On the server, use `getLocale()`, `lhref()` and `alternates()` from [lib/i18n/server.ts](lib/i18n/server.ts); on the client, use `useSite().href()`.
+- **UI strings:** most new strings are flat keys in [lib/i18n/ui.ts](lib/i18n/ui.ts) (`uiT(locale)`, `{var}` interpolation; a French entry is required for every key). Blog strings are in [lib/blog/strings.ts](lib/blog/strings.ts). Older sections still use [lib/serverT.ts](lib/serverT.ts) and the i18next resources in [lib/i18n/resources.ts](lib/i18n/resources.ts). Don't import react-i18next from server components.
+- **Content:** items in the Content bundle can carry `translations.fr`, which `localize()` in [lib/i18n/content.ts](lib/i18n/content.ts) merges over the English fields. Empty French fields fall back to English.
+
+### Booking
+
+Calendly-style booking modal (`openBooking()`), no `/book` page. `BookingConfig` (weekly rules, notice, horizon, timezone) and `MeetingType` live in Prisma. Slots are computed in [lib/booking/slots.ts](lib/booking/slots.ts) (DST-safe zone math in `time.ts`), excluding existing bookings plus buffers and Google Calendar free/busy when connected (`/admin/bookings/settings`). A booking creates a CRM lead and is self-service at `/booking/[token]` (cancel, .ics).
 
 ### Shop, Checkout & Fulfillment
 
 Products live inside `ContentBundle.products` (typed as `ShopProduct[]`). Each product has `id`, `slug`, `price`, `currency`, `priceLabel`, `category` (`platform`/`app`/`document`/`service`), `features`, `media`, optional `fileUrl` (digital download) and `discountCodes`.
 
-Checkout page: `/checkout?product=<slug>`. Flow stays entirely on-site — no redirect:
+Checkout page: `/checkout?product=<slug>` (optional `&code=` or `&ref=` applies a promo code). [app/checkout/page.tsx](app/checkout/page.tsx) loads the product on the server and shows only the payment methods whose keys are configured; `CHECKOUT_METHODS` (comma list) can narrow them further. Flow stays entirely on-site, no redirect:
 - **Stripe** — `CardElement` + `confirmCardPayment()` (on-page)
 - **Paystack** — `window.PaystackPop.openIframe()` (modal over page; script loaded via `<Script>`)
 - **M-Pesa** — Daraja STK Push → 3 s polling of `/api/checkout/mpesa/status`
@@ -159,7 +172,10 @@ Order lifecycle: an `Order` row is created as `PENDING` on checkout initiation, 
 | `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | PayPal browser client ID |
 | `MAILGUN_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | Transactional + newsletter email (unset = emails skipped) |
 | `NEXTAUTH_URL` / `NEXTAUTH_SECRET` | Blog reader sign-in (secret falls back to `ADMIN_SESSION_SECRET`/`ADMIN_PASS`) |
-| `GITHUB_ID` / `GITHUB_SECRET`, `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth apps for reader sign-in; each provider appears only when set |
+| `GITHUB_ID` / `GITHUB_SECRET`, `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `{LINKEDIN,DISCORD,TWITTER,FACEBOOK}_CLIENT_ID` / `_CLIENT_SECRET` | OAuth apps for reader sign-in; each provider appears only when set. The Google app also powers booking Calendar sync (connected from `/admin/bookings/settings`) |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` / `DONATION_FEE_PERCENT` | Connect webhook secret (writer payouts) and the platform fee on donations |
+| `OWNER_EMAIL` (or `CONTACT_EMAIL`) | Where contact messages, bookings and writer requests are notified |
+| `CHECKOUT_METHODS` | Optional comma list restricting checkout methods (`stripe,paystack,mpesa,paypal`) |
 | `NEXT_PUBLIC_SITE_URL` | Absolute site URL for emails, RSS, canonical/OG (default `https://ardenbouet.me`) |
 
 Local dev uses `.env.local`; production uses `.env`. R2 credentials can alternatively be set via the Settings tab in the admin UI (stored in `ContentBundle.settings`), which [lib/getR2Config.ts](lib/getR2Config.ts) falls back to when the `R2_*` env vars are absent.
