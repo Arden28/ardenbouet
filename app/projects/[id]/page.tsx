@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
-import type { Project } from '@/app/admin/types';
+import type { Experience, Project } from '@/app/admin/types';
+import { uiT } from '@/lib/i18n/ui';
 import { getContentBundle } from '@/lib/blog/queries';
 import { getLocale, lhref, alternates, getT } from '@/lib/i18n/server';
 import { makeT } from '@/lib/serverT';
@@ -21,7 +22,9 @@ async function load(id: string) {
   const idx = list.findIndex(p => p.id === id);
   if (idx < 0) return null;
   const locale = getLocale();
+  const exp = (bundle.experiences ?? []).find(e => e.id === list[idx].experienceId);
   return {
+    experience: exp ? (localize(exp, locale) as Experience) : null,
     project: localize(list[idx], locale) as Project,
     prev: idx > 0 ? (localize(list[idx - 1], locale) as Project) : null,
     next: idx < list.length - 1 ? (localize(list[idx + 1], locale) as Project) : null,
@@ -43,7 +46,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function ProjectPage({ params }: { params: { id: string } }) {
   const r = await load(params.id);
   if (!r) notFound();
-  const { project: p, prev, next } = r;
+  const { project: p, prev, next, experience } = r;
   const locale = getLocale();
   const t = makeT(locale);
   const it = getT(locale);
@@ -136,6 +139,16 @@ export default async function ProjectPage({ params }: { params: { id: string } }
         <aside>
           <dl className="lg:sticky lg:top-24">
             <p className="pb-3 text-[15px] font-semibold text-[#242424]">{t('projectDetail.quickFacts')}</p>
+            {experience && fact(uiT(locale)('exp.builtDuring'), (
+              <Link href={lhref(`/experience/${experience.id}`)} className="group inline-flex items-center gap-2 text-[#242424]">
+                {experience.logoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={experience.logoUrl} alt="" className="h-6 w-6 rounded-md border border-[#ececec] bg-[#ffffff] object-contain p-0.5" />
+                )}
+                <span className="group-hover:underline">{[experience.job, experience.title].filter(Boolean).join(' · ')}</span>
+                <ArrowRight className="h-3.5 w-3.5 text-[#9b9b9b]" />
+              </Link>
+            ))}
             {(p.tags ?? []).length > 0 && fact(t('projectDetail.category'), (p.tags ?? []).map(tg => TAGS[tg]).filter(Boolean).join(', '))}
             {tech.length > 0 && fact(t('projectDetail.stack'), (
               <span className="mt-1 flex flex-wrap gap-1.5">{tech.map(x => <span key={x} className="rounded-full bg-[#f2f2f2] px-2.5 py-1 text-[13px]">{x}</span>)}</span>

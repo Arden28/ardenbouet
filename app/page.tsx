@@ -10,6 +10,7 @@ import { uiT } from '@/lib/i18n/ui';
 import { Hero } from '@/components/home/Hero';
 import { Work, type WorkItem } from '@/components/home/Work';
 import { Experience, type ExpItem } from '@/components/home/Experience';
+import { projectCounts } from '@/lib/experience';
 import { Contact } from '@/components/home/Contact';
 import { GridCard } from './blog/_components/PostList';
 
@@ -45,11 +46,13 @@ export default async function Home() {
       metric: p.metric, cover: p.caseFile?.images?.find(i => !isVideo(i.src))?.src, hasCase: !!p.caseFile,
     };
   });
+  const counts = projectCounts(bundle.projects ?? []);
   const experience: ExpItem[] = forLocale(bundle.experiences ?? [], locale).map(raw => {
     const e = localize(raw, locale);
     return {
       id: e.id, title: e.title, job: e.job, fromTo: e.fromTo, type: e.type, location: e.location, logline: e.logline,
       outcomes: e.outcomes?.length ? e.outcomes : e.bullets ?? [], tags: e.tags ?? [],
+      logoUrl: e.logoUrl, projects: counts[e.id] ?? 0,
     };
   });
 
