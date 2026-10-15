@@ -764,3 +764,8 @@ input:autofill, textarea:autofill, select:autofill { color: #242424; }
 @media (prefers-reduced-motion: reduce) { ::view-transition-new(root) { animation: none; } }
 @keyframes admin-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes route-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+/* Media library (Drive-style) */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-in { from { opacity: 0; transform: scale(0.97) translateY(-2px); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

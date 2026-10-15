@@ -323,7 +323,7 @@ export function BookingModal({ open, onClose, locale, initialType }: { open: boo
                 {day && (
                   <div className="border-t border-[#ececec] p-6 md:w-[240px] md:shrink-0 md:border-l md:border-t-0 md:px-5 md:py-8">
                     <p className="text-[15px] text-[#242424]">{fmtDayLong(day)}</p>
-                    <div className="no-scrollbar mt-5 max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                    <div className="thin-scroll mt-5 max-h-[420px] space-y-2 overflow-y-auto pr-1">
                       {(byDay[day] ?? []).length === 0 && <p className="text-[14px] text-[#6b6b6b]">{t.noSlots}</p>}
                       {(byDay[day] ?? []).map(iso => (
                         time === iso ? (

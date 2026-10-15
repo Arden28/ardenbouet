@@ -50,8 +50,14 @@ export const mediaApi = {
   list: (prefix: string) =>
     call<{ files: MediaItem[]; folders: MediaFolderItem[] }>(`/api/admin/media?prefix=${encodeURIComponent(prefix)}`),
   search: (q: string) =>
-    call<{ files: MediaItem[] }>(`/api/admin/media?prefix=${ROOT}&search=${encodeURIComponent(q)}`),
+    call<{ files: MediaItem[] }>(`/api/admin/media?prefix=${encodeURIComponent(ROOT)}&search=${encodeURIComponent(q)}`),
+  /** Every file in the library (recursive). */
+  all: () => call<{ files: MediaItem[] }>(`/api/admin/media?prefix=${encodeURIComponent(ROOT)}&all=1`),
   usage: () => call<{ usage: Record<string, string[]> }>('/api/admin/media/usage'),
+  copy: (key: string) => call<{ key: string; url: string }>('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'copy', key }) }),
+  /** Rename or move a folder (and everything inside it). */
+  moveFolder: (oldPrefix: string, newPrefix: string) =>
+    call<{ moved: number }>('/api/admin/media', { method: 'PATCH', body: JSON.stringify({ oldPrefix, newPrefix }) }),
   createFolder: (prefix: string) =>
     call('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'createFolder', prefix }) }),
   remove: (keys: string[]) => call('/api/admin/media', { method: 'DELETE', body: JSON.stringify({ keys }) }),
@@ -92,6 +98,11 @@ export function parentPrefix(prefix: string) {
   const parts = prefix.replace(/\/$/, '').split('/');
   return parts.length <= 1 ? ROOT : `${parts.slice(0, -1).join('/')}/`;
 }
+
+/** Uploaded files carry a "1712345678901-" timestamp prefix; hide it in the UI. */
+export const displayName = (name: string) => name.replace(/^\d{13}-/, '');
+
+export const folderOf = (key: string) => key.slice(0, key.lastIndexOf('/') + 1);
 
 export function crumbs(prefix: string): { label: string; prefix: string }[] {
   const parts = prefix.replace(/^media\//, '').split('/').filter(Boolean);

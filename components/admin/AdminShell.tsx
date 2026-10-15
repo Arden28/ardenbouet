@@ -52,7 +52,7 @@ const bare = (p: string) => p === '/admin/login' || /^\/admin\/blog\/(?!comments
 function NavLinks({ collapsed, pathname, badges, onNavigate }: { collapsed: boolean; pathname: string; badges: Record<string, number>; onNavigate?: () => void }) {
   const isActive = (it: Item) => (it.exact ? pathname === it.href : pathname.startsWith(it.href));
   return (
-    <div className="no-scrollbar mt-5 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3">
+    <div className="thin-scroll mt-5 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3">
       {SECTIONS.map(s => (
         <div key={s.title || 'top'}>
           {s.title && (

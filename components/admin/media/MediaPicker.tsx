@@ -34,7 +34,7 @@ export function MediaPickerDialog({ open, onClose, onPick, accept, multiple, tit
         role="dialog"
         aria-modal="true"
         aria-label={title ?? 'Choose media'}
-        className="flex h-[min(820px,92vh)] w-full max-w-[1100px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="flex h-[min(820px,92vh)] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl bg-[#f6f6f6] shadow-2xl"
         onMouseDown={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-4">
