@@ -20,7 +20,10 @@ export type ReaderSession = Session & {
 const providers: NextAuthOptions['providers'] = [];
 
 // Each provider is enabled only when its OAuth app credentials are set. Order = button order.
-const env = process.env;
+// Values are trimmed and unquoted: a secret pasted into a hosting dashboard as `"abc…"` (copied from a .env
+// file) otherwise reaches the provider with the quotes, which fails the token exchange as OAuthCallback.
+const clean = (v: string | undefined) => v?.trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
+const env = new Proxy(process.env, { get: (target, key: string) => clean(target[key]) }) as Record<string, string | undefined>;
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   providers.push(GoogleProvider({ clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }));
 }
