@@ -48,6 +48,11 @@
 .dark .disabled\:text-\[\#d4d4d4\]:disabled{color:#4a4a4a}
 .dark .divide-\[\#ececec\] > :not([hidden]) ~ :not([hidden]){border-color:#2e2e2e}
 .dark .divide-\[\#f6f6f6\] > :not([hidden]) ~ :not([hidden]){border-color:#1f1f1f}
+.dark .fill-\[\#e6e6e6\]{fill:#333333}
+.dark .fill-\[\#ececec\]{fill:#2e2e2e}
+.dark .fill-\[\#f2f2f2\]{fill:#2a2a2a}
+.dark .fill-\[\#fafafa\]{fill:#181818}
+.dark .fill-\[\#fcfcfc\]{fill:#161616}
 .dark .focus-within\:bg-white:focus-within{background-color:#121212}
 .dark .focus-within\:border-\[\#242424\]:focus-within{border-color:#d4d4d4}
 .dark .focus-within\:ring-\[\#242424\]:focus-within{--tw-ring-color:#d4d4d4}
@@ -98,6 +103,8 @@
 .dark .ring-\[\#ececec\]{--tw-ring-color:#2e2e2e}
 .dark .ring-\[\#f0f0f0\]{--tw-ring-color:#2a2a2a}
 .dark .ring-\[\#f2f2f2\]{--tw-ring-color:#2a2a2a}
+.dark .stroke-\[\#e6e6e6\]{stroke:#333333}
+.dark .stroke-\[\#ececec\]{stroke:#2e2e2e}
 .dark .text-\[\#1a0dab\]{color:#8ab4f8}
 .dark .text-\[\#1a6b17\]{color:#6fd36a}
 .dark .text-\[\#1a6b2a\]{color:#6fd36a}
@@ -113,5 +120,6 @@
 .dark .text-\[\#c94a4a\]{color:#f08a8a}
 .dark .text-\[\#d4d4d4\]{color:#4a4a4a}
 .dark .text-\[\#e6e6e6\]{color:#333333}
+.dark .text-\[\#f4f4f4\]{color:#232323}
 .dark .bg-\[\#242424\], .dark .bg-\[\#242424\] [class*="text-white"], .dark .bg-\[\#242424\][class*="text-white"]{color:#121212}
 .dark .hover\:bg-black:hover{background-color:#ffffff;color:#121212}

@@ -46,6 +46,14 @@ export async function middleware(req: NextRequest) {
   headers.set(LOCALE_HEADER, locale);
   headers.set(PATH_HEADER, path);
 
+  // ── Maintenance: MAINTENANCE_MODE=1 serves the 503 page everywhere except to a signed-in admin ──
+  if (process.env.MAINTENANCE_MODE === '1' && path !== '/503' && !(await verifyAdminToken(req.cookies.get(ADMIN_COOKIE_NAME)?.value))) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/503';
+    url.search = '';
+    return NextResponse.rewrite(url, { status: 503, headers: { 'Retry-After': '600' }, request: { headers } });
+  }
+
   let res: NextResponse;
   if (locale === 'fr') {
     const url = req.nextUrl.clone();

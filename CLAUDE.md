@@ -65,6 +65,7 @@ The whole public site uses the Medium visual language of the blog: the root layo
 - **Projects** `/projects/[id]`: story-style case study with the bento + lightbox [components/gallery/Gallery.tsx](components/gallery/Gallery.tsx).
 - **Shop** `/shop`, `/shop/[slug]`, checkout (see below) and `/download/[token]`.
 - **Dark mode:** class-based (`.dark` on `<html>`, key `arden_theme`, no-flash script in [lib/theme.ts](lib/theme.ts), View Transitions reveal from the toggle). The UI uses a small fixed palette of arbitrary hex classes (`text-[#242424]`, `bg-[#f2f2f2]`, …); `.dark` overrides are **generated** into [app/dark.css](app/dark.css) by `npm run gen:dark` ([scripts/gen-dark-css.mjs](scripts/gen-dark-css.mjs)). After using a new hex class, add it to the script's `MAP` and rerun. Colours that must not change in dark mode (white chips behind brand logos, overlays) use values outside the map, e.g. `bg-[#ffffff]`.
+- **Error pages:** `app/not-found.tsx` (404), `app/error.tsx` (500 inside the layout), `app/global-error.tsx` (self-contained last resort), `/403` (`<Forbidden>` from [components/site/Forbidden.tsx](components/site/Forbidden.tsx), also rendered by `/write` for non-writers) and `/503`. All share [components/site/ErrorScreen.tsx](components/site/ErrorScreen.tsx). `MAINTENANCE_MODE=1` makes the middleware serve the 503 page (status 503) on every public page, except to a signed-in admin.
 - **Copy:** no em dashes in user-facing text, use commas.
 
 ### Admin CMS
@@ -175,6 +176,7 @@ Order lifecycle: an `Order` row is created as `PENDING` on checkout initiation, 
 | `GITHUB_ID` / `GITHUB_SECRET`, `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, `{LINKEDIN,DISCORD,TWITTER,FACEBOOK}_CLIENT_ID` / `_CLIENT_SECRET` | OAuth apps for reader sign-in; each provider appears only when set. The Google app also powers booking Calendar sync (connected from `/admin/bookings/settings`) |
 | `STRIPE_CONNECT_WEBHOOK_SECRET` / `DONATION_FEE_PERCENT` | Connect webhook secret (writer payouts) and the platform fee on donations |
 | `OWNER_EMAIL` (or `CONTACT_EMAIL`) | Where contact messages, bookings and writer requests are notified |
+| `MAINTENANCE_MODE` | `1` serves the maintenance (503) page to everyone but a signed-in admin |
 | `CHECKOUT_METHODS` | Optional comma list restricting checkout methods (`stripe,paystack,mpesa,paypal`) |
 | `NEXT_PUBLIC_SITE_URL` | Absolute site URL for emails, RSS, canonical/OG (default `https://ardenbouet.me`) |
 
