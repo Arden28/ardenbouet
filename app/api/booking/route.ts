@@ -26,7 +26,7 @@ const recent = new Map<string, number[]>(); // naive per-IP throttle (per server
 export async function POST(req: Request) {
   const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'local';
   const hits = (recent.get(ip) ?? []).filter(t => Date.now() - t < 60 * 60_000);
-  if (hits.length >= 5) return err('Too many bookings from this network — please try again later', 429);
+  if (hits.length >= 5) return err('Too many bookings from this network, please try again later', 429);
 
   const body = await readJson(req);
   if (!body) return err('Invalid JSON');
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
   const type = await prisma.meetingType.findFirst({ where: { id: str(body.typeId, 64), active: true } });
   if (!type) return err('This meeting type is not available', 404);
-  if (!(await isSlotAvailable(type, start))) return err('That time was just taken — please pick another one', 409);
+  if (!(await isSlotAvailable(type, start))) return err('That time was just taken, please pick another one', 409);
 
   const booking = await createBooking({
     type, start, name, email,

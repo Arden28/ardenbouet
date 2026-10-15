@@ -17,7 +17,7 @@ const STAGES: { key: CrmProjectStatus; label: string }[] = [
   { key: 'REVIEW', label: 'Review' }, { key: 'COMPLETED', label: 'Completed' }, { key: 'ON_HOLD', label: 'On hold' }, { key: 'CANCELLED', label: 'Cancelled' },
 ];
 const INV_TONE: Record<CrmInvoiceStatus, 'neutral' | 'blue' | 'green' | 'red' | 'amber'> = { DRAFT: 'neutral', SENT: 'blue', PAID: 'green', OVERDUE: 'red', CANCELLED: 'neutral' };
-const money = (n: number | null | undefined, c = 'USD') => (n == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: c, maximumFractionDigits: 0 }).format(n));
+const money = (n: number | null | undefined, c = 'USD') => (n == null ? '' : new Intl.NumberFormat('en-US', { style: 'currency', currency: c, maximumFractionDigits: 0 }).format(n));
 const dateInput = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : '');
 
 async function send(url: string, method: string, body?: unknown) {
@@ -154,9 +154,9 @@ function Crm() {
                 <tr key={i.id} onClick={() => setInvoice(i)} className="cursor-pointer border-b border-[#f6f6f6] last:border-0 hover:bg-[#fcfcfc]">
                   <td className="px-4 py-3 font-mono text-[13px] text-[#242424]">{i.invoiceNumber}</td>
                   <td className="px-4 py-3 text-[#242424]">{i.client?.name}</td>
-                  <td className="px-4 py-3 text-[#6b6b6b]">{i.project?.title ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#6b6b6b]">{i.project?.title ?? ''}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-[#242424]">{money(i.amount, i.currency)}</td>
-                  <td className="px-4 py-3 text-[#6b6b6b]">{i.dueAt ? new Date(i.dueAt).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-3 text-[#6b6b6b]">{i.dueAt ? new Date(i.dueAt).toLocaleDateString() : ''}</td>
                   <td className="px-4 py-3"><Badge tone={isOverdue(i) ? 'red' : INV_TONE[i.status]}>{isOverdue(i) && i.status === 'SENT' ? 'overdue' : i.status.toLowerCase()}</Badge></td>
                 </tr>
               ))}

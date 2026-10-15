@@ -176,7 +176,7 @@ export function MoveDialog({ count, from, exclude = [], onClose, onMove }: { cou
       </nav>
       <ul className="thin-scroll mt-3 h-[280px] overflow-y-auto rounded-xl border border-[#ececec] p-1.5">
         {folders === null && <li className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-[#9b9b9b]" /></li>}
-        {folders?.length === 0 && <li className="py-12 text-center text-[13px] text-[#9b9b9b]">No folders here{prefix !== ROOT ? ' — you can move into this folder' : ''}</li>}
+        {folders?.length === 0 && <li className="py-12 text-center text-[13px] text-[#9b9b9b]">No folders here{prefix !== ROOT ? ', you can move into this folder' : ''}</li>}
         {folders?.map(f => {
           const disabled = exclude.includes(f.prefix);
           return (

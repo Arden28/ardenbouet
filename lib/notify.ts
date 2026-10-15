@@ -17,7 +17,7 @@ export function simpleEmail(title: string, body: string, cta?: { label: string; 
 /** Email the site owner (CONTACT/OWNER email env). */
 export async function notifyOwner(subject: string, body: string, adminPath?: string) {
   const to = process.env.OWNER_EMAIL || process.env.CONTACT_EMAIL;
-  if (!to) { console.info('[notify] OWNER_EMAIL not set —', subject); return; }
+  if (!to) { console.info('[notify] OWNER_EMAIL not set,', subject); return; }
   try {
     await sendMail({ to, subject, html: simpleEmail(subject, body, adminPath ? { label: 'Open in admin', href: `${SITE_URL}${adminPath}` } : undefined) });
   } catch (e) { console.error('[notify] owner email failed', e); }

@@ -102,7 +102,7 @@ function Settings() {
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-medium text-[#242424]">Google Calendar</p>
               <p className="text-[13px] text-[#6b6b6b]">
-                {data.google.connected ? `Connected${data.google.email ? ` as ${data.google.email}` : ''} — busy times are blocked and events with Meet links are created automatically.`
+                {data.google.connected ? `Connected${data.google.email ? ` as ${data.google.email}` : ''}, busy times are blocked and events with Meet links are created automatically.`
                   : data.google.configured ? 'Connect to avoid double bookings and create Google Meet links.'
                   : 'Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, and add /api/admin/booking/google/callback as an authorised redirect URI.'}
               </p>

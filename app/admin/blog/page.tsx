@@ -103,7 +103,7 @@ export default function StoriesPage() {
           <Stat label="Published" value={counts.PUBLISHED ?? 0} icon={<Sparkles className="h-4 w-4" />} />
           <Stat label="Views" value={totals.views} icon={<Eye className="h-4 w-4" />} />
           <Stat label="Claps · Responses" value={`${totals.claps.toLocaleString()} · ${totals.responses}`} icon={<ClapIcon className="h-4 w-4" />} />
-          <Stat label="Subscribers" value={subs ?? '—'} icon={<Mail className="h-4 w-4" />} />
+          <Stat label="Subscribers" value={subs ?? ''} icon={<Mail className="h-4 w-4" />} />
         </div>
 
         <div className="mt-8 flex flex-col gap-4 border-b border-[#f2f2f2] sm:flex-row sm:items-end sm:justify-between">

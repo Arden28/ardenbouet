@@ -11,7 +11,7 @@ const schema: FieldDef[] = [
   { type: 'text', path: 'title', label: 'Company / project', translatable: true, half: true },
   { type: 'text', path: 'fromTo', label: 'Period', placeholder: 'Sept 2024 – Mar 2025', translatable: true, half: true },
   { type: 'select', path: 'type', label: 'Type', half: true, options: ['Full-time', 'Contract', 'Freelance', 'Part-time', 'Intern'].map(v => ({ value: v, label: v })) },
-  { type: 'select', path: 'location', label: 'Work mode', half: true, options: [{ value: '', label: '—' }, { value: 'Remote', label: 'Remote' }, { value: 'Hybrid', label: 'Hybrid' }, { value: 'On-site', label: 'On-site' }] },
+  { type: 'select', path: 'location', label: 'Work mode', half: true, options: [{ value: '', label: '' }, { value: 'Remote', label: 'Remote' }, { value: 'Hybrid', label: 'Hybrid' }, { value: 'On-site', label: 'On-site' }] },
   { type: 'select', path: 'language', label: 'Primary language', half: true, options: [{ value: 'both', label: 'Both' }, { value: 'en', label: 'English' }, { value: 'fr', label: 'Français' }] },
   { type: 'textarea', path: 'logline', label: 'One-line summary', translatable: true },
   { type: 'list', path: 'outcomes', label: 'Outcomes (shown first)', placeholder: 'Add an outcome', translatable: true },

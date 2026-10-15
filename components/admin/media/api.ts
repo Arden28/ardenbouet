@@ -84,7 +84,7 @@ export const mediaApi = {
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)); };
       xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)));
-      xhr.onerror = () => reject(new Error('Network error during upload — check the bucket CORS settings'));
+      xhr.onerror = () => reject(new Error('Network error during upload, check the bucket CORS settings'));
       xhr.send(file);
     });
     return {

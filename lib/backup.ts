@@ -71,12 +71,12 @@ export async function importData(payload: unknown, sections: Section[], mode: Mo
       if (incoming === undefined) continue;
       const rep = r(`content.${key}`);
       if (key === 'settings') {
-        if (!isObj(incoming)) { rep.notes.push('settings must be an object — skipped'); continue; }
+        if (!isObj(incoming)) { rep.notes.push('settings must be an object, skipped'); continue; }
         next.settings = mode === 'replace' ? incoming : { ...(current.settings as object), ...incoming };
         rep.update++;
         continue;
       }
-      if (!Array.isArray(incoming)) { rep.notes.push(`${key} must be a list — skipped`); continue; }
+      if (!Array.isArray(incoming)) { rep.notes.push(`${key} must be a list, skipped`); continue; }
       const existing = asArr(current[key]);
       const ids = new Set(existing.map(i => i.id));
       const valid = asArr(incoming).filter(i => typeof i.id === 'string');

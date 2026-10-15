@@ -40,7 +40,7 @@ const schema: FieldDef[] = [
       { type: 'text', path: 'label', label: 'Label', half: true },
       { type: 'textarea', path: 'description', label: 'Caption' },
     ] },
-  { type: 'media', path: 'fileUrl', label: 'Downloadable file (private)', accept: '*', hint: 'Delivered through expiring download links after payment — never shown publicly.', showIf: i => i.category !== 'service' },
+  { type: 'media', path: 'fileUrl', label: 'Downloadable file (private)', accept: '*', hint: 'Delivered through expiring download links after payment, never shown publicly.', showIf: i => i.category !== 'service' },
   { type: 'url', path: 'demoUrl', label: 'Live demo URL', placeholder: 'https://', half: true },
 ];
 
@@ -52,7 +52,7 @@ export default function ProductsPage() {
           section="products"
           title="Products"
           singular="product"
-          description="Everything sold in the shop — digital goods with a downloadable file, and services."
+          description="Everything sold in the shop, digital goods with a downloadable file, and services."
           schema={schema}
           newItem={() => ({ id: Math.random().toString(36).slice(2, 10), slug: `product-${Date.now().toString(36)}`, title: '', tagline: '', description: '', category: 'platform', price: 0, currency: 'USD', priceLabel: '', status: 'draft', features: [], tags: [], media: [], discountCodes: [], language: 'both' })}
           card={p => ({

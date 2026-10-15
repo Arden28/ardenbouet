@@ -246,7 +246,7 @@ export function BookingModal({ open, onClose, locale, initialType }: { open: boo
               </ul>
             </div>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <a href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${title} — ${info.host.name}`)}&dates=${new Date(confirmed.start).toISOString().replace(/[-:]|\.\d{3}/g, '')}/${new Date(confirmed.end).toISOString().replace(/[-:]|\.\d{3}/g, '')}${confirmed.meetLink ? `&location=${encodeURIComponent(confirmed.meetLink)}` : ''}`}
+              <a href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${title}, ${info.host.name}`)}&dates=${new Date(confirmed.start).toISOString().replace(/[-:]|\.\d{3}/g, '')}/${new Date(confirmed.end).toISOString().replace(/[-:]|\.\d{3}/g, '')}${confirmed.meetLink ? `&location=${encodeURIComponent(confirmed.meetLink)}` : ''}`}
                 target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-full border border-[#242424] px-4 py-2 text-[14px] hover:bg-[#f9f9f9]">
                 <CalendarPlus className="h-4 w-4" /> {t.addGoogle}
               </a>

@@ -134,7 +134,7 @@ export function PublishDialog({ post, patch, onClose, fallbackCover, tagSuggesti
     const ok = mode === 'schedule'
       ? await patch({ ...base, status: 'SCHEDULED', scheduledAt: new Date(when).toISOString() }, true)
       : await patch({ ...base, status: 'PUBLISHED' }, true);
-    if (!ok) { setBusy(false); setError('Could not publish — check the error in the top bar.'); return; }
+    if (!ok) { setBusy(false); setError('Could not publish, check the error in the top bar.'); return; }
     if (notify && mode === 'now') {
       const res = await fetch(`/api/admin/blog/posts/${post.id}/newsletter`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const d = await res.json().catch(() => ({}));
@@ -242,7 +242,7 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
     if (!s || s === post.slug) return;
     setSlugErr('');
     const ok = await patch({ slug: s }, true);
-    if (!ok) setSlugErr('Slug not saved — it may be taken or reserved.');
+    if (!ok) setSlugErr('Slug not saved, it may be taken or reserved.');
   };
 
   const createSeries = async () => {

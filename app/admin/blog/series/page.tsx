@@ -47,7 +47,7 @@ function SeriesCard({ s, onChanged }: { s: Series; onChanged: () => void }) {
         <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} className="w-full text-[18px] font-bold text-[#242424] outline-none" />
         <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} rows={2} placeholder="Describe this series…" className="mt-1 w-full resize-none text-[14px] text-[#6b6b6b] outline-none" />
         <ol className="mt-3 space-y-1">
-          {draft.posts.length === 0 && <li className="text-[13px] text-[#9b9b9b]">No stories yet — add one from a story’s settings.</li>}
+          {draft.posts.length === 0 && <li className="text-[13px] text-[#9b9b9b]">No stories yet, add one from a story’s settings.</li>}
           {draft.posts.map((p, i) => (
             <li key={p.id} className="flex items-center gap-2 rounded-md bg-[#fafafa] px-3 py-2 text-[14px]">
               <span className="w-5 text-[#9b9b9b]">{i + 1}.</span>

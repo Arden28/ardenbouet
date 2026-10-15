@@ -7,8 +7,8 @@ import { useSite } from '@/components/site/SiteProviders';
 type B = { title: string; titleFr: string; start: string; end: string; status: string; name: string; guestTimezone: string; meetLink: string | null; location: string; googleCalendar: string };
 
 const T = {
-  en: { title: 'Your meeting', cancelled: 'This meeting was cancelled.', cancel: 'Cancel meeting', reason: 'Reason (optional)', confirm: 'Yes, cancel', keep: 'Keep it', done: 'Cancelled — you’ll get a confirmation email.', rebook: 'Book another time', past: 'This meeting has already taken place.', notFound: 'Booking not found.' },
-  fr: { title: 'Votre rendez-vous', cancelled: 'Ce rendez-vous a été annulé.', cancel: 'Annuler le rendez-vous', reason: 'Motif (facultatif)', confirm: 'Oui, annuler', keep: 'Le garder', done: 'Annulé — vous recevrez un e-mail de confirmation.', rebook: 'Réserver un autre créneau', past: 'Ce rendez-vous a déjà eu lieu.', notFound: 'Rendez-vous introuvable.' },
+  en: { title: 'Your meeting', cancelled: 'This meeting was cancelled.', cancel: 'Cancel meeting', reason: 'Reason (optional)', confirm: 'Yes, cancel', keep: 'Keep it', done: 'Cancelled, you’ll get a confirmation email.', rebook: 'Book another time', past: 'This meeting has already taken place.', notFound: 'Booking not found.' },
+  fr: { title: 'Votre rendez-vous', cancelled: 'Ce rendez-vous a été annulé.', cancel: 'Annuler le rendez-vous', reason: 'Motif (facultatif)', confirm: 'Oui, annuler', keep: 'Le garder', done: 'Annulé, vous recevrez un e-mail de confirmation.', rebook: 'Réserver un autre créneau', past: 'Ce rendez-vous a déjà eu lieu.', notFound: 'Rendez-vous introuvable.' },
 };
 
 export default function ManageBooking({ params }: { params: { token: string } }) {

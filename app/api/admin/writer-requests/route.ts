@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
     const grant = await setGrant(request.readerId, parseGrantInput((body.grant as Record<string, unknown>) ?? {}));
     await prisma.writerRequest.update({ where: { id: request.id }, data: { status: 'APPROVED', decidedAt: new Date(), decisionNote: note } });
     await notifyEmail(request.reader.email, 'Your writer request was approved',
-      `Hi ${request.reader.name},\n\nGood news — you can now write on Arden’s blog (${describeGrant(grant)}).${note ? `\n\n${note}` : ''}`,
+      `Hi ${request.reader.name},\n\nGood news, you can now write on Arden’s blog (${describeGrant(grant)}).${note ? `\n\n${note}` : ''}`,
       { label: 'Start writing', href: `${SITE_URL}/me/stories` });
   } else if (body?.decision === 'reject') {
     await prisma.writerRequest.update({ where: { id: request.id }, data: { status: 'REJECTED', decidedAt: new Date(), decisionNote: note } });

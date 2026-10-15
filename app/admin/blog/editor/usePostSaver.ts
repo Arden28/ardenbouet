@@ -56,7 +56,7 @@ export function usePostSaver(post: EditorPost | null, onSaved: (p: EditorPost) =
       } catch {
         pending.current = { ...patch, ...pending.current };
         setState('error');
-        setError('Network error — your changes will be retried.');
+        setError('Network error, your changes will be retried.');
         return false;
       }
     })();

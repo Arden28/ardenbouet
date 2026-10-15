@@ -51,7 +51,7 @@ function Earnings() {
               <p className="text-[16px] font-medium text-[#242424]">Stripe</p>
               <p className="flex items-center gap-1.5 text-[13px] text-[#6b6b6b]">
                 {s.chargesEnabled && s.payoutsEnabled ? <><Check className="h-3.5 w-3.5 text-[#1a8917]" /> {ui('me.earn.ready')}</>
-                  : s.connected ? <><Clock className="h-3.5 w-3.5" /> {ui('me.earn.pending')}</> : '—'}
+                  : s.connected ? <><Clock className="h-3.5 w-3.5" /> {ui('me.earn.pending')}</> : ''}
               </p>
             </div>
             {!s.available ? (

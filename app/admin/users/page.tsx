@@ -69,7 +69,7 @@ function GrantFields({ value, onChange }: { value: Grant; onChange: (g: Grant) =
         <input type="date" value={value.expiresAt?.slice(0, 10) ?? ''} onChange={e => onChange({ ...value, expiresAt: e.target.value ? new Date(e.target.value + 'T23:59:59').toISOString() : null })} className="rounded-md border border-[#e6e6e6] px-2 py-1.5 outline-none focus:border-[#242424]" />
         {value.expiresAt && <button type="button" onClick={() => onChange({ ...value, expiresAt: null })} className="text-[12px] text-[#6b6b6b] underline">never</button>}
       </label>
-      <textarea value={value.note} onChange={e => onChange({ ...value, note: e.target.value })} rows={2} placeholder="Note (optional — shown to the writer on invitations)" className="w-full rounded-md border border-[#e6e6e6] px-3 py-2 text-[14px] outline-none focus:border-[#242424]" />
+      <textarea value={value.note} onChange={e => onChange({ ...value, note: e.target.value })} rows={2} placeholder="Note (optional, shown to the writer on invitations)" className="w-full rounded-md border border-[#e6e6e6] px-3 py-2 text-[14px] outline-none focus:border-[#242424]" />
     </div>
   );
 }
@@ -313,7 +313,7 @@ function UsersAdmin() {
           ) : (
             <div className="space-y-5">
               <div>
-                <input type="email" value={inviting.email} onChange={e => setInviting({ ...inviting, email: e.target.value })} placeholder="Email (optional — leave empty for a shareable link)" className="w-full rounded-md border border-[#e6e6e6] px-3 py-2 text-[14px] outline-none focus:border-[#242424]" />
+                <input type="email" value={inviting.email} onChange={e => setInviting({ ...inviting, email: e.target.value })} placeholder="Email (optional, leave empty for a shareable link)" className="w-full rounded-md border border-[#e6e6e6] px-3 py-2 text-[14px] outline-none focus:border-[#242424]" />
                 {inviting.email && (
                   <label className="mt-2 flex items-center gap-2 text-[13px] text-[#6b6b6b]"><input type="checkbox" checked={inviting.send} onChange={e => setInviting({ ...inviting, send: e.target.checked })} className="accent-[#1a8917]" /> Email the invitation</label>
                 )}

@@ -283,7 +283,7 @@ export default function MediaLibrary({
   // ── Uploads ───────────────────────────────────────────────────────────
   const uploadFiles = useCallback(async (list: { file: File; dir?: string }[], target: string) => {
     const accepted = picking && accept ? list.filter(({ file }) => matchesAccept({ contentType: file.type, name: file.name }, accept)) : list;
-    if (accepted.length < list.length) toast(`${list.length - accepted.length} file(s) skipped — this field only accepts ${accept}`);
+    if (accepted.length < list.length) toast(`${list.length - accepted.length} file(s) skipped, this field only accepts ${accept}`);
     if (!accepted.length) return [];
     setTrayOpen(true);
     const done: MediaItem[] = [];
@@ -861,8 +861,8 @@ export default function MediaLibrary({
                         onClick={e => clickItem(f.prefix, e)} onDoubleClick={() => openFolder(f.prefix)} onContextMenu={e => onItemContext(f.prefix, e)}
                         className={`group cursor-pointer select-none border-b border-[#f0f0f0] ${sel ? 'bg-[#d3e3fd]' : 'hover:bg-[#f6f6f6]'} ${dropTarget === f.prefix ? 'outline outline-2 outline-[#2467ac]' : ''}`}>
                         <td className="py-2.5 pl-3"><span className="flex items-center gap-3"><FolderGlyph className="h-5 w-5 shrink-0" /><span className="truncate font-medium">{f.name}</span></span></td>
-                        <td className="hidden py-2.5 text-[#6b6b6b] sm:table-cell">—</td>
-                        <td className="hidden py-2.5 text-[#6b6b6b] md:table-cell">—</td>
+                        <td className="hidden py-2.5 text-[#6b6b6b] sm:table-cell"></td>
+                        <td className="hidden py-2.5 text-[#6b6b6b] md:table-cell"></td>
                         <td className="py-1 text-right"><button type="button" onClick={e => onKebab(f.prefix, e)} aria-label={`More actions for ${f.name}`} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[rgba(0,0,0,0.08)]"><MoreVertical className="h-4 w-4" /></button></td>
                       </tr>
                     );
@@ -1008,7 +1008,7 @@ export default function MediaLibrary({
             okLabel="Delete forever"
             body={<>
               <p>This permanently removes {single ? 'it' : 'them'} from the bucket{nFolders ? ', including everything inside the folder' + (nFolders > 1 ? 's' : '') : ''}. It can’t be undone.</p>
-              {inUse > 0 && <p className="mt-3 rounded-lg bg-[#fdf6e7] px-3 py-2 text-[13px] text-[#7a5a00]">{inUse === 1 && single ? 'This file is' : `${inUse} file${inUse > 1 ? 's are' : ' is'}`} used on the site — those pages will show a broken image.</p>}
+              {inUse > 0 && <p className="mt-3 rounded-lg bg-[#fdf6e7] px-3 py-2 text-[13px] text-[#7a5a00]">{inUse === 1 && single ? 'This file is' : `${inUse} file${inUse > 1 ? 's are' : ' is'}`} used on the site, those pages will show a broken image.</p>}
             </>}
             onConfirm={() => removeKeys(keys)}
             onClose={() => setDialog(null)}

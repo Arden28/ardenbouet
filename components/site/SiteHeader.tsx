@@ -79,7 +79,7 @@ export function SiteHeader() {
       className={`blog-ui sticky top-0 z-50 bg-white transition-[transform,box-shadow] duration-300 ${hidden ? '-translate-y-full' : ''} ${scrolled ? 'shadow-[0_1px_0_#f2f2f2]' : ''}`}
     >
       <div className="mx-auto flex h-[60px] max-w-[1336px] items-center gap-4 px-4 sm:px-6">
-        <Link href={href('/')} className="flex shrink-0 items-baseline gap-1.5" aria-label="Arden BOUET — home">
+        <Link href={href('/')} className="flex shrink-0 items-baseline gap-1.5" aria-label="Arden BOUET, home">
           <span className="font-story text-[27px] font-bold leading-none tracking-[-0.02em] text-[#242424]">Arden</span>
           <span className="hidden h-1.5 w-1.5 rounded-full bg-[#1a8917] sm:inline-block" aria-hidden />
         </Link>

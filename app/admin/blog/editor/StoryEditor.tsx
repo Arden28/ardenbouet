@@ -89,7 +89,7 @@ function SaveIndicator({ state, error, onRetry }: { state: SaveState; error: str
   if (state === 'error' || state === 'conflict') {
     return (
       <button type="button" onClick={state === 'conflict' ? () => window.location.reload() : onRetry} title={error} className="flex items-center gap-1.5 text-[13px] text-[#c94a4a]">
-        <AlertCircle className="h-3.5 w-3.5" /> {state === 'conflict' ? 'Edited elsewhere — reload' : 'Not saved — retry'}
+        <AlertCircle className="h-3.5 w-3.5" /> {state === 'conflict' ? 'Edited elsewhere, reload' : 'Not saved, retry'}
       </button>
     );
   }

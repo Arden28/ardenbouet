@@ -38,8 +38,8 @@ export default function PurchaseEmail({
 }: PurchaseEmailProps) {
   const downloadUrl = downloadToken ? `${siteUrl}/download/${downloadToken}` : null;
   const subject     = isService
-    ? `Booking confirmed — ${productTitle}`
-    : `Your download is ready — ${productTitle}`;
+    ? `Booking confirmed, ${productTitle}`
+    : `Your download is ready, ${productTitle}`;
 
   return (
     <Html lang="en">
@@ -71,7 +71,7 @@ export default function PurchaseEmail({
             </Heading>
 
             <Text style={{ color: MUTED, fontSize: 14, margin: '10px 0 0', lineHeight: 1.5 }}>
-              Hi <strong style={{ color: '#d4d4d8' }}>{customerName}</strong> —{' '}
+              Hi <strong style={{ color: '#d4d4d8' }}>{customerName}</strong>,{' '}
               {isService
                 ? "we'll be in touch within 24 hours to schedule your session."
                 : 'your download is ready below. Save it somewhere safe.'}

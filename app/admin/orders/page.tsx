@@ -83,7 +83,7 @@ function Orders() {
                   <td className="max-w-[220px] truncate px-4 py-3 text-[#242424]">{o.productTitle}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-[#242424]">{money(o.amount, o.currency)}</td>
                   <td className="px-4 py-3"><Badge tone={TONE[o.status]}>{o.status.toLowerCase()}</Badge></td>
-                  <td className="px-4 py-3 capitalize text-[#6b6b6b]">{o.paymentProvider ?? '—'}</td>
+                  <td className="px-4 py-3 capitalize text-[#6b6b6b]">{o.paymentProvider ?? ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -99,7 +99,7 @@ function Orders() {
               <Badge tone={TONE[open.status]}>{open.status.toLowerCase()}</Badge>
             </div>
             <dl className="divide-y divide-[#f6f6f6] rounded-xl border border-[#f0f0f0] text-[14px]">
-              {[['Customer', open.customerName], ['Email', open.customerEmail], ['Provider', open.paymentProvider ?? '—'], ['Reference', open.paymentRef ?? '—'], ['Product id', open.productId]].map(([k, v]) => (
+              {[['Customer', open.customerName], ['Email', open.customerEmail], ['Provider', open.paymentProvider ?? ''], ['Reference', open.paymentRef ?? ''], ['Product id', open.productId]].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4 px-4 py-2.5"><dt className="text-[#9b9b9b]">{k}</dt><dd className="truncate text-right font-mono text-[13px] text-[#242424]">{v}</dd></div>
               ))}
             </dl>

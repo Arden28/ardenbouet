@@ -87,7 +87,7 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.slug !== undefined) {
     const wanted = slugify(String(body.slug ?? ''));
     if (!wanted) throw new EditorError('Slug cannot be empty');
-    if (RESERVED_SLUGS.has(wanted)) throw new EditorError(`"${wanted}" is reserved — pick another slug`);
+    if (RESERVED_SLUGS.has(wanted)) throw new EditorError(`"${wanted}" is reserved, pick another slug`);
     const clash = await prisma.post.findUnique({ where: { slug: wanted }, select: { id: true } });
     if (clash && clash.id !== current.id) throw new EditorError('Another story already uses this slug');
     data.slug = wanted;

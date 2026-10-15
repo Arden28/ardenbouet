@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || null;
   const recent = ip ? await prisma.message.count({ where: { ip, createdAt: { gte: new Date(Date.now() - 3_600_000) } } }) : 0;
-  if (recent >= 5) return err('Too many messages — please try again later', 429);
+  if (recent >= 5) return err('Too many messages, please try again later', 429);
 
   await prisma.message.create({
     data: {

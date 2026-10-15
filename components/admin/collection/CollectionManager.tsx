@@ -245,7 +245,7 @@ export function CollectionManager<T extends Item>({ section, title, description,
                     {c.subtitle && <span className="block truncate text-[13px] text-[#6b6b6b]">{c.subtitle}</span>}
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       {c.badges?.map(b => <Badge key={b.label} tone={b.tone}>{b.label}</Badge>)}
-                      {translatableCount > 0 && <span className={cx('inline-flex items-center gap-1 text-[11px]', fr ? 'text-[#2467ac]' : 'text-[#c4c4c4]')}><Languages className="h-3 w-3" /> FR {fr ? `${fr}/${translatableCount}` : '—'}</span>}
+                      {translatableCount > 0 && <span className={cx('inline-flex items-center gap-1 text-[11px]', fr ? 'text-[#2467ac]' : 'text-[#c4c4c4]')}><Languages className="h-3 w-3" /> FR {fr ? `${fr}/${translatableCount}` : ''}</span>}
                       {c.meta && <span className="text-[12px] text-[#9b9b9b]">{c.meta}</span>}
                     </span>
                   </span>
@@ -283,7 +283,7 @@ export function CollectionManager<T extends Item>({ section, title, description,
       >
         {editing && (
           <>
-            {lang === 'fr' && <p className="mb-5 rounded-lg bg-[#eef4fb] px-4 py-3 text-[13px] leading-5 text-[#2467ac]">French version — leave a field empty to show the English text on /fr. The English value is shown as a placeholder.</p>}
+            {lang === 'fr' && <p className="mb-5 rounded-lg bg-[#eef4fb] px-4 py-3 text-[13px] leading-5 text-[#2467ac]">French version, leave a field empty to show the English text on /fr. The English value is shown as a placeholder.</p>}
             <FieldsForm schema={schema} item={editing.item} lang={lang} onChange={i => setEditing({ ...editing, item: i as T })} />
           </>
         )}
