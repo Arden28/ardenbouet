@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   PenSquare, Package, FolderKanban, UserPlus, Upload, Receipt, CalendarCog, ArrowUpRight, ArrowDownRight,
-  ShoppingBag, MessageCircle, CalendarDays, Mail, Feather, Users, Eye, AlertCircle,
+  ShoppingBag, MessageCircle, CalendarDays, Mail, Feather, Users, Eye, AlertCircle, ArrowDownUp,
 } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { BarChart } from '@/components/admin/BarChart';
@@ -85,6 +85,7 @@ export default function Dashboard() {
     { label: 'Invite a writer', href: '/admin/users?tab=invites', icon: UserPlus },
     { label: 'Create invoice', href: '/admin/crm?tab=invoices&new=1', icon: Receipt },
     { label: 'Availability', href: '/admin/bookings/settings', icon: CalendarCog },
+    { label: 'Back up data', href: '/admin/data', icon: ArrowDownUp },
   ];
 
   const k = d?.kpis;

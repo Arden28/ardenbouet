@@ -107,8 +107,14 @@ export default async function StoryPage({ params }: { params: { slug: string } }
       <div className="px-6">
         <header className="mx-auto max-w-[680px] pt-10 sm:pt-14">
           {series && seriesIndex >= 0 && (
-            <Link href={lhref(`/blog/series/${series.slug}`)} className="mb-6 block rounded-md bg-[#f9f9f9] px-4 py-3 text-[14px] text-[#6b6b6b] hover:bg-[#f2f2f2]">
-              {t('inSeries', { n: seriesIndex + 1, total: series.posts.length })} <span className="font-medium text-[#242424]">{series.title}</span>
+            <Link href={lhref(`/blog/series/${series.slug}`)} className="group mb-7 flex items-center gap-3 rounded-xl border border-[#ececec] px-4 py-3 hover:border-[#c4c4c4]">
+              <span className="flex shrink-0 gap-1" aria-hidden>
+                {series.posts.map((sp, i) => <span key={sp.id} className={`h-1.5 rounded-full ${i === seriesIndex ? 'w-5 bg-[#1a8917]' : i < seriesIndex ? 'w-1.5 bg-[#242424]' : 'w-1.5 bg-[#d4d4d4]'}`} />).slice(0, 12)}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#6b6b6b]">
+                {t('seriesPartOf', { n: seriesIndex + 1, total: series.posts.length })} · <span className="font-medium text-[#242424]">{series.title}</span>
+              </span>
+              <span className="shrink-0 text-[13px] text-[#9b9b9b] group-hover:text-[#242424]">{t('viewSeries')} →</span>
             </Link>
           )}
           <h1 className="text-[32px] font-bold leading-[40px] tracking-[-0.016em] text-[#242424] sm:text-[42px] sm:leading-[52px]">
@@ -174,8 +180,38 @@ export default async function StoryPage({ params }: { params: { slug: string } }
 
           {isVisible && post.donationsEnabled && <DonateCard slug={post.slug} />}
 
+          {series && seriesIndex >= 0 && (
+            <section className="mt-12 overflow-hidden rounded-2xl border border-[#ececec]" aria-label={t('inThisSeries')}>
+              <div className="flex items-baseline justify-between gap-4 bg-[#fafafa] px-5 py-4">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-[#1a8917]">{t('inThisSeries')}</p>
+                  <Link href={lhref(`/blog/series/${series.slug}`)} className="mt-0.5 block truncate text-[17px] font-bold text-[#242424] hover:underline">{series.title}</Link>
+                </div>
+                <span className="shrink-0 text-[13px] text-[#9b9b9b]">{t('seriesPartOf', { n: seriesIndex + 1, total: series.posts.length })}</span>
+              </div>
+              <ol className="divide-y divide-[#f2f2f2]">
+                {series.posts.map((sp, i) => {
+                  const current = sp.id === post.id;
+                  return (
+                    <li key={sp.id}>
+                      <Link href={lhref(`/blog/${sp.slug}`)} aria-current={current ? 'page' : undefined}
+                        className={`flex items-center gap-4 px-5 py-3.5 ${current ? 'bg-[#f3faf3]' : 'hover:bg-[#fafafa]'}`}>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${current ? 'bg-[#1a8917] text-white' : i < seriesIndex ? 'bg-[#242424] text-white' : 'border border-[#d4d4d4] text-[#6b6b6b]'}`}>{i + 1}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-[15px] ${current ? 'font-semibold text-[#242424]' : 'text-[#242424]'}`}>{sp.title}</span>
+                          {current && <span className="text-[12px] text-[#1a6b17]">{t('youAreHere')}</span>}
+                        </span>
+                        <span className="shrink-0 text-[12px] text-[#9b9b9b]">{t('minRead', { n: sp.readingMinutes })}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
           {(prev || next) && (
-            <nav className="mt-10 grid gap-3 sm:grid-cols-2" aria-label={t('series')}>
+            <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label={t('series')}>
               {prev ? (
                 <Link href={lhref(`/blog/${prev.slug}`)} className="rounded-md border border-[#e6e6e6] p-4 hover:border-[#c4c4c4]">
                   <span className="text-[13px] text-[#6b6b6b]">← {t('previous')}</span>

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
   FileText, MessageSquare, UserCog, CalendarDays, Mail, Library, LayoutDashboard, ShoppingBag, Users, Image as ImageIcon, Settings, LogOut, Menu, X, PenSquare, ExternalLink,
-  FolderKanban, Briefcase, GraduationCap, Package, Inbox, PanelLeftClose, PanelLeftOpen,
+  FolderKanban, Briefcase, GraduationCap, Package, Inbox, PanelLeftClose, PanelLeftOpen, ArrowDownUp,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/site/ThemeToggle';
 import '@/app/blog/story.css';
@@ -38,6 +38,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
   ] },
   { title: 'People', items: [
     { href: '/admin/users', label: 'Users & writers', icon: UserCog },
+    { href: '/admin/data', label: 'Import & export', icon: ArrowDownUp },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ] },
 ];

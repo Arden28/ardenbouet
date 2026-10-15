@@ -6,6 +6,7 @@
 .dark .bg-\[\#d4d4d4\]{background-color:#4a4a4a}
 .dark .bg-\[\#def4dd\]{background-color:#1e4422}
 .dark .bg-\[\#e6e6e6\]{background-color:#333333}
+.dark .bg-\[\#ececec\]{background-color:#2e2e2e}
 .dark .bg-\[\#eef4fb\]{background-color:#15253a}
 .dark .bg-\[\#eef7ee\]{background-color:#16301a}
 .dark .bg-\[\#f0f0f0\]{background-color:#262626}
@@ -47,6 +48,7 @@
 .dark .decoration-\[\#d4d4d4\]{text-decoration-color:#4a4a4a}
 .dark .disabled\:text-\[\#d4d4d4\]:disabled{color:#4a4a4a}
 .dark .divide-\[\#ececec\] > :not([hidden]) ~ :not([hidden]){border-color:#2e2e2e}
+.dark .divide-\[\#f2f2f2\] > :not([hidden]) ~ :not([hidden]){border-color:#2a2a2a}
 .dark .divide-\[\#f6f6f6\] > :not([hidden]) ~ :not([hidden]){border-color:#1f1f1f}
 .dark .fill-\[\#e6e6e6\]{fill:#333333}
 .dark .fill-\[\#ececec\]{fill:#2e2e2e}
@@ -63,6 +65,7 @@
 .dark .group:hover .group-hover\:bg-black\/30{background-color:rgba(250,250,250,0.3)}
 .dark .group:hover .group-hover\:decoration-\[\#d4d4d4\]{text-decoration-color:#4a4a4a}
 .dark .group:hover .group-hover\:text-\[\#242424\]{color:#e6e6e6}
+.dark .group:hover .group-hover\:text-\[\#9b9b9b\]{color:#8c8c8c}
 .dark .hover\:bg-\[\#242424\]:hover{background-color:#ececec}
 .dark .hover\:bg-\[\#dcefdc\]:hover{background-color:#1e4422}
 .dark .hover\:bg-\[\#e6e6e6\]:hover{background-color:#333333}
@@ -83,6 +86,7 @@
 .dark .hover\:border-\[\#242424\]:hover{border-color:#d4d4d4}
 .dark .hover\:border-\[\#c4c4c4\]:hover{border-color:#5f5f5f}
 .dark .hover\:border-\[\#d4d4d4\]:hover{border-color:#4a4a4a}
+.dark .hover\:border-\[\#e6e6e6\]:hover{border-color:#333333}
 .dark .hover\:decoration-\[\#242424\]:hover{text-decoration-color:#d4d4d4}
 .dark .hover\:decoration-\[\#d4d4d4\]:hover{text-decoration-color:#4a4a4a}
 .dark .hover\:text-\[\#242424\]:hover{color:#e6e6e6}
@@ -119,7 +123,6 @@
 .dark .text-\[\#c4c4c4\]{color:#5f5f5f}
 .dark .text-\[\#c94a4a\]{color:#f08a8a}
 .dark .text-\[\#d4d4d4\]{color:#4a4a4a}
-.dark .text-\[\#e6e6e6\]{color:#333333}
 .dark .text-\[\#f4f4f4\]{color:#232323}
 .dark .bg-\[\#242424\], .dark .bg-\[\#242424\] [class*="text-white"], .dark .bg-\[\#242424\][class*="text-white"]{color:#121212}
 .dark .hover\:bg-black:hover{background-color:#ffffff;color:#121212}

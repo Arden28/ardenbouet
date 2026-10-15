@@ -19,6 +19,7 @@ export type PostCard = {
   claps: number;
   responses: number;
   seriesTitle: string | null;
+  seriesSlug: string | null;
   /** null = the site owner */
   author: { name: string; handle: string | null; image: string | null } | null;
 };
@@ -38,7 +39,7 @@ const cardSelect = {
   id: true, slug: true, title: true, subtitle: true, excerpt: true, coverUrl: true,
   publishedAt: true, scheduledAt: true, status: true, readingMinutes: true, tags: true,
   featured: true, content: true,
-  series: { select: { title: true } },
+  series: { select: { title: true, slug: true } },
   author: { select: { name: true, handle: true, image: true } },
   _count: { select: { comments: { where: { status: 'VISIBLE' as const } } } },
 } satisfies Prisma.PostSelect;
@@ -75,6 +76,7 @@ async function toCards(rows: CardRow[]): Promise<PostCard[]> {
     claps: claps.get(r.id) ?? 0,
     responses: r._count.comments,
     seriesTitle: r.series?.title ?? null,
+    seriesSlug: r.series?.slug ?? null,
     author: r.author ?? null,
   }));
 }
@@ -164,7 +166,7 @@ export async function getPostBySlug(slug: string, { includeDrafts = false } = {}
         include: {
           posts: {
             where: visibleWhere(),
-            select: { id: true, slug: true, title: true, seriesOrder: true },
+            select: { id: true, slug: true, title: true, seriesOrder: true, readingMinutes: true },
             orderBy: [{ seriesOrder: 'asc' }, { publishedAt: 'asc' }],
           },
         },
@@ -208,13 +210,43 @@ export async function getPostCardsByIds(ids: string[]): Promise<PostCard[]> {
   return cards.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
 
-export async function getSeries(slug: string) {
-  return prisma.series.findUnique({
-    where: { slug },
-    include: {
-      posts: { where: visibleWhere(), select: { id: true }, orderBy: [{ seriesOrder: 'asc' }, { publishedAt: 'asc' }] },
-    },
+const seriesPostOrder = [{ seriesOrder: 'asc' as const }, { publishedAt: 'asc' as const }];
+
+export type SeriesSummary = {
+  id: string; slug: string; title: string; description: string; coverUrl: string | null;
+  count: number; minutes: number; updatedAt: string; firstSlug: string | null;
+};
+
+/** Series that have at least one visible story, most recently active first. */
+export async function listSeries(): Promise<SeriesSummary[]> {
+  const rows = await prisma.series.findMany({
+    include: { posts: { where: visibleWhere(), select: { slug: true, coverUrl: true, readingMinutes: true, publishedAt: true, scheduledAt: true, status: true }, orderBy: seriesPostOrder } },
   });
+  return rows
+    .filter(s => s.posts.length > 0)
+    .map(s => {
+      const latest = s.posts.reduce<Date>((d, p) => { const e = effectiveDate(p); return e && e > d ? e : d; }, s.updatedAt);
+      return {
+        id: s.id, slug: s.slug, title: s.title, description: s.description,
+        coverUrl: s.coverUrl || s.posts.find(p => p.coverUrl)?.coverUrl || null,
+        count: s.posts.length, minutes: s.posts.reduce((m, p) => m + p.readingMinutes, 0),
+        updatedAt: latest.toISOString(), firstSlug: s.posts[0]?.slug ?? null,
+      };
+    })
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/** One series with its visible stories as cards, in reading order. */
+export async function getSeries(slug: string) {
+  const series = await prisma.series.findUnique({
+    where: { slug },
+    include: { posts: { where: visibleWhere(), select: { id: true }, orderBy: seriesPostOrder } },
+  });
+  if (!series) return null;
+  const posts = await getPostCardsByIds(series.posts.map(p => p.id));
+  const minutes = posts.reduce((m, p) => m + p.readingMinutes, 0);
+  const updatedAt = posts.reduce((d, p) => (p.publishedAt && p.publishedAt > d ? p.publishedAt : d), series.updatedAt.toISOString());
+  return { ...series, posts, minutes, updatedAt, coverUrl: series.coverUrl || posts.find(p => p.coverUrl)?.coverUrl || null };
 }
 
 export async function getContentBundle(): Promise<Partial<ContentBundle>> {

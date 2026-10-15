@@ -74,6 +74,11 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.seriesId !== undefined) {
     const id = optS(body.seriesId, 64);
     data.series = id ? { connect: { id } } : { disconnect: true };
+    // Joining a series appends the story as its last part (unless an explicit position is sent).
+    if (id && id !== current.seriesId && body.seriesOrder === undefined) {
+      const last = await prisma.post.aggregate({ where: { seriesId: id, NOT: { id: current.id } }, _max: { seriesOrder: true }, _count: true });
+      data.seriesOrder = last._count ? (last._max.seriesOrder ?? 0) + 1 : 0;
+    }
   }
   if (body.seriesOrder !== undefined) data.seriesOrder = Math.max(0, Math.floor(Number(body.seriesOrder) || 0));
 

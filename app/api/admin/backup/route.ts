@@ -1,7 +1,7 @@
-// GET  /api/admin/backup?sections=content,blog,crm,booking&secrets=1 — download a JSON backup
+// GET  /api/admin/backup?sections=content,blog,…&secrets=1 — download a JSON backup; ?counts=1 — rows per section
 // POST /api/admin/backup { data, sections, mode: 'merge'|'replace', dryRun } — preview or apply an import
 import { err, isAdminRequest, json, readJson } from '@/lib/apiUtil';
-import { SECTIONS, exportData, importData, type Section } from '@/lib/backup';
+import { SECTIONS, dataCounts, exportData, importData, type Section } from '@/lib/backup';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -12,6 +12,7 @@ const pick = (raw: unknown): Section[] =>
 export async function GET(req: Request) {
   if (!(await isAdminRequest())) return err('Unauthorized', 401);
   const sp = new URL(req.url).searchParams;
+  if (sp.get('counts') === '1') return json({ counts: await dataCounts() });
   const sections = pick(sp.get('sections') ?? SECTIONS.join(','));
   if (!sections.length) return err('Choose at least one section');
   const data = await exportData(sections, sp.get('secrets') === '1');

@@ -252,7 +252,7 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
     if (res.ok) {
       setSeries(s => [{ ...d.series, posts: [] }, ...(s ?? [])]);
       setNewSeries('');
-      patch({ seriesId: d.series.id, seriesOrder: 0 });
+      patch({ seriesId: d.series.id });
     }
   };
 
@@ -303,12 +303,16 @@ export function SettingsDrawer({ post, patch, onClose, onDeleted, fallbackCover,
             <option value="">Not part of a series</option>
             {series?.map(s => <option key={s.id} value={s.id}>{s.title} ({s.posts.length})</option>)}
           </select>
-          {post.seriesId && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[13px] text-[#6b6b6b]">Position</span>
-              <input type="number" min={0} value={post.seriesOrder} onChange={e => patch({ seriesOrder: Number(e.target.value) })} className={`${input} w-24`} />
-            </div>
-          )}
+          {post.seriesId && (() => {
+            const s = series?.find(x => x.id === post.seriesId);
+            const at = s ? s.posts.findIndex(p => p.id === post.id) : -1;
+            return (
+              <p className="mt-2 text-[13px] text-[#6b6b6b]">
+                {at >= 0 ? `Part ${at + 1} of ${s!.posts.length}` : 'Added as the last part'} ·{' '}
+                <a href="/admin/blog/series" target="_blank" rel="noopener noreferrer" className="text-[#1a8917] hover:underline">Reorder in Series</a>
+              </p>
+            );
+          })()}
           <div className="mt-2 flex gap-2">
             <input value={newSeries} onChange={e => setNewSeries(e.target.value)} placeholder="New series title" className={input} onKeyDown={e => e.key === 'Enter' && createSeries()} />
             <button type="button" onClick={createSeries} className="flex shrink-0 items-center gap-1 rounded-md border border-[#e6e6e6] px-3 text-[13px] hover:border-[#242424]"><Plus className="h-4 w-4" /> Create</button>

@@ -42,7 +42,7 @@ export function FeedRow({ post, locale, t, priority = false }: { post: PostCard;
     <article className="border-b border-[#f2f2f2] py-6 sm:py-8">
       <div className="mb-2 flex items-center gap-2">
         <AuthorChip author={post.author} locale={locale} />
-        {post.seriesTitle && <span className="truncate text-[13px] text-[#6b6b6b]">in {post.seriesTitle}</span>}
+        {post.seriesTitle && post.seriesSlug && <Link href={localizeHref(`/blog/series/${post.seriesSlug}`, locale)} className="truncate text-[13px] text-[#6b6b6b] hover:text-[#242424] hover:underline">{t('inSeriesShort', { title: post.seriesTitle })}</Link>}
       </div>
       <div className="flex gap-6 sm:gap-14">
         <div className="min-w-0 flex-1">

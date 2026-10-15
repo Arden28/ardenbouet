@@ -1,12 +1,12 @@
 'use client';
 // /admin/settings — site identity, contact, social profiles, storage fallback, integrations status
 import { useEffect, useState } from 'react';
-import { CheckCircle2, CircleDashed } from 'lucide-react';
+import { ArrowDownUp, ArrowRight, CheckCircle2, CircleDashed } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { Button, Field, PageIntro, SaveStatus, Spinner, inputCls } from '@/components/admin/ui';
 import type { SiteSettings } from '@/app/admin/types';
 import '@/app/blog/story.css';
-import { BackupCard } from './BackupCard';
+import Link from 'next/link';
 
 type Integration = { key: string; name: string; ok: boolean; detail: string; env: string };
 
@@ -68,7 +68,11 @@ export default function SettingsPage() {
               </section>
             ))}
 
-            <BackupCard />
+            <Link href="/admin/data" className="group flex items-center gap-4 rounded-2xl border border-[#f0f0f0] bg-white p-6 hover:border-[#e6e6e6]">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f2f2f2]"><ArrowDownUp className="h-5 w-5 text-[#242424]" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-[#242424]">Import & export</span><span className="block text-[13px] text-[#6b6b6b]">Back up all site data as JSON, or restore it from a backup.</span></span>
+              <ArrowRight className="h-4 w-4 text-[#9b9b9b] transition-transform group-hover:translate-x-0.5" />
+            </Link>
 
             <section className="rounded-2xl border border-[#f0f0f0] bg-white p-6">
               <h2 className="text-[15px] font-semibold text-[#242424]">Integrations</h2>
