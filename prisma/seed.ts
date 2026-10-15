@@ -10,7 +10,7 @@ const SEED = {
     {
       id: uid(),
       language: 'en',
-      title: 'Auprea — Heritage for everyone',
+      title: 'Auprea, Heritage for everyone',
       description: 'Wealth manager with secure vault, PDF declarations, and an optional notary flow.',
       logoUrl: '/images/auprea.ico',
       url: 'https://patrimoine-manager.vercel.app/',
@@ -22,7 +22,7 @@ const SEED = {
         approach: [
           'Domain model for assets/liabilities; secure doc vault w/ role-based access',
           'Server-generated PDF declarations; optional notarization workflow',
-          'Performance budget for dashboard—<150ms TTFB on cached pages',
+          'Performance budget for dashboard, <150ms TTFB on cached pages',
         ],
         result: 'Single source of truth; faster onboarding; exportable declarations that are legally tidy.',
         images: [
@@ -78,7 +78,7 @@ const SEED = {
       language: 'en',
       slug: 'shipping-saas-like-an-ops-team',
       title: 'Shipping SaaS like an ops team',
-      excerpt: 'Treat features like on-call: runbooks, budgets, dashboards first—then UI.',
+      excerpt: 'Treat features like on-call: runbooks, budgets, dashboards first, then UI.',
       cover: '/blog/ops-saas.jpg',
       date: '2025-07-20',
       reading: '6 min',
@@ -94,7 +94,7 @@ const SEED = {
       title: 'SaaS Starter Kit',
       tagline: 'Full-stack Next.js 14 boilerplate with auth, billing, and dashboard.',
       description:
-        'Production-ready Next.js 14 starter with Prisma, Stripe, NextAuth, Tailwind CSS, and a pre-built admin dashboard. Skip the setup — ship in days, not weeks. Every config decision is already made so you can focus on your product.',
+        'Production-ready Next.js 14 starter with Prisma, Stripe, NextAuth, Tailwind CSS, and a pre-built admin dashboard. Skip the setup, ship in days, not weeks. Every config decision is already made so you can focus on your product.',
       category: 'platform',
       price: 149,
       currency: 'USD',
@@ -130,7 +130,7 @@ const SEED = {
           url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           kind: 'video',
           label: 'Walkthrough video',
-          description: '5-minute tour of the full starter — auth, billing, and dashboard.',
+          description: '5-minute tour of the full starter: auth, billing and dashboard.',
         },
       ],
     },
@@ -209,7 +209,7 @@ const SEED = {
       title: 'API Integration Playbook',
       tagline: 'Patterns and recipes for robust third-party API integrations.',
       description:
-        'A practical guide covering retry logic, webhook handling, rate-limit strategies, OAuth flows, and error budgeting — drawn from real production integrations. 60+ pages of battle-tested patterns with full TypeScript examples.',
+        'A practical guide covering retry logic, webhook handling, rate-limit strategies, OAuth flows, and error budgeting, drawn from real production integrations. 60+ pages of battle-tested patterns with full TypeScript examples.',
       category: 'document',
       price: 29,
       currency: 'USD',
@@ -233,7 +233,7 @@ const SEED = {
       language: 'en',
       slug: 'production-deployment',
       title: 'Production Deployment',
-      tagline: 'From local to live — properly, securely, and fast.',
+      tagline: 'From local to live, properly, securely, and fast.',
       description:
         'End-to-end deployment of any web application to a cloud provider of your choice. Includes SSL, CI/CD pipeline via GitHub Actions, environment management, database provisioning, and a post-launch health check. Delivered in 3–5 business days.',
       category: 'service',
@@ -257,7 +257,7 @@ const SEED = {
       language: 'en',
       slug: 'performance-audit',
       title: 'Performance Audit',
-      tagline: 'Find exactly what is making your app slow — with a clear fix plan.',
+      tagline: 'Find exactly what is making your app slow, with a clear fix plan.',
       description:
         'A deep-dive into your Next.js or Laravel application’s performance. I profile database queries, API latency, frontend bundle size, and server response times, then deliver a prioritized remediation report with impact estimates.',
       category: 'service',
@@ -312,7 +312,7 @@ const SEED = {
       language: 'en',
       slug: 'saas-mvp-build',
       title: 'SaaS MVP Build',
-      tagline: 'Validate your idea with a production-grade MVP — in 4 weeks.',
+      tagline: 'Validate your idea with a production-grade MVP, in 4 weeks.',
       description:
         'Full-stack development of a scoped SaaS MVP: auth, payments, core workflow, and production deployment. Built on Next.js + Prisma (or Supabase). Scope is locked at kickoff so timelines hold. You own the source code outright.',
       category: 'service',

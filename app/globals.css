@@ -169,8 +169,9 @@ body {
 
 @layer base {
   :root {
-    --background: 233 64% 98%;
-    --foreground: 233 67% 0%;
+    /* Pure white page, Medium ink — the old blue-tinted surface made inputs look filled. */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 14%;
     --muted: 233 19% 92%;
     --muted-foreground: 233 7% 32%;
     --popover: 233 64% 97%;
@@ -192,8 +193,8 @@ body {
 
   }
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 90%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
@@ -718,4 +719,82 @@ body {
   display: block;
   font-size: .9em;
   line-height: 1.6;
+}
+
+/* Checkerboard behind media thumbnails, so transparent PNG/SVG edges stay visible (admin media library) */
+.checker {
+  background-color: #fafafa;
+  background-image:
+    linear-gradient(45deg, #f2f2f2 25%, transparent 25%), linear-gradient(-45deg, #f2f2f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f2f2f2 75%), linear-gradient(-45deg, transparent 75%, #f2f2f2 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+@keyframes gallery-in { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: scale(1); } }
+@keyframes drawer-in { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ── Theme ─────────────────────────────────────────────────────────────── */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+html.dark body { background-color: #121212; color: #e6e6e6; }
+
+/* Browser autofill paints inputs blue/yellow — keep fields on their own surface. */
+/* Explicit text colour: Chrome replaces `currentColor` with its own autofill ink (white on a dark OS theme). */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
+textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus, select:-webkit-autofill {
+  -webkit-text-fill-color: #242424 !important;
+  caret-color: #242424;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+input:autofill, textarea:autofill, select:autofill { color: #242424; }
+.dark input:-webkit-autofill, .dark input:-webkit-autofill:hover, .dark input:-webkit-autofill:focus, .dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill, .dark textarea:-webkit-autofill:hover, .dark textarea:-webkit-autofill:focus, .dark select:-webkit-autofill {
+  -webkit-text-fill-color: #e6e6e6 !important;
+  caret-color: #e6e6e6;
+  box-shadow: 0 0 0 1000px #121212 inset !important;
+}
+.dark input:autofill, .dark textarea:autofill, .dark select:autofill { color: #e6e6e6; }
+
+/* Theme switch: circular reveal from the toggle (View Transitions API) */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: theme-reveal 0.6s cubic-bezier(0.65, 0, 0.35, 1) both; }
+@keyframes theme-reveal { from { clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 0%)); } to { clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 0%)); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-new(root) { animation: none; } }
+@keyframes admin-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes route-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+/* Media library (Drive-style) */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-in { from { opacity: 0; transform: scale(0.97) translateY(-2px); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Error pages */
+.err-grid { background-image: radial-gradient(#e9e9e9 1px, transparent 1px); background-size: 22px 22px; }
+.dark .err-grid { background-image: radial-gradient(#262626 1px, transparent 1px); }
+.err-rise { animation: err-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.err-route { stroke-dasharray: 520; stroke-dashoffset: 520; animation: err-draw 2.4s cubic-bezier(0.65, 0, 0.35, 1) 0.3s forwards; }
+.err-ping { transform-box: fill-box; transform-origin: center; animation: err-ping 2s ease-out infinite; }
+.err-float { animation: err-float 3s ease-in-out infinite; }
+.err-shadow { transform-box: fill-box; transform-origin: center; animation: err-shadow 3s ease-in-out infinite; }
+.err-blink { animation: err-blink 1.6s steps(2, jump-none) infinite; }
+.err-blink-fast { animation: err-blink 0.45s steps(2, jump-none) infinite; }
+.err-shake { animation: err-shake 2.6s ease-in-out infinite; }
+.err-smoke { transform-box: fill-box; transform-origin: center; animation: err-smoke 2.7s ease-out infinite; opacity: 0; }
+.err-swing { animation: err-swing 2.8s ease-in-out infinite; }
+.err-spin { animation: err-spin 9s linear infinite; }
+@keyframes err-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes err-draw { to { stroke-dashoffset: 0; } }
+@keyframes err-ping { from { transform: scale(1); opacity: 0.5; } to { transform: scale(3); opacity: 0; } }
+@keyframes err-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes err-shadow { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(0.7); opacity: 0.6; } }
+@keyframes err-blink { 0% { opacity: 1; } 100% { opacity: 0.25; } }
+@keyframes err-shake { 0%, 86%, 100% { transform: none; } 88% { transform: translateX(-3px); } 90% { transform: translateX(3px); } 92% { transform: translateX(-2px); } 94% { transform: translateX(2px); } }
+@keyframes err-smoke { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-80px) scale(1.4); } }
+@keyframes err-swing { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes err-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .err-route { animation: none; stroke-dashoffset: 0; }
+  .err-ping, .err-float, .err-shadow, .err-blink, .err-blink-fast, .err-shake, .err-smoke, .err-swing, .err-spin, .err-rise { animation: none; }
 }

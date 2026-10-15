@@ -304,3 +304,51 @@
 .story-editor .ProseMirror .callout-body > p { padding-top: 0; }
 .story-editor .ProseMirror .gapcursor::after { border-top-color: #242424; }
 .story-editor .ProseMirror li[data-type='taskItem'] > label input { cursor: pointer; }
+
+/* ── Dark theme ──────────────────────────────────────────────────────────── */
+.dark {
+  --story-ink: #e6e6e6;
+  --story-soft: #a8a8a8;
+  --story-faint: #262626;
+  --story-line: #333333;
+  --story-mark: #1e4422;
+}
+.dark .blog-ui, .dark .story { color: var(--story-ink); }
+.dark .story pre { background: #1b1b1b; border-color: #2e2e2e; }
+.dark .story .hljs-keyword, .dark .story .hljs-selector-tag, .dark .story .hljs-built_in { color: #d19af0; }
+.dark .story .hljs-string, .dark .story .hljs-attr { color: #98d982; }
+.dark .story .hljs-number, .dark .story .hljs-literal { color: #e5c07b; }
+.dark .story .hljs-comment, .dark .story .hljs-quote { color: #7f848e; }
+.dark .story .hljs-title, .dark .story .hljs-section { color: #6fb3f2; }
+.dark .story .hljs-type, .dark .story .hljs-variable { color: #e5c07b; }
+.dark .story .hljs-tag, .dark .story .hljs-name, .dark .story .hljs-attribute { color: #ef7b85; }
+.dark .story th { background: #1c1c1c; }
+.dark .story .content-card { background: #161616; }
+.dark .story a.content-card:hover { border-color: #444; box-shadow: none; }
+.dark .story .callout { background: #1c1c1c; }
+.dark .story .callout-info, .dark .story [data-variant='info'] { background: #15253a; }
+.dark .story .callout-tip, .dark .story [data-variant='tip'] { background: #16301a; }
+.dark .story .callout-warning, .dark .story [data-variant='warning'] { background: #33290f; }
+.dark .story .callout-success, .dark .story [data-variant='success'] { background: #16301a; }
+.dark .story .story-button-solid { background: #ececec; color: #121212; }
+.dark .story .story-button-outline { border-color: #d4d4d4; color: #e6e6e6; }
+.dark .story .task-item[data-checked='true'] .task-box { background: #e6e6e6; color: #121212; }
+.dark .story mark.top-hl { background: linear-gradient(transparent 60%, #5c4a14 60%); }
+.dark .checker {
+  background-color: #1a1a1a;
+  background-image:
+    linear-gradient(45deg, #222 25%, transparent 25%), linear-gradient(-45deg, #222 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #222 75%), linear-gradient(-45deg, transparent 75%, #222 75%);
+}
+
+/* Thin scrollbar for vertical panes (admin sidebar, lists) — subtle, stronger on hover. */
+.thin-scroll { scrollbar-width: thin; scrollbar-color: #d4d4d4 transparent; }
+.thin-scroll:hover { scrollbar-color: #b3b3b3 transparent; }
+.thin-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.thin-scroll:hover::-webkit-scrollbar-thumb { background-color: #bdbdbd; }
+.dark .thin-scroll { scrollbar-color: #3a3a3a transparent; }
+.dark .thin-scroll:hover { scrollbar-color: #555555 transparent; }
+.dark .thin-scroll::-webkit-scrollbar-thumb { background-color: #333333; }
+.dark .thin-scroll:hover::-webkit-scrollbar-thumb { background-color: #555555; }

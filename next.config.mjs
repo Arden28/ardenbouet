@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Separate build output (e.g. a local production build next to `next dev`).
+    distDir: process.env.NEXT_DIST_DIR || '.next',
     // output: 'export',
     images: { unoptimized: true },
     async redirects() {

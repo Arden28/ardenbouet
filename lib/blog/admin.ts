@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { docStats, firstParagraph, isDoc, slugify, type PMNode } from './doc';
 
 /** Static routes under /blog that a post slug must not shadow. */
-export const RESERVED_SLUGS = new Set(['search', 'subscribe', 'reading-list', 'tag', 'series', 'rss.xml', 'new']);
+export const RESERVED_SLUGS = new Set(['search', 'subscribe', 'reading-list', 'tag', 'series', 'author', 'rss.xml', 'new']);
 
 export type EditorPost = Omit<Post, 'createdAt' | 'updatedAt' | 'publishedAt' | 'scheduledAt' | 'newsletterSentAt'> & {
   createdAt: string;
@@ -66,6 +66,7 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.language !== undefined) data.language = ['en', 'fr', 'both'].includes(String(body.language)) ? String(body.language) : 'en';
   if (body.featured !== undefined) data.featured = !!body.featured;
   if (body.commentsOpen !== undefined) data.commentsOpen = !!body.commentsOpen;
+  if (body.donationsEnabled !== undefined) data.donationsEnabled = !!body.donationsEnabled;
   if (body.tags !== undefined) {
     const tags = Array.isArray(body.tags) ? body.tags : [];
     data.tags = Array.from(new Set(tags.map(t => String(t).trim().toLowerCase().slice(0, 40)).filter(Boolean))).slice(0, 5);
@@ -73,6 +74,11 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.seriesId !== undefined) {
     const id = optS(body.seriesId, 64);
     data.series = id ? { connect: { id } } : { disconnect: true };
+    // Joining a series appends the story as its last part (unless an explicit position is sent).
+    if (id && id !== current.seriesId && body.seriesOrder === undefined) {
+      const last = await prisma.post.aggregate({ where: { seriesId: id, NOT: { id: current.id } }, _max: { seriesOrder: true }, _count: true });
+      data.seriesOrder = last._count ? (last._max.seriesOrder ?? 0) + 1 : 0;
+    }
   }
   if (body.seriesOrder !== undefined) data.seriesOrder = Math.max(0, Math.floor(Number(body.seriesOrder) || 0));
 
@@ -86,7 +92,7 @@ export async function buildPostUpdate(current: Post, body: Record<string, unknow
   if (body.slug !== undefined) {
     const wanted = slugify(String(body.slug ?? ''));
     if (!wanted) throw new EditorError('Slug cannot be empty');
-    if (RESERVED_SLUGS.has(wanted)) throw new EditorError(`"${wanted}" is reserved — pick another slug`);
+    if (RESERVED_SLUGS.has(wanted)) throw new EditorError(`"${wanted}" is reserved, pick another slug`);
     const clash = await prisma.post.findUnique({ where: { slug: wanted }, select: { id: true } });
     if (clash && clash.id !== current.id) throw new EditorError('Another story already uses this slug');
     data.slug = wanted;
