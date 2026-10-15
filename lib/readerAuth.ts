@@ -22,8 +22,8 @@ const providers: NextAuthOptions['providers'] = [];
 // Each provider is enabled only when its OAuth app credentials are set. Order = button order.
 // Values are trimmed and unquoted: a secret pasted into a hosting dashboard as `"abc…"` (copied from a .env
 // file) otherwise reaches the provider with the quotes, which fails the token exchange as OAuthCallback.
-const clean = (v: string | undefined) => v?.trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
-const env = new Proxy(process.env, { get: (target, key: string) => clean(target[key]) }) as Record<string, string | undefined>;
+export const cleanEnv = (v: string | undefined) => v?.trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim() || undefined;
+const env = new Proxy(process.env, { get: (target, key: string) => cleanEnv(target[key]) }) as Record<string, string | undefined>;
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   providers.push(GoogleProvider({ clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }));
 }
@@ -74,6 +74,17 @@ export const readerAuthOptions: NextAuthOptions = {
   session: { strategy: 'jwt', maxAge: 60 * 60 * 24 * 60 },
   secret: process.env.NEXTAUTH_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS,
   pages: { signIn: '/signin', error: '/signin' },
+  // One readable line per failure in the server logs, including the provider's own reason
+  // (e.g. "incorrect_client_credentials", "State cookie was missing", "redirect_uri_mismatch").
+  logger: {
+    error(code, metadata) {
+      const m = metadata as { error?: { message?: string; cause?: { message?: string } }; providerId?: string; message?: string } | undefined;
+      const reason = [m?.error?.message, m?.error?.cause?.message, m?.message].filter(Boolean).join(' / ');
+      console.error(`[auth] ${code}${m?.providerId ? ` (${m.providerId})` : ''}: ${reason || JSON.stringify(metadata)?.slice(0, 500)}`);
+    },
+    warn(code) { console.warn(`[auth] warning: ${code}`); },
+    debug() { /* quiet */ },
+  },
   callbacks: {
     // Banned readers can't sign back in (next-auth shows ?error=AccessDenied on /signin).
     async signIn({ account }) {

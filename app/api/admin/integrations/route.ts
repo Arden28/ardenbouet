@@ -1,8 +1,10 @@
-// GET /api/admin/integrations — which third-party services are configured (booleans only, no secrets)
+// GET /api/admin/integrations — which third-party services are configured (no secrets). Sign-in entries
+// also verify OAuth credentials live against each provider (see lib/authCheck.ts).
 import { err, isAdminRequest, json } from '@/lib/apiUtil';
 import { readerProviderIds } from '@/lib/readerAuth';
 import { getR2Config } from '@/lib/getR2Config';
 import { prisma } from '@/lib/prisma';
+import { authChecks } from '@/lib/authCheck';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,7 @@ export async function GET() {
       { key: 'r2', name: 'Cloudflare R2', ok: !!(await getR2Config()), detail: 'Media library & downloads', env: 'R2_* or CLOUDFLARE_R2_* (+ R2_PUBLIC_URL)' },
       { key: 'google', name: 'Google Calendar', ok: !!cfg?.googleRefreshToken, detail: cfg?.googleRefreshToken ? 'Connected' : 'Connect in Bookings → Availability', env: 'GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET' },
       { key: 'auth', name: 'Reader sign-in', ok: readerProviderIds.some(p => p !== 'dev'), detail: readerProviderIds.filter(p => p !== 'dev').join(', ') || 'No providers', env: 'GOOGLE_*, GITHUB_*, LINKEDIN_*, DISCORD_*, TWITTER_*, FACEBOOK_*' },
+      ...(await authChecks()),
       { key: 'owner', name: 'Owner alerts', ok: !!(e.OWNER_EMAIL || e.CONTACT_EMAIL), detail: e.OWNER_EMAIL || e.CONTACT_EMAIL ? 'Emails you about bookings, messages, requests' : 'Set OWNER_EMAIL', env: 'OWNER_EMAIL' },
     ],
   });

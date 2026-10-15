@@ -22,8 +22,10 @@ export default async function SignInPage({ searchParams }: { searchParams: { cal
 
   const t = uiT(locale);
   const errKey = searchParams.error ? (`auth.error.${searchParams.error}` as const) : null;
+  // Show next-auth's error code with the generic message, so a failed sign-in can be diagnosed from a screenshot.
+  const errCode = (searchParams.error ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
   const error = errKey
-    ? (['auth.error.OAuthAccountNotLinked', 'auth.error.AccessDenied'].includes(errKey) ? t(errKey as 'auth.error.AccessDenied') : t('auth.error.default'))
+    ? (['auth.error.OAuthAccountNotLinked', 'auth.error.AccessDenied'].includes(errKey) ? t(errKey as 'auth.error.AccessDenied') : `${t('auth.error.default')} (${errCode || 'unknown'})`)
     : undefined;
 
   return (
