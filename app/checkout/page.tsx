@@ -5,6 +5,7 @@ import { getContentBundle } from '@/lib/blog/queries';
 import { getLocale, lhref } from '@/lib/i18n/server';
 import { localize } from '@/lib/i18n/content';
 import { uiT } from '@/lib/i18n/ui';
+import { findCode, publicProduct } from '@/lib/publicContent';
 import CheckoutClient, { type MethodId } from './CheckoutClient';
 
 export const dynamic = 'force-dynamic';
@@ -37,5 +38,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: { p
     );
   }
 
-  return <CheckoutClient product={localize(raw, locale)} methods={enabledMethods()} promo={(searchParams.ref ?? searchParams.code ?? '').toUpperCase()} />;
+  // Only public fields reach the browser (no file URL, no promo codes). A ?code=/?ref= link is checked here.
+  const initialDiscount = findCode(raw, searchParams.ref ?? searchParams.code ?? '');
+  return <CheckoutClient product={publicProduct(localize(raw, locale))} methods={enabledMethods()} initialDiscount={initialDiscount} />;
 }

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { localCharge, quote } from '@/lib/checkoutPrice';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY ?? '';
 
 export async function POST(req: NextRequest) {
-  const { reference, productId, productTitle, amount, currency, customerName, customerEmail } = await req.json();
+  const { reference, productId, code, customerName, customerEmail } = await req.json();
   if (!reference) return NextResponse.json({ error: 'Missing reference' }, { status: 400 });
 
   const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
@@ -17,7 +18,19 @@ export async function POST(req: NextRequest) {
   }
 
   const paidAmount = (json.data.amount ?? 0) / 100;
-  const paidCurrency = (json.data.currency ?? currency ?? 'NGN').toUpperCase();
+  const paidCurrency = String(json.data.currency ?? '').toUpperCase();
+
+  // What was paid must cover the server's price for this product (+ promo code) in the charged currency.
+  const q = await quote(productId, code);
+  if (!q) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+  const expected = Math.round(localCharge(q, paidCurrency || 'NGN'));
+  if (!paidCurrency || paidAmount + 1 < expected) {
+    console.error('[paystack/verify] underpaid', { reference, paidAmount, paidCurrency, expected });
+    return NextResponse.json({ error: 'Payment does not match the price' }, { status: 402 });
+  }
+  // A reference can only ever pay for one product.
+  const existing = await prisma.order.findUnique({ where: { id: reference }, select: { productId: true } });
+  if (existing && existing.productId !== q.product.id) return NextResponse.json({ error: 'Reference already used' }, { status: 409 });
 
   await prisma.order.upsert({
     where: { id: reference },
@@ -26,8 +39,8 @@ export async function POST(req: NextRequest) {
       id: reference,
       customerName: customerName ?? json.data.customer?.name ?? '',
       customerEmail: customerEmail ?? json.data.customer?.email ?? '',
-      productId: productId ?? '',
-      productTitle: productTitle ?? '',
+      productId: q.product.id,
+      productTitle: q.product.title,
       amount: paidAmount,
       currency: paidCurrency,
       paymentRef: reference,

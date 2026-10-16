@@ -1,43 +1,29 @@
+// POST /api/checkout/paypal/capture { orderId } — captures a PayPal order this site created, and marks it
+// PAID only if PayPal captured the full stored amount in the stored currency.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-const {
-  PAYPAL_CLIENT_ID = '',
-  PAYPAL_CLIENT_SECRET = '',
-  PAYPAL_BASE = 'https://api-m.sandbox.paypal.com',
-} = process.env;
-
-async function getPayPalToken(): Promise<string> {
-  const creds = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-  const res = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: { Authorization: `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'grant_type=client_credentials',
-  });
-  const json = await res.json();
-  return json.access_token as string;
-}
+import { capturedAmount, coversOrder, getPayPalToken } from '@/lib/paypal';
 
 export async function POST(req: NextRequest) {
-  // client sends orderId (lowercase d)
-  const { orderId } = await req.json();
-  if (!orderId) return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
+  const { orderId } = await req.json().catch(() => ({}));
+  if (!orderId || typeof orderId !== 'string') return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.paymentProvider !== 'paypal') return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
   const token = await getPayPalToken();
-  const captureRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders/${orderId}/capture`, {
+  const captureRes = await fetch(`${process.env.PAYPAL_BASE || 'https://api-m.sandbox.paypal.com'}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    cache: 'no-store',
   });
   const json = await captureRes.json();
 
-  if (json.status !== 'COMPLETED') {
-    return NextResponse.json({ error: 'Capture failed', details: json }, { status: 402 });
+  if (!coversOrder(capturedAmount(json), order)) {
+    console.error('[paypal/capture] not captured in full', { orderId, status: json?.status });
+    return NextResponse.json({ error: 'Capture failed' }, { status: 402 });
   }
 
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { status: 'PAID' },
-  });
-
+  await prisma.order.update({ where: { id: order.id }, data: { status: 'PAID' } });
   return NextResponse.json({ ok: true });
 }

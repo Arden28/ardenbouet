@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { ContentBundle } from '@/app/admin/types';
+import { quote } from '@/lib/checkoutPrice';
 import { prisma } from '@/lib/prisma';
 
 const {
@@ -20,15 +20,14 @@ async function getPayPalToken(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const { amount, currency, productTitle, productId, customerName, customerEmail } = await req.json();
+  // The price comes from the server (product + optional promo code), never from the request body.
+  const { code, productId, customerName, customerEmail } = await req.json();
+  const q = await quote(productId, code);
+  if (!q) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
 
-  const row = await prisma.content.findUnique({ where: { id: 1 } });
-  const bundle = row?.data as ContentBundle | null;
-  const product = bundle?.products?.find(p => p.id === productId && p.status === 'published');
-
-  const curr = (currency ?? product?.currency ?? 'USD').toUpperCase();
-  const value = (amount ?? product?.price ?? 0).toFixed(2);
-  const title = productTitle ?? product?.title ?? '';
+  const curr = q.currency;
+  const value = q.amount.toFixed(2);
+  const title = q.product.title;
 
   const token = await getPayPalToken();
   const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
