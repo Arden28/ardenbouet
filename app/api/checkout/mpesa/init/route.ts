@@ -1,40 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import type { ContentBundle } from '@/app/admin/types';
+import { localCharge, quote } from '@/lib/checkoutPrice';
+import { darajaBase, getDarajaToken, stkPassword, stkTimestamp } from '@/lib/mpesa';
 
-const {
-  MPESA_CONSUMER_KEY = '',
-  MPESA_CONSUMER_SECRET = '',
-  MPESA_SHORTCODE = '',
-  MPESA_PASSKEY = '',
-  MPESA_CALLBACK_URL = '',
-} = process.env;
-
-async function getDarajaToken(): Promise<string> {
-  const creds = Buffer.from(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`).toString('base64');
-  const res = await fetch(
-    'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
-    { headers: { Authorization: `Basic ${creds}` } },
-  );
-  const json = await res.json();
-  return json.access_token as string;
-}
+const { MPESA_SHORTCODE = '', MPESA_CALLBACK_URL = '' } = process.env;
 
 export async function POST(req: NextRequest) {
-  const { phone, productId, productTitle, amount, amountKes, customerName, customerEmail } = await req.json();
+  const { phone, productId, code, customerName, customerEmail } = await req.json();
   if (!phone) return NextResponse.json({ error: 'Phone required' }, { status: 400 });
 
-  const row = await prisma.content.findUnique({ where: { id: 1 } });
-  const bundle = row?.data as ContentBundle | null;
-  const product = bundle?.products?.find(p => p.id === productId && p.status === 'published');
-  if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+  // The price comes from the server (product + optional promo code), never from the request body.
+  const q = await quote(productId, code);
+  if (!q) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+  const { product } = q;
 
   const token = await getDarajaToken();
-  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
-  const password = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString('base64');
-  const chargeKes = Math.round(amountKes ?? Math.ceil(product.price * 130));
+  const timestamp = stkTimestamp();
+  const password = stkPassword(timestamp);
+  const chargeKes = Math.ceil(localCharge(q, 'KES'));
 
-  const stkRes = await fetch('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+  const stkRes = await fetch(`${darajaBase()}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -48,7 +33,7 @@ export async function POST(req: NextRequest) {
       PhoneNumber: phone,
       CallBackURL: MPESA_CALLBACK_URL,
       AccountReference: product.slug,
-      TransactionDesc: productTitle ?? product.title,
+      TransactionDesc: product.title,
     }),
   });
 
@@ -63,9 +48,9 @@ export async function POST(req: NextRequest) {
     data: {
       customerName,
       customerEmail,
-      productId,
-      productTitle: productTitle ?? product.title,
-      amount: amount ?? product.price,
+      productId: product.id,
+      productTitle: product.title,
+      amount: chargeKes, // recorded in the currency actually charged
       currency: 'KES',
       paymentRef: checkoutRequestId,
       paymentProvider: 'mpesa',

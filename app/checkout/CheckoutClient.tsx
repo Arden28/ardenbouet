@@ -10,14 +10,16 @@ import { AlertCircle, ArrowLeft, CalendarDays, Check, ChevronDown, CreditCard, D
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import type { ShopProduct, DiscountCode } from '@/app/admin/types';
+import type { DiscountCode } from '@/app/admin/types';
+import type { PublicProduct as ShopProduct } from '@/lib/publicContent';
 import { formatPrice, CURRENCIES, LS_KEY, type CurrencyCode } from '@/lib/currency';
 import { useSite } from '@/components/site/SiteProviders';
 import type { UiKey, UiT } from '@/lib/i18n/ui';
 import { OWNER } from '@/lib/site';
 
 export type MethodId = 'stripe' | 'paystack' | 'mpesa' | 'paypal';
-type PayProps = { product: ShopProduct; name: string; email: string; finalPrice: number; display: CurrencyCode; ui: UiT; onSuccess: (ref: string) => void };
+// finalPrice is for display; the server prices every charge itself from the product and `code`.
+type PayProps = { product: ShopProduct; name: string; email: string; finalPrice: number; code?: string; display: CurrencyCode; ui: UiT; onSuccess: (ref: string) => void };
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -91,7 +93,7 @@ const methodName = (ui: UiT, m: MethodId) => ui(`co.method.${METHOD_KEY[m]}` as 
 const methodDetail = (ui: UiT, m: MethodId) => ui(`co.method.${METHOD_KEY[m]}Detail` as UiKey);
 
 // ─── Stripe ────────────────────────────────────────────────────────────────────
-function StripeCardForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+function StripeCardForm({ product, name, email, finalPrice, code, display, ui, onSuccess }: PayProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -106,7 +108,7 @@ function StripeCardForm({ product, name, email, finalPrice, display, ui, onSucce
       const res = await fetch('/api/checkout/stripe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
+        body: JSON.stringify({ productId: product.id, code, customerName: name, customerEmail: email }),
       });
       const { clientSecret, error: serverErr } = await res.json();
       if (serverErr) throw new Error(serverErr);
@@ -165,7 +167,7 @@ function waitForPaystack(maxMs = 6000): Promise<PaystackPopType | null> {
   });
 }
 
-function PaystackForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+function PaystackForm({ product, name, email, finalPrice, code, display, ui, onSuccess }: PayProps) {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +190,7 @@ function PaystackForm({ product, name, email, finalPrice, display, ui, onSuccess
       fetch('/api/checkout/paystack/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference, productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
+        body: JSON.stringify({ reference, productId: product.id, code, customerName: name, customerEmail: email }),
       })
         .then(r => r.json())
         .then(data => {
@@ -226,7 +228,7 @@ function PaystackForm({ product, name, email, finalPrice, display, ui, onSuccess
 }
 
 // ─── M-Pesa ────────────────────────────────────────────────────────────────────
-function MpesaForm({ product, name, email, finalPrice, display, ui, onSuccess }: PayProps) {
+function MpesaForm({ product, name, email, finalPrice, code, display, ui, onSuccess }: PayProps) {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -248,7 +250,7 @@ function MpesaForm({ product, name, email, finalPrice, display, ui, onSuccess }:
       const res = await fetch('/api/checkout/mpesa/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalized, productId: product.id, productTitle: product.title, amount: finalPrice, amountKes, currency: product.currency, customerName: name, customerEmail: email }),
+        body: JSON.stringify({ phone: normalized, productId: product.id, code, customerName: name, customerEmail: email }),
       });
       const { checkoutRequestId, error: initErr } = await res.json();
       if (initErr) throw new Error(initErr);
@@ -305,7 +307,7 @@ function MpesaForm({ product, name, email, finalPrice, display, ui, onSuccess }:
 }
 
 // ─── PayPal ────────────────────────────────────────────────────────────────────
-function PayPalSection({ product, name, email, finalPrice, ui, onSuccess }: PayProps) {
+function PayPalSection({ product, name, email, code, ui, onSuccess }: PayProps) {
   const [error, setError] = useState<string | null>(null);
   return (
     <div>
@@ -316,7 +318,7 @@ function PayPalSection({ product, name, email, finalPrice, ui, onSuccess }: PayP
           const res = await fetch('/api/checkout/paypal/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: finalPrice, currency: product.currency, productTitle: product.title, productId: product.id, customerName: name, customerEmail: email }),
+            body: JSON.stringify({ productId: product.id, code, customerName: name, customerEmail: email }),
           });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
@@ -326,7 +328,7 @@ function PayPalSection({ product, name, email, finalPrice, ui, onSuccess }: PayP
           const res = await fetch('/api/checkout/paypal/capture', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: data.orderID, productId: product.id, productTitle: product.title, amount: finalPrice, currency: product.currency, customerName: name, customerEmail: email }),
+            body: JSON.stringify({ orderId: data.orderID }),
           });
           const result = await res.json();
           if (result.ok) onSuccess(`paypal_${data.orderID}`);
@@ -353,15 +355,23 @@ function Cover({ product, className }: { product: ShopProduct; className: string
 
 function Summary({ product, display, setDisplay, finalPrice, discount, onApply, onRemove, ui }: {
   product: ShopProduct; display: CurrencyCode; setDisplay: (c: CurrencyCode) => void; finalPrice: number;
-  discount: DiscountCode | null; onApply: (code: string) => boolean; onRemove: () => void; ui: UiT;
+  discount: DiscountCode | null; onApply: (code: string) => Promise<boolean>; onRemove: () => void; ui: UiT;
 }) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [bad, setBad] = useState(false);
   const isService = product.category === 'service';
   const fmt = (n: number) => formatPrice(n, product.currency, display);
-  const apply = () => { if (!code.trim()) return; const ok = onApply(code); setBad(!ok); if (ok) setCode(''); };
-  const hasCodes = !!product.discountCodes?.length;
+  const [checking, setChecking] = useState(false);
+  const apply = async () => {
+    if (!code.trim() || checking) return;
+    setChecking(true);
+    const ok = await onApply(code);
+    setChecking(false);
+    setBad(!ok);
+    if (ok) setCode('');
+  };
+  const hasCodes = product.hasCodes;
 
   return (
     <div className="rounded-2xl border border-[#ececec] bg-white">
@@ -444,7 +454,7 @@ function Confirmation({ product, name, email, paymentRef, method, amount, token,
 }) {
   const { href, openBooking } = useSite();
   const isService = product.category === 'service';
-  const hasFile = !isService && !!product.fileUrl;
+  const hasFile = product.hasFile;
   const first = name.trim().split(/\s+/)[0] || name;
 
   return (
@@ -527,13 +537,13 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
   );
 }
 
-export default function CheckoutClient({ product, methods, promo }: { product: ShopProduct; methods: MethodId[]; promo: string }) {
+export default function CheckoutClient({ product, methods, initialDiscount }: { product: ShopProduct; methods: MethodId[]; initialDiscount: DiscountCode | null }) {
   const { ui, href, me, openBooking } = useSite();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [method, setMethod] = useState<MethodId | null>(methods[0] ?? null);
   const [display, setDisplayState] = useState<CurrencyCode>((CURRENCIES.find(c => c.code === product.currency.toUpperCase())?.code ?? 'USD') as CurrencyCode);
-  const [discount, setDiscount] = useState<DiscountCode | null>(() => product.discountCodes?.find(d => d.code.toUpperCase() === promo) ?? null);
+  const [discount, setDiscount] = useState<DiscountCode | null>(initialDiscount);
   const [done, setDone] = useState<{ ref: string; method: MethodId } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [fulfilled, setFulfilled] = useState(false);
@@ -554,10 +564,15 @@ export default function CheckoutClient({ product, methods, promo }: { product: S
     return +Math.max(0, product.price - discount.value).toFixed(2);
   }, [product, discount]);
 
-  const applyCode = (raw: string) => {
-    const match = product.discountCodes?.find(d => d.code.toUpperCase() === raw.trim().toUpperCase());
-    if (match) setDiscount(match);
-    return !!match;
+  // Codes are checked on the server one at a time; the list never reaches the browser.
+  const applyCode = async (raw: string) => {
+    try {
+      const res = await fetch('/api/checkout/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: product.id, code: raw }) });
+      if (!res.ok) return false;
+      const d = await res.json();
+      setDiscount(d.discount);
+      return true;
+    } catch { return false; }
   };
 
   const detailsValid = name.trim().length >= 2 && /^\S+@\S+\.\S+$/.test(email.trim());
@@ -565,22 +580,24 @@ export default function CheckoutClient({ product, methods, promo }: { product: S
   const handleSuccess = (ref: string) => {
     setDone({ ref, method: method! });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    fetch('/api/checkout/fulfill', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentRef: ref, productId: product.id, productTitle: product.title, customerName: name.trim(), customerEmail: email.trim(), amount: finalPrice, currency: product.currency }),
-    })
-      .then(r => r.json())
-      .then(data => { if (data.downloadToken) setToken(data.downloadToken); })
-      .catch(() => {})
-      .finally(() => setFulfilled(true));
+    // The server only fulfils confirmed payments; if a provider is still confirming, retry a few times.
+    const fulfil = async (attempt = 0): Promise<void> => {
+      try {
+        const res = await fetch('/api/checkout/fulfill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentRef: ref }) });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 202 && attempt < 5) { await new Promise(r => setTimeout(r, 2000 * (attempt + 1))); return fulfil(attempt + 1); }
+        if (data.downloadToken) setToken(data.downloadToken);
+      } catch { /* the receipt email still carries the link */ }
+      setFulfilled(true);
+    };
+    fulfil();
   };
 
   if (done) {
     return <Confirmation product={product} name={name} email={email.trim()} paymentRef={done.ref} method={done.method} amount={formatPrice(finalPrice, product.currency, display)} token={token} fulfilled={fulfilled} ui={ui} />;
   }
 
-  const payProps = { product, name: name.trim(), email: email.trim(), finalPrice, display, ui, onSuccess: handleSuccess };
+  const payProps = { product, name: name.trim(), email: email.trim(), finalPrice, code: discount?.code, display, ui, onSuccess: handleSuccess };
 
   return (
     <>
