@@ -4,36 +4,9 @@ import type { Experience, Project } from '@/app/admin/types';
 import { getContentBundle } from '@/lib/blog/queries';
 import { localize } from '@/lib/i18n/content';
 import type { Locale } from '@/lib/i18n/config';
-import type { UiT } from '@/lib/i18n/ui';
+import { experienceRange, nowYm, ym } from '@/lib/experienceDates';
 
-/** "2024-09" → months since year 0 (null when missing or malformed). */
-export function ym(v?: string): number | null {
-  const m = /^(\d{4})-(\d{1,2})$/.exec((v ?? '').trim());
-  if (!m) return null;
-  const month = Number(m[2]);
-  return month >= 1 && month <= 12 ? Number(m[1]) * 12 + (month - 1) : null;
-}
-const nowYm = () => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); };
-
-/** Inclusive month count, e.g. Sep 2024 → Mar 2025 = 7 months. */
-export function monthsBetween(start?: string, end?: string): number | null {
-  const s = ym(start);
-  if (s === null) return null;
-  const e = ym(end) ?? nowYm();
-  return e >= s ? e - s + 1 : null;
-}
-
-export function formatDuration(months: number | null, ui: UiT): string {
-  if (!months) return '';
-  const y = Math.floor(months / 12), m = months % 12;
-  return [y ? ui(y === 1 ? 'exp.year' : 'exp.years', { n: y }) : '', m ? ui(m === 1 ? 'exp.month' : 'exp.months', { n: m }) : ''].filter(Boolean).join(' ');
-}
-
-export function formatYm(v: string | undefined, locale: Locale): string {
-  const n = ym(v);
-  if (n === null) return '';
-  return new Date(Math.floor(n / 12), n % 12, 1).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: 'numeric' });
-}
+export * from '@/lib/experienceDates';
 
 export type TimelineSegment = { id: string; label: string; role: string; left: number; width: number; current: boolean; ongoing: boolean };
 export type Timeline = { segments: TimelineSegment[]; ticks: { year: number; left: number }[] };
@@ -41,7 +14,7 @@ export type Timeline = { segments: TimelineSegment[]; ticks: { year: number; lef
 /** Every dated experience as a segment on one shared axis (first start → now or last end). */
 export function careerTimeline(all: Experience[], currentId: string): Timeline | null {
   const dated = all
-    .map(e => ({ e, s: ym(e.startDate), end: ym(e.endDate) }))
+    .map(e => { const r = experienceRange(e); return { e, s: ym(r.start), end: ym(r.end) }; })
     .filter((x): x is { e: Experience; s: number; end: number | null } => x.s !== null);
   if (!dated.some(x => x.e.id === currentId)) return null;
   const min = Math.min(...dated.map(x => x.s));

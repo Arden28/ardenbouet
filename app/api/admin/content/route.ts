@@ -3,6 +3,8 @@ import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { DEFAULT_CONTENT } from '@/lib/defaultContent';
 import { prisma } from '@/lib/prisma'; // 1. Use static import
+import { withExperienceDates } from '@/lib/experience';
+import type { ContentBundle } from '@/app/admin/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,7 +37,9 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json(row.data, { status: 200 });
+    // Experiences saved before start/end months existed get them read from their old period text,
+    // so the editor opens pre-filled (they're stored on the next save).
+    return NextResponse.json(withExperienceDates(row.data as ContentBundle), { status: 200 });
   } catch (err) {
     console.error('GET /api/admin/content failed', err);
     return NextResponse.json({ error: 'DB error' }, { status: 500 });

@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, Check, MapPin } from 'lucide-react
 import { getLocale, lhref, alternates } from '@/lib/i18n/server';
 import { uiT } from '@/lib/i18n/ui';
 import { mdToSafeHtml } from '@/lib/mardown';
-import { careerTimeline, formatDuration, formatYm, loadExperience, monthsBetween } from '@/lib/experience';
+import { careerTimeline, experienceRange, formatDuration, formatYm, loadExperience, monthsBetween, periodLabel } from '@/lib/experience';
 import { Gallery } from '@/components/gallery/Gallery';
 import { BookCallButton } from '@/app/projects/[id]/BookCallButton';
 
@@ -35,16 +35,21 @@ export default async function ExperiencePage({ params }: { params: { id: string 
   if (!d) notFound();
   const ui = uiT(locale);
   const { experience: e, projects, newer, older, all } = d;
-  const months = monthsBetween(e.startDate, e.endDate);
+  // Structured dates when set, otherwise read from the period text ("Sept. 2024 ~ Mar 2025", "Sep 2024 – Present", …).
+  const range = experienceRange(e);
+  const ongoing = !!range.start && !range.end;
+  const months = monthsBetween(range.start, range.end);
   const duration = formatDuration(months, ui);
-  const from = formatYm(e.startDate, locale);
-  const to = e.startDate ? (e.endDate ? formatYm(e.endDate, locale) : ui('exp.present')) : '';
+  const from = formatYm(range.start, locale);
+  const to = range.start ? (range.end ? formatYm(range.end, locale) : ui('exp.present')) : '';
   const timeline = careerTimeline(all, e.id);
   const gallery = (e.gallery ?? []).filter(g => g.src).map(g => ({ src: g.src, alt: g.alt, caption: g.alt, kind: isVideo(g.src) ? 'video' as const : 'image' as const }));
   const tags = e.tags ?? [];
   const outcomes = e.outcomes ?? [];
   const bullets = e.bullets ?? [];
   const eyebrow = [e.type, e.location].filter(Boolean).join(' · ');
+  const period = periodLabel(e, locale, ui);
+  const periodOf = (x: typeof e) => periodLabel(x, locale, ui);
 
   const fact = (label: string, value: React.ReactNode) => (
     <div className="border-t border-[#ececec] py-4">
@@ -73,7 +78,7 @@ export default async function ExperiencePage({ params }: { params: { id: string 
           )}
           {e.logline && <p className="mt-6 max-w-[620px] font-story text-[22px] leading-[1.55] text-[#6b6b6b]">{e.logline}</p>}
           <div className="mt-7 flex flex-wrap gap-2">
-            {e.fromTo && <span className="rounded-full bg-[#f2f2f2] px-3.5 py-1.5 text-[13px] text-[#242424]">{e.fromTo}</span>}
+            {period && <span className="rounded-full bg-[#f2f2f2] px-3.5 py-1.5 text-[13px] text-[#242424]">{period}{duration ? ` · ${duration}` : ''}</span>}
             {e.place && <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f2f2f2] px-3.5 py-1.5 text-[13px] text-[#242424]"><MapPin className="h-3.5 w-3.5" /> {e.place}</span>}
             {projects.length > 0 && <span className="rounded-full bg-[#eef7ee] px-3.5 py-1.5 text-[13px] font-medium text-[#1a6b17]">{projects.length === 1 ? ui('exp.projectCount') : ui('exp.projectsCount', { n: projects.length })}</span>}
           </div>
@@ -93,10 +98,11 @@ export default async function ExperiencePage({ params }: { params: { id: string 
                   <p className="truncate text-[12px] text-[#9b9b9b]">{e.type}{e.location ? ` · ${e.location}` : ''}</p>
                 </div>
               </div>
+              {from ? (
               <div className="mt-7 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#9b9b9b]">{ui('exp.from')}</p>
-                  <p className="mt-1 font-story text-[24px] font-bold leading-none tracking-[-0.02em] text-[#242424]">{from || e.fromTo.split(/[–-]/)[0]?.trim() || '·'}</p>
+                  <p className="mt-1 font-story text-[24px] font-bold leading-none tracking-[-0.02em] text-[#242424]">{from}</p>
                 </div>
                 <svg viewBox="0 0 64 16" className="mb-1.5 h-4 w-14 text-[#c4c4c4]" fill="none" aria-hidden>
                   <path d="M1 8h54" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
@@ -104,9 +110,16 @@ export default async function ExperiencePage({ params }: { params: { id: string 
                 </svg>
                 <div className="text-right">
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#9b9b9b]">{ui('exp.to')}</p>
-                  <p className={`mt-1 font-story text-[24px] font-bold leading-none tracking-[-0.02em] ${e.startDate && !e.endDate ? 'text-[#1a8917]' : 'text-[#242424]'}`}>{to || e.fromTo.split(/[–-]/)[1]?.trim() || ui('exp.now')}</p>
+                  <p className={`mt-1 font-story text-[24px] font-bold leading-none tracking-[-0.02em] ${ongoing ? 'text-[#1a8917]' : 'text-[#242424]'}`}>{to}</p>
                 </div>
               </div>
+              ) : e.fromTo ? (
+                // Period text we couldn't read as dates: show it as written.
+                <div className="mt-7">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#9b9b9b]">{ui('exp.period')}</p>
+                  <p className="mt-1 font-story text-[20px] font-bold leading-snug tracking-[-0.01em] text-[#242424]">{e.fromTo}</p>
+                </div>
+              ) : null}
               {e.place && <p className="mt-6 flex items-center gap-1.5 text-[13px] text-[#6b6b6b]"><MapPin className="h-3.5 w-3.5" /> {e.place}</p>}
             </div>
             {/* perforation + stub */}
@@ -115,9 +128,18 @@ export default async function ExperiencePage({ params }: { params: { id: string 
               <span className="absolute -bottom-3 -left-[13px] h-6 w-6 rounded-full bg-white ring-1 ring-[#ececec]" />
             </div>
             <div className="flex w-[120px] shrink-0 flex-col items-center justify-center bg-[#fafafa] px-3 text-center">
-              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#9b9b9b]">{ui('exp.duration')}</p>
-              <p className="mt-2 font-story text-[26px] font-bold leading-[1.05] tracking-[-0.02em] text-[#242424]">{duration || '·'}</p>
-              {projects.length > 0 && <p className="mt-3 text-[12px] text-[#6b6b6b]">{projects.length === 1 ? ui('exp.projectCount') : ui('exp.projectsCount', { n: projects.length })}</p>}
+              {duration ? (
+                <>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#9b9b9b]">{ui('exp.duration')}</p>
+                  <p className="mt-2 font-story text-[26px] font-bold leading-[1.05] tracking-[-0.02em] text-[#242424]">{duration}</p>
+                  {projects.length > 0 && <p className="mt-3 text-[12px] text-[#6b6b6b]">{projects.length === 1 ? ui('exp.projectCount') : ui('exp.projectsCount', { n: projects.length })}</p>}
+                </>
+              ) : (
+                <>
+                  <p className="font-story text-[34px] font-bold leading-none text-[#242424]">{projects.length}</p>
+                  <p className="mt-2 text-[12px] text-[#6b6b6b]">{projects.length === 1 ? ui('exp.projectCount').replace(/^1s*/, '') : ui('exp.projectsCount', { n: '' }).trim()}</p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -199,7 +221,7 @@ export default async function ExperiencePage({ params }: { params: { id: string 
             {fact(ui('exp.company'), e.companyUrl
               ? <a href={e.companyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[#1a8917] hover:underline">{e.title} <ArrowUpRight className="h-3.5 w-3.5" /></a>
               : e.title)}
-            {e.fromTo && fact(ui('exp.period'), e.fromTo)}
+            {period && fact(ui('exp.period'), period)}
             {duration && fact(ui('exp.duration'), duration)}
             {fact(ui('exp.type'), e.type)}
             {e.location && fact(ui('exp.mode'), e.location)}
@@ -282,14 +304,14 @@ export default async function ExperiencePage({ params }: { params: { id: string 
             <Link href={lhref(`/experience/${older.id}`)} className="group rounded-2xl border border-[#ececec] p-6 transition-colors hover:border-[#242424]">
               <span className="flex items-center gap-1.5 text-[13px] text-[#6b6b6b]"><ArrowLeft className="h-4 w-4" /> {ui('exp.prev')}</span>
               <span className="mt-2 block text-[20px] font-bold tracking-[-0.01em] text-[#242424]">{older.job || older.title}</span>
-              <span className="text-[14px] text-[#6b6b6b]">{older.job ? older.title : ''}{older.fromTo ? ` · ${older.fromTo}` : ''}</span>
+              <span className="text-[14px] text-[#6b6b6b]">{older.job ? older.title : ''}{periodOf(older) ? ` · ${periodOf(older)}` : ''}</span>
             </Link>
           ) : <span />}
           {newer && (
             <Link href={lhref(`/experience/${newer.id}`)} className="group rounded-2xl border border-[#ececec] p-6 text-right transition-colors hover:border-[#242424]">
               <span className="flex items-center justify-end gap-1.5 text-[13px] text-[#6b6b6b]">{ui('exp.next')} <ArrowRight className="h-4 w-4" /></span>
               <span className="mt-2 block text-[20px] font-bold tracking-[-0.01em] text-[#242424]">{newer.job || newer.title}</span>
-              <span className="text-[14px] text-[#6b6b6b]">{newer.job ? newer.title : ''}{newer.fromTo ? ` · ${newer.fromTo}` : ''}</span>
+              <span className="text-[14px] text-[#6b6b6b]">{newer.job ? newer.title : ''}{periodOf(newer) ? ` · ${periodOf(newer)}` : ''}</span>
             </Link>
           )}
         </nav>

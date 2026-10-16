@@ -6,7 +6,7 @@ import { ArrowRight, Download, MapPin } from 'lucide-react';
 import { useSite } from '@/components/site/SiteProviders';
 import { OWNER } from '@/lib/site';
 
-export type ExpItem = { id: string; title: string; job: string; fromTo: string; type: string; location?: string; logline?: string; outcomes: string[]; tags: string[]; logoUrl?: string; projects: number };
+export type ExpItem = { id: string; title: string; job: string; fromTo: string; duration?: string; type: string; location?: string; logline?: string; outcomes: string[]; tags: string[]; logoUrl?: string; projects: number };
 
 const VISIBLE = 4;
 
@@ -32,7 +32,7 @@ export function Experience({ items }: { items: ExpItem[] }) {
             <li key={e.id} className={`grid gap-2 py-8 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-8 ${i ? 'border-t border-[#ececec]' : 'pt-0'}`}>
               <div className="text-[13px] text-[#6b6b6b]">
                 <p className="font-medium text-[#242424]">{e.fromTo}</p>
-                <p className="mt-0.5">{e.type}</p>
+                <p className="mt-0.5">{[e.duration, e.type].filter(Boolean).join(' · ')}</p>
               </div>
               <div className="min-w-0">
                 <h3 className="flex items-center gap-3 text-[21px] font-bold leading-7 tracking-[-0.01em] text-[#242424]">

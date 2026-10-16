@@ -4,6 +4,8 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import type { ContentBundle } from '@/app/admin/types';
 import { collectContentRefs, firstImage, type ContentRef, type PMNode, isDoc } from './doc';
+import { periodLabel } from '@/lib/experienceDates';
+import { uiT } from '@/lib/i18n/ui';
 
 export type PostCard = {
   id: string;
@@ -291,7 +293,7 @@ export async function resolveEmbeds(refs: ContentRef[]): Promise<EmbedMap> {
   for (const e of bundle.experiences ?? []) {
     out[`experience:${e.id}`] = {
       kind: 'experience', id: e.id, title: e.title, subtitle: e.logline || e.job,
-      image: e.poster, period: e.fromTo, bullets: (e.outcomes?.length ? e.outcomes : e.bullets ?? []).slice(0, 3),
+      image: e.poster || e.logoUrl, period: periodLabel(e, 'en', uiT('en')), bullets: (e.outcomes?.length ? e.outcomes : e.bullets ?? []).slice(0, 3),
     };
   }
 

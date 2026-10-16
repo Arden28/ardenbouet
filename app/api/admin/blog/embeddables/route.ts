@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { err, isAdminRequest, json } from '@/lib/apiUtil';
 import { getContentBundle } from '@/lib/blog/queries';
+import { periodLabel } from '@/lib/experienceDates';
+import { uiT } from '@/lib/i18n/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +27,7 @@ export async function GET() {
       meta: p.metric || (p.tech ?? []).slice(0, 3).join(' · '),
     })),
     experience: (bundle.experiences ?? []).map(e => ({
-      id: e.id, title: e.title, subtitle: e.logline || e.job, image: e.poster, meta: e.fromTo,
+      id: e.id, title: e.title, subtitle: e.logline || e.job, image: e.poster, meta: periodLabel(e, 'en', uiT('en')),
     })),
     post: posts.map(p => ({
       id: p.id, title: p.title || 'Untitled', subtitle: p.subtitle, image: p.coverUrl ?? undefined,

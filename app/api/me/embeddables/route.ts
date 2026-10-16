@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { json } from '@/lib/apiUtil';
 import { requireWriter } from '@/lib/meApi';
 import { getContentBundle, visibleWhere } from '@/lib/blog/queries';
+import { periodLabel } from '@/lib/experienceDates';
+import { uiT } from '@/lib/i18n/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +23,7 @@ export async function GET() {
       id: p.id, title: p.title, subtitle: p.tagline, image: p.cover, meta: [p.category, p.priceLabel].filter(Boolean).join(' · '),
     })),
     project: (bundle.projects ?? []).map(p => ({ id: p.id, title: p.title, subtitle: p.description, image: p.logoUrl, meta: p.metric })),
-    experience: (bundle.experiences ?? []).map(e => ({ id: e.id, title: e.title, subtitle: e.logline || e.job, image: e.poster, meta: e.fromTo })),
+    experience: (bundle.experiences ?? []).map(e => ({ id: e.id, title: e.title, subtitle: e.logline || e.job, image: e.poster, meta: periodLabel(e, 'en', uiT('en')) })),
     post: posts.map(p => ({ id: p.id, title: p.title, subtitle: p.subtitle, image: p.coverUrl ?? undefined, meta: `${p.readingMinutes} min read` })),
   });
 }
