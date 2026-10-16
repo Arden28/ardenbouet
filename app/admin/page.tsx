@@ -7,21 +7,22 @@ import {
   ShoppingBag, MessageCircle, CalendarDays, Mail, Feather, Users, Eye, AlertCircle, ArrowDownUp,
 } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { formatBreakdown, formatMoney, formatSummary, type MoneySummary } from '@/lib/money';
 import { BarChart } from '@/components/admin/BarChart';
 import { Spinner } from '@/components/admin/ui';
 import { openMediaPicker } from '@/components/admin/media/MediaPicker';
 import '@/app/blog/story.css';
 
 type Dash = {
-  range: string; unit: 'day' | 'month';
+  range: string; unit: 'day' | 'month'; baseCurrency: string;
   kpis: {
-    revenue: { value: number; delta: number | null; orders: number; donations: number };
+    revenue: { value: number; summary: MoneySummary; delta: number | null; orders: number; donations: number };
     pendingOrders: number;
     audience: { readers: number; readersDelta: number | null; subscribers: number; subscribersDelta: number | null; activeSubscribers: number };
     blog: { posts: number; published: number; views: number; claps: number; responses: number; responsesDelta: number | null; hidden: number; review: number };
     bookings: { upcoming: number; created: number };
     messages: { unread: number; created: number };
-    crm: { activeProjects: number; pipeline: number; openInvoices: number; openAmount: number; overdue: number };
+    crm: { activeProjects: number; pipeline: MoneySummary; openInvoices: number; openAmount: MoneySummary; overdue: number };
     writerRequests: number;
   };
   series: { revenue: { key: string; value: number }[]; audience: { key: string; value: number }[] };
@@ -30,7 +31,10 @@ type Dash = {
 };
 
 const RANGES = [['7d', '7 days'], ['30d', '30 days'], ['90d', '90 days'], ['12m', '12 months'], ['all', 'All time']] as const;
-const money = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n >= 1000 ? 0 : 2 }).format(n);
+/** Chart values are converted to the base currency. */
+const money = (n: number) => formatMoney(n, 'USD');
+/** Under a money KPI: the exact per-currency amounts when the headline is a converted total. */
+const breakdown = (s: MoneySummary) => (s.byCurrency.length > 1 ? formatBreakdown(s) : undefined);
 const compact = (n: number) => new Intl.NumberFormat('en-US', { notation: n >= 10_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n);
 const ago = (iso: string) => {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -49,7 +53,7 @@ function Delta({ v }: { v: number | null }) {
   );
 }
 
-function Kpi({ label, value, sub, delta, href, icon: Icon }: { label: string; value: string; sub?: string; delta?: number | null; href?: string; icon: typeof Eye }) {
+function Kpi({ label, value, sub, note, delta, href, icon: Icon }: { label: string; value: string; sub?: string; note?: string; delta?: number | null; href?: string; icon: typeof Eye }) {
   const inner = (
     <>
       <div className="flex items-center justify-between">
@@ -57,6 +61,7 @@ function Kpi({ label, value, sub, delta, href, icon: Icon }: { label: string; va
         {delta !== undefined && <Delta v={delta} />}
       </div>
       <p className="mt-3 text-[30px] font-semibold tabular-nums tracking-[-0.02em] text-[#242424]">{value}</p>
+      {note && <p className="mt-1 truncate text-[12px] font-medium text-[#6b6b6b]" title={`Converted at fixed rates. Exact amounts: ${note}`}>{note}</p>}
       {sub && <p className="mt-0.5 text-[12px] text-[#9b9b9b]">{sub}</p>}
     </>
   );
@@ -127,12 +132,12 @@ export default function Dashboard() {
         {!d || !k ? <Spinner /> : (
           <>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Kpi icon={ShoppingBag} label="Revenue" value={money(k.revenue.value)} delta={k.revenue.delta} sub={`${k.revenue.orders} orders · ${k.revenue.donations} donations`} href="/admin/orders" />
+              <Kpi icon={ShoppingBag} label="Revenue" value={formatSummary(k.revenue.summary)} note={breakdown(k.revenue.summary)} delta={k.revenue.delta} sub={`${k.revenue.orders} orders · ${k.revenue.donations} donations`} href="/admin/orders" />
               <Kpi icon={Users} label="New readers" value={compact(k.audience.readers)} delta={k.audience.readersDelta} sub={`${k.audience.subscribers} new subscribers · ${k.audience.activeSubscribers} total`} href="/admin/users" />
               <Kpi icon={MessageCircle} label="Responses" value={compact(k.blog.responses)} delta={k.blog.responsesDelta} sub={`${compact(k.blog.claps)} claps · ${compact(k.blog.views)} views all-time`} href="/admin/blog/comments" />
               <Kpi icon={CalendarDays} label="Upcoming calls" value={String(k.bookings.upcoming)} sub={`${k.bookings.created} booked in range`} href="/admin/bookings" />
-              <Kpi icon={Receipt} label="Outstanding invoices" value={money(k.crm.openAmount)} sub={`${k.crm.openInvoices} open${k.crm.overdue ? ` · ${k.crm.overdue} overdue` : ''}`} href="/admin/crm?tab=invoices" />
-              <Kpi icon={FolderKanban} label="CRM pipeline" value={money(k.crm.pipeline)} sub={`${k.crm.activeProjects} active projects`} href="/admin/crm?tab=projects" />
+              <Kpi icon={Receipt} label="Outstanding invoices" value={formatSummary(k.crm.openAmount)} note={breakdown(k.crm.openAmount)} sub={`${k.crm.openInvoices} open${k.crm.overdue ? ` · ${k.crm.overdue} overdue` : ''}`} href="/admin/crm?tab=invoices" />
+              <Kpi icon={FolderKanban} label="CRM pipeline" value={formatSummary(k.crm.pipeline)} note={breakdown(k.crm.pipeline)} sub={`${k.crm.activeProjects} active projects`} href="/admin/crm?tab=projects" />
               <Kpi icon={PenSquare} label="Stories" value={String(k.blog.posts)} sub={`${k.blog.published} published in range`} href="/admin/blog" />
               <Kpi icon={Mail} label="Messages" value={String(k.messages.created)} sub={`${k.messages.unread} unread`} href="/admin/messages" />
             </div>
@@ -141,7 +146,7 @@ export default function Dashboard() {
               <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
                 <h3 className="text-[14px] font-semibold text-[#242424]">Revenue</h3>
                 <p className="mb-4 text-[12px] text-[#9b9b9b]">Paid orders + donations to you, per {d.unit}</p>
-                <BarChart data={d.series.revenue} format={money} label="Revenue" unit={d.unit} />
+                <BarChart data={d.series.revenue} format={money} label={`Revenue (${d.baseCurrency}, converted)`} unit={d.unit} />
               </section>
               <section className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
                 <h3 className="text-[14px] font-semibold text-[#242424]">Audience growth</h3>

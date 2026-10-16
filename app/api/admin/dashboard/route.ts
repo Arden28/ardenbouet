@@ -1,6 +1,7 @@
 // GET /api/admin/dashboard?range=7d|30d|90d|12m|all — KPIs, time series and activity for /admin
 import { prisma } from '@/lib/prisma';
 import { err, isAdminRequest, json } from '@/lib/apiUtil';
+import { formatMoney, summarize, toBase } from '@/lib/money';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,10 +42,10 @@ export async function GET(req: Request) {
     latest,
   ] = await Promise.all([
     prisma.order.findMany({ where: { status: 'PAID', createdAt: inRange }, select: { amount: true, currency: true, createdAt: true } }),
-    prevSince ? prisma.order.aggregate({ where: { status: 'PAID', createdAt: { gte: prevSince, lt: since } }, _sum: { amount: true } }) : null,
+    prevSince ? prisma.order.findMany({ where: { status: 'PAID', createdAt: { gte: prevSince, lt: since } }, select: { amount: true, currency: true } }) : null,
     prisma.order.count({ where: { status: 'PENDING' } }),
-    prisma.donation.findMany({ where: { status: 'SUCCEEDED', createdAt: inRange }, select: { amount: true, feeAmount: true, recipientId: true, createdAt: true } }),
-    prevSince ? prisma.donation.aggregate({ where: { status: 'SUCCEEDED', recipientId: null, createdAt: { gte: prevSince, lt: since } }, _sum: { amount: true } }) : null,
+    prisma.donation.findMany({ where: { status: 'SUCCEEDED', createdAt: inRange }, select: { amount: true, currency: true, feeAmount: true, recipientId: true, createdAt: true } }),
+    prevSince ? prisma.donation.findMany({ where: { status: 'SUCCEEDED', recipientId: null, createdAt: { gte: prevSince, lt: since } }, select: { amount: true, currency: true } }) : null,
     prisma.reader.findMany({ where: { createdAt: inRange }, select: { createdAt: true } }),
     prevSince ? prisma.reader.count({ where: { createdAt: { gte: prevSince, lt: since } } }) : null,
     prisma.subscriber.findMany({ where: { status: 'ACTIVE', confirmedAt: inRange }, select: { confirmedAt: true } }),
@@ -62,8 +63,8 @@ export async function GET(req: Request) {
     prisma.message.count({ where: { read: false, archived: false } }),
     prisma.message.count({ where: { createdAt: inRange } }),
     prisma.crmProject.count({ where: { status: { in: ['ACTIVE', 'REVIEW'] } } }),
-    prisma.crmProject.aggregate({ where: { status: { in: ['DISCOVERY', 'PROPOSAL', 'ACTIVE', 'REVIEW'] } }, _sum: { budget: true } }),
-    prisma.crmInvoice.aggregate({ where: { status: { in: ['SENT', 'OVERDUE'] } }, _sum: { amount: true }, _count: { _all: true } }),
+    prisma.crmProject.findMany({ where: { status: { in: ['DISCOVERY', 'PROPOSAL', 'ACTIVE', 'REVIEW'] }, budget: { not: null } }, select: { budget: true, currency: true } }),
+    prisma.crmInvoice.findMany({ where: { status: { in: ['SENT', 'OVERDUE'] } }, select: { amount: true, currency: true } }),
     prisma.crmInvoice.count({ where: { OR: [{ status: 'OVERDUE' }, { status: 'SENT', dueAt: { lt: now } }] } }),
     prisma.writerRequest.count({ where: { status: 'PENDING' } }),
     prisma.post.count({ where: { status: 'REVIEW' } }),
@@ -81,22 +82,24 @@ export async function GET(req: Request) {
     ]),
   ]);
 
-  // Revenue (USD-equivalent display uses the order's own currency; most orders are USD)
+  // Revenue: each order/donation keeps its currency. Totals are summed per currency and converted to the
+  // base currency (fixed rates) only for the headline, the period comparison and the chart.
   const ownerDonations = donations.filter(d => !d.recipientId);
-  const revenue = paidOrders.reduce((s, o) => s + o.amount, 0) + ownerDonations.reduce((s, d) => s + d.amount / 100, 0);
-  const prevRevenue = prevSince ? (prevPaid?._sum.amount ?? 0) + (prevDonations?._sum.amount ?? 0) / 100 : null;
+  const donationRows = (rows: { amount: number; currency: string }[]) => rows.map(d => ({ amount: d.amount / 100, currency: d.currency })); // cents
+  const revenue = summarize([...paidOrders, ...donationRows(ownerDonations)]);
+  const prevRevenue = prevSince ? summarize([...(prevPaid ?? []), ...donationRows(prevDonations ?? [])]).base : null;
 
   const keys = buckets(since, now, unit);
   const rev = new Map(keys.map(k => [k, 0]));
-  for (const o of paidOrders) rev.set(bucketKey(o.createdAt, unit), (rev.get(bucketKey(o.createdAt, unit)) ?? 0) + o.amount);
-  for (const d of ownerDonations) rev.set(bucketKey(d.createdAt, unit), (rev.get(bucketKey(d.createdAt, unit)) ?? 0) + d.amount / 100);
+  for (const o of paidOrders) rev.set(bucketKey(o.createdAt, unit), (rev.get(bucketKey(o.createdAt, unit)) ?? 0) + (toBase(o.amount, o.currency) ?? 0));
+  for (const d of ownerDonations) rev.set(bucketKey(d.createdAt, unit), (rev.get(bucketKey(d.createdAt, unit)) ?? 0) + (toBase(d.amount / 100, d.currency) ?? 0));
   const aud = new Map(keys.map(k => [k, 0]));
   for (const r of readersNew) aud.set(bucketKey(r.createdAt, unit), (aud.get(bucketKey(r.createdAt, unit)) ?? 0) + 1);
   for (const s of subsNew) if (s.confirmedAt) aud.set(bucketKey(s.confirmedAt, unit), (aud.get(bucketKey(s.confirmedAt, unit)) ?? 0) + 1);
 
   const [orders, comments, bookings, messages, requests, subscribers] = latest;
   const activity = [
-    ...orders.map(o => ({ type: 'order', at: o.createdAt, title: `${o.customerName} · ${o.productTitle}`, meta: `${o.currency} ${o.amount.toFixed(2)} · ${o.status.toLowerCase()}`, href: '/admin/orders' })),
+    ...orders.map(o => ({ type: 'order', at: o.createdAt, title: `${o.customerName} · ${o.productTitle}`, meta: `${formatMoney(o.amount, o.currency)} · ${o.status.toLowerCase()}`, href: '/admin/orders' })),
     ...comments.map(c => ({ type: 'response', at: c.createdAt, title: `${c.reader?.name ?? 'Reader'} on “${c.post.title}”`, meta: c.body.slice(0, 90), href: '/admin/blog/comments' })),
     ...bookings.map(b => ({ type: 'booking', at: b.createdAt, title: `${b.name} · ${b.meetingType.title}`, meta: `${b.status === 'CANCELLED' ? 'cancelled · ' : ''}${b.start.toISOString()}`, href: '/admin/bookings' })),
     ...messages.map(m => ({ type: 'message', at: m.createdAt, title: m.name, meta: m.body.slice(0, 90), href: '/admin/messages', unread: !m.read })),
@@ -109,14 +112,19 @@ export async function GET(req: Request) {
   return json({
     range: rangeKey,
     unit,
+    baseCurrency: revenue.baseCurrency,
     kpis: {
-      revenue: { value: revenue, delta: delta(revenue, prevRevenue), orders: paidOrders.length, donations: ownerDonations.length },
+      revenue: { value: revenue.base, summary: revenue, delta: delta(revenue.base, prevRevenue), orders: paidOrders.length, donations: ownerDonations.length },
       pendingOrders,
       audience: { readers: readersNew.length, readersDelta: delta(readersNew.length, prevReaders), subscribers: subsNew.length, subscribersDelta: delta(subsNew.length, prevSubs), activeSubscribers: subsActive },
       blog: { posts, published: postsPublished, views: views._sum.views ?? 0, claps: claps._sum.count ?? 0, responses, responsesDelta: delta(responses, prevResponses), hidden: responsesPendingWriters, review: reviewQueue },
       bookings: { upcoming: bookingsUpcoming, created: bookingsNew },
       messages: { unread: messagesUnread, created: messagesNew },
-      crm: { activeProjects: crmActive, pipeline: crmPipeline._sum.budget ?? 0, openInvoices: invoicesOpen._count._all, openAmount: invoicesOpen._sum.amount ?? 0, overdue: invoicesOverdue },
+      crm: {
+        activeProjects: crmActive, overdue: invoicesOverdue, openInvoices: invoicesOpen.length,
+        pipeline: summarize(crmPipeline.map(p => ({ amount: p.budget ?? 0, currency: p.currency }))),
+        openAmount: summarize(invoicesOpen),
+      },
       writerRequests,
     },
     series: {

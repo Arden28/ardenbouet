@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Mail, Phone, Building2, Trash2 } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { formatBreakdown, formatSummary, summarize } from '@/lib/money';
 import { Badge, Button, Drawer, Empty, Field, SearchInput, Spinner, Tabs, TagInput, inputCls } from '@/components/admin/ui';
 import type { CrmClient, CrmProject, CrmInvoice, CrmProjectStatus, CrmInvoiceStatus } from '@/app/admin/crm-types';
 import '@/app/blog/story.css';
@@ -114,14 +115,15 @@ function Crm() {
         <div className="no-scrollbar -mx-4 mt-6 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0">
           {STAGES.map(s => {
             const col = fProjects.filter(p => p.status === s.key);
-            const total = col.reduce((sum, p) => sum + (p.budget ?? 0), 0);
+            // Budgets in different currencies are summed per currency (converted headline + exact amounts on hover).
+            const total = summarize(col.filter(p => p.budget != null).map(p => ({ amount: p.budget ?? 0, currency: p.currency })));
             return (
               <div key={s.key} className="flex w-[260px] shrink-0 flex-col rounded-2xl bg-[#f6f6f6] p-2"
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { const id = e.dataTransfer.getData('text/project'); const p = projects.find(x => x.id === id); if (p && p.status !== s.key) moveProject(p, s.key); }}>
                 <div className="flex items-baseline justify-between px-2 py-2">
                   <p className="text-[13px] font-semibold text-[#242424]">{s.label} <span className="font-normal text-[#9b9b9b]">{col.length}</span></p>
-                  {total > 0 && <span className="text-[12px] tabular-nums text-[#6b6b6b]">{money(total)}</span>}
+                  {total.count > 0 && <span className="text-[12px] tabular-nums text-[#6b6b6b]" title={total.byCurrency.length > 1 ? formatBreakdown(total) : undefined}>{formatSummary(total)}</span>}
                 </div>
                 <div className="flex min-h-[80px] flex-1 flex-col gap-2">
                   {col.map(p => (

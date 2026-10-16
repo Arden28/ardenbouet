@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Download, Mail } from 'lucide-react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { formatBreakdown, formatMoney, formatSummary, summarize } from '@/lib/money';
 import { Badge, Button, Drawer, Empty, Field, PageIntro, SearchInput, Spinner, Tabs, inputCls } from '@/components/admin/ui';
 import '@/app/blog/story.css';
 
@@ -12,7 +13,7 @@ type Order = {
   status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED'; amount: number; currency: string; paymentRef: string | null; paymentProvider: string | null; notes: string | null;
 };
 const TONE = { PAID: 'green', PENDING: 'amber', CANCELLED: 'neutral', REFUNDED: 'red' } as const;
-const money = (n: number, c: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: c || 'USD' }).format(n);
+const money = (n: number, c: string) => formatMoney(n, c);
 
 function Orders() {
   const params = useSearchParams();
@@ -31,7 +32,8 @@ function Orders() {
     (tab === 'ALL' || o.status === tab) && (!provider || o.paymentProvider === provider) &&
     (!q.trim() || `${o.customerName} ${o.customerEmail} ${o.productTitle} ${o.paymentRef ?? ''}`.toLowerCase().includes(q.trim().toLowerCase()))), [orders, tab, provider, q]);
   const count = (s: Order['status']) => (orders ?? []).filter(o => o.status === s).length;
-  const paidTotal = (orders ?? []).filter(o => o.status === 'PAID').reduce((s, o) => s + o.amount, 0);
+  // Summed per currency; the headline is converted to USD only when currencies are mixed.
+  const paid = summarize((orders ?? []).filter(o => o.status === 'PAID'));
 
   const update = async (o: Order, data: Partial<Order>) => {
     setBusy(true);
@@ -53,7 +55,7 @@ function Orders() {
 
   return (
     <div className="mx-auto max-w-[1100px]">
-      <PageIntro title="Orders" description={orders ? `${money(paidTotal, 'USD')} collected from ${count('PAID')} paid orders.` : undefined}
+      <PageIntro title="Orders" description={orders ? `${formatSummary(paid)} collected from ${count('PAID')} paid orders${paid.byCurrency.length > 1 ? ` (${formatBreakdown(paid)})` : ''}.` : undefined}
         actions={<Button onClick={exportCsv} disabled={!shown.length}><Download className="h-4 w-4" /> Export CSV</Button>} />
       <Tabs value={tab} onChange={setTab} items={[
         { key: 'ALL', label: 'All', count: orders?.length }, { key: 'PAID', label: 'Paid', count: count('PAID') },
