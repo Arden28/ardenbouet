@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useSearchParams } from 'next/navigation';
 import { Plus, Pencil, Copy, Trash2, ArrowUp, ArrowDown, ExternalLink, Languages, X } from 'lucide-react';
 import { MediaField } from '@/components/admin/media/MediaField';
+import { PeriodField } from '@/components/admin/PeriodField';
 import { Badge, Button, Drawer, Empty, Field, ListInput, PageIntro, SaveStatus, SearchInput, Spinner, TagInput, Toggle, inputCls, cx } from '../ui';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -12,6 +13,8 @@ import { Badge, Button, Drawer, Empty, Field, ListInput, PageIntro, SaveStatus, 
 type Base = { path: string; label: string; hint?: string; translatable?: boolean; half?: boolean; showIf?: (item: Record<string, unknown>) => boolean };
 export type FieldDef =
   | (Base & { type: 'text' | 'url' | 'textarea' | 'markdown' | 'number'; placeholder?: string })
+  /** Start/end months ("YYYY-MM") at `path` and `endPath`; an empty end means ongoing. */
+  | (Base & { type: 'period'; endPath: string; currentLabel?: string })
   | (Base & { type: 'select'; options: { value: string; label: string }[] })
   | (Base & { type: 'tags'; suggestions?: string[] })
   | (Base & { type: 'list'; placeholder?: string; multiline?: boolean })
@@ -102,6 +105,16 @@ function FieldsForm({ schema, item, onChange, lang }: { schema: FieldDef[]; item
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       {rows.map(f => {
+        if (f.type === 'period') {
+          if (lang === 'fr') return null;
+          return (
+            <div key={f.path} className="sm:col-span-2">
+              <PeriodField start={getPath(item, f.path) as string | undefined} end={getPath(item, f.endPath) as string | undefined} currentLabel={f.currentLabel}
+                onChange={(start, end) => onChange(setPath(setPath(item, f.path, start), f.endPath, end))} />
+              {f.hint && <p className="mt-1.5 text-[12px] text-[#9b9b9b]">{f.hint}</p>}
+            </div>
+          );
+        }
         if (f.type === 'section') return <h3 key={f.path} className="mt-4 border-t border-[#f2f2f2] pt-5 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#9b9b9b] sm:col-span-2">{f.label}</h3>;
         const path = lang === 'fr' ? `translations.fr.${f.path}` : f.path;
         const value = getPath(item, path);

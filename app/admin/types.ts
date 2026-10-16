@@ -19,6 +19,10 @@ export type Project = {
   metric?: string;
   language?: 'en' | 'fr' | 'both';
   caseFile?: CaseFile;
+  /** The experience (job / contract) this project was built or contributed to during. */
+  experienceId?: string;
+  /** Position among that experience's projects (ascending). */
+  experienceOrder?: number;
   /** French overrides, merged at render time (lib/i18n/content.ts). */
   translations?: { fr?: Partial<Omit<Project, 'id' | 'translations'>> };
 };
@@ -36,6 +40,18 @@ export type Experience = {
   tags?: string[];
   poster?: string;
   language?: 'en' | 'fr' | 'both';
+  // ── Detail page (/experience/[id]) ──
+  logoUrl?: string;
+  companyUrl?: string;
+  /** City / country, e.g. "Nairobi, Kenya". */
+  place?: string;
+  /** "YYYY-MM"; used for the duration and the career timeline (fromTo stays the display text). */
+  startDate?: string;
+  /** "YYYY-MM", empty = present. */
+  endDate?: string;
+  /** Long-form write-up (markdown). */
+  story?: string;
+  gallery?: CaseImage[];
   /** French overrides, merged at render time (lib/i18n/content.ts). */
   translations?: { fr?: Partial<Omit<Experience, 'id' | 'translations'>> };
 };

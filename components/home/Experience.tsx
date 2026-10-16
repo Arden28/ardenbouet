@@ -1,16 +1,17 @@
 'use client';
 // Experience — an editorial timeline (period | role, company, outcomes).
 import { useState } from 'react';
-import { Download, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Download, MapPin } from 'lucide-react';
 import { useSite } from '@/components/site/SiteProviders';
 import { OWNER } from '@/lib/site';
 
-export type ExpItem = { id: string; title: string; job: string; fromTo: string; type: string; location?: string; logline?: string; outcomes: string[]; tags: string[] };
+export type ExpItem = { id: string; title: string; job: string; fromTo: string; duration?: string; type: string; location?: string; logline?: string; outcomes: string[]; tags: string[]; logoUrl?: string; projects: number };
 
 const VISIBLE = 4;
 
 export function Experience({ items }: { items: ExpItem[] }) {
-  const { ui } = useSite();
+  const { ui, href } = useSite();
   const [all, setAll] = useState(false);
   const shown = all ? items : items.slice(0, VISIBLE);
   if (!items.length) return null;
@@ -31,10 +32,16 @@ export function Experience({ items }: { items: ExpItem[] }) {
             <li key={e.id} className={`grid gap-2 py-8 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-8 ${i ? 'border-t border-[#ececec]' : 'pt-0'}`}>
               <div className="text-[13px] text-[#6b6b6b]">
                 <p className="font-medium text-[#242424]">{e.fromTo}</p>
-                <p className="mt-0.5">{e.type}</p>
+                <p className="mt-0.5">{[e.duration, e.type].filter(Boolean).join(' · ')}</p>
               </div>
               <div className="min-w-0">
-                <h3 className="text-[21px] font-bold leading-7 tracking-[-0.01em] text-[#242424]">{e.job || e.title}</h3>
+                <h3 className="flex items-center gap-3 text-[21px] font-bold leading-7 tracking-[-0.01em] text-[#242424]">
+                  {e.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-lg border border-[#ececec] bg-[#ffffff] object-contain p-1" />
+                  )}
+                  <Link href={href(`/experience/${e.id}`)} className="hover:underline hover:decoration-[#c4c4c4] hover:underline-offset-4">{e.job || e.title}</Link>
+                </h3>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[15px] text-[#6b6b6b]">
                   <span>{e.job ? e.title : ''}</span>
                   {e.location && <span className="flex items-center gap-1 text-[13px]"><MapPin className="h-3.5 w-3.5" /> {e.location}</span>}
@@ -52,6 +59,11 @@ export function Experience({ items }: { items: ExpItem[] }) {
                     {e.tags.slice(0, 6).map(t => <span key={t} className="rounded-full bg-white px-2.5 py-1 text-[12px] text-[#6b6b6b] ring-1 ring-[#ececec]">{t}</span>)}
                   </div>
                 )}
+                <Link href={href(`/experience/${e.id}`)} className="group mt-5 inline-flex items-center gap-2 text-[14px] font-medium text-[#242424]">
+                  {ui('exp.readMore')}
+                  {e.projects > 0 && <span className="rounded-full bg-[#eef7ee] px-2 py-0.5 text-[12px] font-medium text-[#1a6b17]">{e.projects === 1 ? ui('exp.projectCount') : ui('exp.projectsCount', { n: e.projects })}</span>}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </div>
             </li>
           ))}
