@@ -1,3 +1,4 @@
+import type { MoneySummary } from '@/lib/money';
 // ─── CRM Types ────────────────────────────────────────────────────────────────
 
 export type CrmClientStatus  = 'LEAD' | 'ACTIVE' | 'INACTIVE';
@@ -54,14 +55,15 @@ export interface CrmInvoice {
   project?:      Pick<CrmProject, 'id' | 'title'> | null;
 }
 
+/** Money figures are per-currency summaries (see lib/money.ts), never cross-currency sums. */
 export interface CrmStats {
-  totalRevenue:     number;
-  pendingAmount:    number;
+  totalRevenue:     MoneySummary;
+  pendingAmount:    MoneySummary;
   pendingCount:     number;
   overdueCount:     number;
   activeProjects:   number;
   totalClients:     number;
   leadsCount:       number;
-  revenueThisMonth: number;
-  revenueLastMonth: number;
+  revenueThisMonth: MoneySummary;
+  revenueLastMonth: MoneySummary;
 }

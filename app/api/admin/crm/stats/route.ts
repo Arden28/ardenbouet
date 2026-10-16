@@ -3,6 +3,7 @@ import { verifyAdminToken } from '@/lib/adminSession';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import type { CrmStats } from '@/app/admin/crm-types';
+import { summarize } from '@/lib/money';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,36 +35,26 @@ export async function GET() {
     thisMonthAgg,
     lastMonthAgg,
   ] = await Promise.all([
-    prisma.crmInvoice.aggregate({ _sum: { amount: true }, where: { status: 'PAID' } }),
-    prisma.crmInvoice.aggregate({
-      _sum: { amount: true },
-      _count: true,
-      where: { status: { in: ['SENT', 'OVERDUE'] } },
-    }),
+    prisma.crmInvoice.findMany({ where: { status: 'PAID' }, select: { amount: true, currency: true } }),
+    prisma.crmInvoice.findMany({ where: { status: { in: ['SENT', 'OVERDUE'] } }, select: { amount: true, currency: true } }),
     prisma.crmInvoice.count({ where: { status: 'OVERDUE' } }),
     prisma.crmProject.count({ where: { status: 'ACTIVE' } }),
     prisma.crmClient.count(),
     prisma.crmClient.count({ where: { status: 'LEAD' } }),
-    prisma.crmInvoice.aggregate({
-      _sum: { amount: true },
-      where: { status: 'PAID', paidAt: { gte: startOfMonth } },
-    }),
-    prisma.crmInvoice.aggregate({
-      _sum: { amount: true },
-      where: { status: 'PAID', paidAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
-    }),
+    prisma.crmInvoice.findMany({ where: { status: 'PAID', paidAt: { gte: startOfMonth } }, select: { amount: true, currency: true } }),
+    prisma.crmInvoice.findMany({ where: { status: 'PAID', paidAt: { gte: startOfLastMonth, lte: endOfLastMonth } }, select: { amount: true, currency: true } }),
   ]);
 
   const stats: CrmStats = {
-    totalRevenue:     totalRevenueAgg._sum.amount ?? 0,
-    pendingAmount:    pendingAgg._sum.amount ?? 0,
-    pendingCount:     pendingAgg._count,
+    totalRevenue:     summarize(totalRevenueAgg),
+    pendingAmount:    summarize(pendingAgg),
+    pendingCount:     pendingAgg.length,
     overdueCount,
     activeProjects,
     totalClients,
     leadsCount,
-    revenueThisMonth: thisMonthAgg._sum.amount ?? 0,
-    revenueLastMonth: lastMonthAgg._sum.amount ?? 0,
+    revenueThisMonth: summarize(thisMonthAgg),
+    revenueLastMonth: summarize(lastMonthAgg),
   };
 
   return NextResponse.json(stats);
