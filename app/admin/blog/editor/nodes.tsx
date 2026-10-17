@@ -73,7 +73,7 @@ function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeViewProps
       </div>
 
       <pre>
-        <NodeViewContent as="code" />
+        <NodeViewContent />
       </pre>
     </NodeViewWrapper>
   );
