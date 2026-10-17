@@ -3,7 +3,9 @@
 // reader highlights (selection popover) and the floating table of contents.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, Share, Link2, Play, Square, Highlighter, MessageSquareQuote } from 'lucide-react';
+import { MessageCircle, Share, Link2, Play, Square, Highlighter, MessageSquareQuote, List,
+  ChevronUp,
+  X, } from 'lucide-react';
 import { useBlog, useReader } from '../_components/ReaderProvider';
 import { ClapIcon } from '../_components/PostList';
 import { SaveButton } from '../_components/SaveButton';
@@ -418,9 +420,7 @@ export function HighlightLayer({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Table of contents (wide screens) ────────────────────────────────────────
-
-// ─── Table of contents (wide screens) ────────────────────────────────────────
+// ─── Table of contents (wide + compact collapsible) ──────────────────────────
 
 export function TocRail({
   entries,
@@ -433,14 +433,16 @@ export function TocRail({
   const [active, setActive] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [barVisible, setBarVisible] = useState(true);
+  const [open, setOpen] = useState(false);
+
   const navRef = useRef<HTMLElement>(null);
+  const compactRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const els = entries.map(e => document.getElementById(e.id)).filter(Boolean) as HTMLElement[];
     const article = document.querySelector('article.story') as HTMLElement | null;
 
     const update = () => {
-      // Active heading (triggers slightly below headerOffset so clicked headings activate immediately)
       const spyThreshold = headerOffset + 32;
       let cur: string | null = null;
       for (const el of els) {
@@ -464,7 +466,10 @@ export function TocRail({
         navRef.current.style.top = `${clampedTop}px`;
       }
 
-      setBarVisible(r.bottom > 60);
+      const isVisible = r.bottom > 60;
+      setBarVisible(isVisible);
+      if (!isVisible) setOpen(false);
+
       setProgress(
         Math.min(1, Math.max(0, (window.innerHeight - r.top) / (r.height + window.innerHeight * 0.4)))
       );
@@ -485,8 +490,24 @@ export function TocRail({
     };
   }, [entries, headerOffset]);
 
+  // Close compact menu on outside click or Escape key
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!compactRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    // Allow modified clicks (Cmd/Ctrl/Shift/middle-click) to work normally
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
 
     const target = document.getElementById(id);
@@ -494,6 +515,7 @@ export function TocRail({
 
     e.preventDefault();
     setActive(id);
+    setOpen(false);
 
     const targetTop = target.getBoundingClientRect().top + window.scrollY - headerOffset;
     window.scrollTo({
@@ -501,9 +523,10 @@ export function TocRail({
       behavior: 'smooth',
     });
 
-    // Update the URL hash without triggering an instant browser jump
     window.history.pushState(null, '', `#${id}`);
   };
+
+  const activeEntry = entries.find(e => e.id === active);
 
   return (
     <>
@@ -517,34 +540,104 @@ export function TocRail({
       />
 
       {entries.length >= 3 && (
-        <nav
-          ref={navRef}
-          aria-label={t('contents')}
-          className="fixed left-6 z-40 hidden w-[200px] 2xl:block"
-          style={{ top: '160px' }}
-        >
-          <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[#9b9b9b]">
-            {t('contents')}
-          </p>
-          <ul className="space-y-2 border-l border-[#f2f2f2]">
-            {entries.map(e => (
-              <li key={e.id} style={{ paddingLeft: (e.level - 2) * 12 + 14 }}>
-                <a
-                  href={`#${e.id}`}
-                  onClick={ev => handleLinkClick(ev, e.id)}
-                  className={`-ml-px block border-l py-0.5 pl-3 text-[13px] leading-5 transition-colors line-clamp-2 ${
-                    active === e.id
-                      ? 'border-[#242424] text-[#242424]'
-                      : 'border-transparent text-[#9b9b9b] hover:text-[#242424]'
-                  }`}
-                  style={{ marginLeft: -((e.level - 2) * 12 + 14) }}
-                >
-                  {e.text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <>
+          {/* Wide-screen rail (2xl and up) */}
+          <nav
+            ref={navRef}
+            aria-label={t('contents')}
+            className="fixed left-6 z-40 hidden w-[200px] 2xl:block"
+            style={{ top: '160px' }}
+          >
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[#9b9b9b]">
+              {t('contents')}
+            </p>
+            <ul className="space-y-2 border-l border-[#f2f2f2]">
+              {entries.map(e => (
+                <li key={e.id} style={{ paddingLeft: (e.level - 2) * 12 + 14 }}>
+                  <a
+                    href={`#${e.id}`}
+                    onClick={ev => handleLinkClick(ev, e.id)}
+                    className={`-ml-px block border-l py-0.5 pl-3 text-[13px] leading-5 transition-colors line-clamp-2 ${
+                      active === e.id
+                        ? 'border-[#242424] text-[#242424]'
+                        : 'border-transparent text-[#9b9b9b] hover:text-[#242424]'
+                    }`}
+                    style={{ marginLeft: -((e.level - 2) * 12 + 14) }}
+                  >
+                    {e.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Compact floating pill + collapsible drawer (smaller than 2xl) */}
+          <div
+            ref={compactRef}
+            className={`fixed bottom-5 right-5 z-40 2xl:hidden transition-all duration-200 ${
+              barVisible
+                ? 'translate-y-0 opacity-100'
+                : 'pointer-events-none translate-y-3 opacity-0'
+            }`}
+          >
+            {open && (
+              <nav
+                aria-label={t('contents')}
+                className="mb-2.5 w-[min(300px,calc(100vw-2.5rem))] rounded-xl border border-[#f2f2f2] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.12)]"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-[#9b9b9b]">
+                    {t('contents')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    aria-label="Close table of contents"
+                    className="rounded p-1 text-[#9b9b9b] hover:text-[#242424]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <ul className="max-h-[55vh] space-y-2 overflow-y-auto border-l border-[#f2f2f2] pr-1">
+                  {entries.map(e => (
+                    <li key={e.id} style={{ paddingLeft: (e.level - 2) * 12 + 14 }}>
+                      <a
+                        href={`#${e.id}`}
+                        onClick={ev => handleLinkClick(ev, e.id)}
+                        className={`-ml-px block border-l py-1 pl-3 text-[13px] leading-5 transition-colors line-clamp-2 ${
+                          active === e.id
+                            ? 'border-[#242424] font-medium text-[#242424]'
+                            : 'border-transparent text-[#6b6b6b] hover:text-[#242424]'
+                        }`}
+                        style={{ marginLeft: -((e.level - 2) * 12 + 14) }}
+                      >
+                        {e.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setOpen(o => !o)}
+              aria-expanded={open}
+              aria-label={t('contents')}
+              className="ml-auto flex max-w-[min(280px,calc(100vw-2.5rem))] items-center gap-2.5 rounded-full border border-[#e6e6e6] bg-white/95 px-3.5 py-2 text-[13px] text-[#242424] shadow-[0_2px_12px_rgba(0,0,0,0.1)] backdrop-blur transition-colors hover:border-[#242424]"
+            >
+              <List className="h-4 w-4 shrink-0 text-[#6b6b6b]" />
+              <span className="truncate font-medium">
+                {activeEntry ? activeEntry.text : t('contents')}
+              </span>
+              <ChevronUp
+                className={`h-4 w-4 shrink-0 text-[#6b6b6b] transition-transform duration-200 ${
+                  open ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </>
       )}
     </>
   );
