@@ -11,22 +11,32 @@ import {
 } from 'lucide-react';
 import { CommandMenu, filterCommands, type CommandMenuHandle } from './commands';
 
-function Btn({ on, active, title, children }: { on: () => void; active?: boolean; title: string; children: React.ReactNode }) {
+function BubbleBtn({
+  on, active, title, children,
+}: {
+  on: () => void;
+  active?: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
       onMouseDown={e => { e.preventDefault(); on(); }}
-      className={`flex h-9 w-9 items-center justify-center rounded transition-colors ${active ? 'text-[#7ed37a]' : 'text-white hover:text-[#bdebb9]'}`}
+      className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+        active
+          ? 'bg-[var(--bubble-active-bg)] text-[var(--bubble-active-fg)]'
+          : 'text-[var(--bubble-fg)] hover:bg-[var(--bubble-hover)]'
+      }`}
     >
       {children}
     </button>
   );
 }
-const Sep = () => <span className="mx-1 h-5 w-px bg-white/25" />;
 
-// ─── Selection bubble ────────────────────────────────────────────────────────
+const Sep = () => <span className="mx-0.5 h-4 w-px bg-[var(--bubble-sep)]" />;
 
 export function SelectionBubble({ editor }: { editor: Editor }) {
   const [linkMode, setLinkMode] = useState(false);
@@ -34,34 +44,50 @@ export function SelectionBubble({ editor }: { editor: Editor }) {
   const s = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
-      bold: e.isActive('bold'), italic: e.isActive('italic'), underline: e.isActive('underline'), strike: e.isActive('strike'),
-      code: e.isActive('code'), highlight: e.isActive('highlight'), link: e.isActive('link'),
-      h2: e.isActive('heading', { level: 2 }), h3: e.isActive('heading', { level: 3 }), quote: e.isActive('blockquote'),
+      bold: e.isActive('bold'),
+      italic: e.isActive('italic'),
+      underline: e.isActive('underline'),
+      strike: e.isActive('strike'),
+      code: e.isActive('code'),
+      highlight: e.isActive('highlight'),
+      link: e.isActive('link'),
+      h2: e.isActive('heading', { level: 2 }),
+      h3: e.isActive('heading', { level: 3 }),
+      quote: e.isActive('blockquote'),
       center: e.isActive({ textAlign: 'center' }),
       href: (e.getAttributes('link').href as string | undefined) ?? '',
     }),
   });
 
-  useEffect(() => { if (!linkMode) setHref(s.href); }, [s.href, linkMode]);
+  useEffect(() => {
+    if (!linkMode) setHref(s.href);
+  }, [s.href, linkMode]);
 
   const applyLink = () => {
     const url = href.trim();
     if (!url) editor.chain().focus().extendMarkRange('link').unsetLink().run();
-    else editor.chain().focus().extendMarkRange('link').setLink({ href: /^(https?:|mailto:|\/|#)/i.test(url) ? url : `https://${url}` }).run();
+    else {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .setLink({ href: /^(https?:|mailto:|\/|#)/i.test(url) ? url : `https://${url}` })
+        .run();
+    }
     setLinkMode(false);
   };
 
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: 'top', offset: 10 }}
+      options={{ placement: 'top', offset: 18 }}
       shouldShow={({ editor: e, state }) => {
         const { selection } = state;
         if (selection.empty || selection instanceof NodeSelection) return false;
         if (e.isActive('codeBlock') || e.isActive('figure') || e.isActive('contentCard')) return false;
         return state.doc.textBetween(selection.from, selection.to).trim().length > 0;
       }}
-      className="z-50 flex items-center rounded-md bg-[#242424] px-1 shadow-lg"
+      className="bubble-menu z-50 flex items-center rounded-xl border border-[var(--bubble-border)] bg-[var(--bubble-bg)] px-1.5 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md"
     >
       {linkMode ? (
         <form className="flex items-center" onSubmit={e => { e.preventDefault(); applyLink(); }}>
@@ -69,40 +95,78 @@ export function SelectionBubble({ editor }: { editor: Editor }) {
             autoFocus
             value={href}
             onChange={e => setHref(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setLinkMode(false); editor.commands.focus(); } }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setLinkMode(false);
+                editor.commands.focus();
+              }
+            }}
             placeholder="Paste or type a link…"
-            className="w-64 bg-transparent px-3 py-2 font-sans text-[14px] text-white outline-none placeholder:text-white/50"
+            className="w-64 bg-transparent px-3 py-2 font-sans text-[14px] text-[var(--bubble-fg)] outline-none placeholder:text-[var(--bubble-muted)]"
           />
-          {s.link && <Btn title="Remove link" on={() => { editor.chain().focus().extendMarkRange('link').unsetLink().run(); setLinkMode(false); }}><Unlink className="h-4 w-4" /></Btn>}
-          <Btn title="Apply" on={applyLink}><Check className="h-4 w-4" /></Btn>
-          <Btn title="Cancel" on={() => setLinkMode(false)}><X className="h-4 w-4" /></Btn>
+          {s.link && (
+            <BubbleBtn title="Remove link" on={() => {
+              editor.chain().focus().extendMarkRange('link').unsetLink().run();
+              setLinkMode(false);
+            }}>
+              <Unlink className="h-4 w-4" />
+            </BubbleBtn>
+          )}
+          <BubbleBtn title="Apply" on={applyLink}>
+            <Check className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn title="Cancel" on={() => setLinkMode(false)}>
+            <X className="h-4 w-4" />
+          </BubbleBtn>
         </form>
       ) : (
         <>
-          <Btn title="Bold (⌘B)" active={s.bold} on={() => editor.chain().focus().toggleBold().run()}><Bold className="h-4 w-4" strokeWidth={2.5} /></Btn>
-          <Btn title="Italic (⌘I)" active={s.italic} on={() => editor.chain().focus().toggleItalic().run()}><Italic className="h-4 w-4" /></Btn>
-          <Btn title="Underline (⌘U)" active={s.underline} on={() => editor.chain().focus().toggleUnderline().run()}><Underline className="h-4 w-4" /></Btn>
-          <Btn title="Strikethrough" active={s.strike} on={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="h-4 w-4" /></Btn>
-          <Btn title="Link (⌘K)" active={s.link} on={() => setLinkMode(true)}><Link2 className="h-4 w-4" /></Btn>
+          <BubbleBtn title="Bold (⌘B / Ctrl+B)" active={s.bold} on={() => editor.chain().focus().toggleBold().run()}>
+            <Bold className="h-4 w-4" strokeWidth={2.5} />
+          </BubbleBtn>
+          <BubbleBtn title="Italic (⌘I / Ctrl+I)" active={s.italic} on={() => editor.chain().focus().toggleItalic().run()}>
+            <Italic className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn title="Underline (⌘U / Ctrl+U)" active={s.underline} on={() => editor.chain().focus().toggleUnderline().run()}>
+            <Underline className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn title="Strikethrough" active={s.strike} on={() => editor.chain().focus().toggleStrike().run()}>
+            <Strikethrough className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn title="Link (⌘K / Ctrl+K)" active={s.link} on={() => setLinkMode(true)}>
+            <Link2 className="h-4 w-4" />
+          </BubbleBtn>
           <Sep />
-          <Btn title="Heading" active={s.h2} on={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 className="h-[18px] w-[18px]" /></Btn>
-          <Btn title="Subheading" active={s.h3} on={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 className="h-[18px] w-[18px]" /></Btn>
-          <Btn title="Quote" active={s.quote} on={() => editor.chain().focus().toggleBlockquote().run()}><Quote className="h-4 w-4" /></Btn>
+          <BubbleBtn title="Heading" active={s.h2} on={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+            <Heading2 className="h-[18px] w-[18px]" />
+          </BubbleBtn>
+          <BubbleBtn title="Subheading" active={s.h3} on={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+            <Heading3 className="h-[18px] w-[18px]" />
+          </BubbleBtn>
+          <BubbleBtn title="Quote" active={s.quote} on={() => editor.chain().focus().toggleBlockquote().run()}>
+            <Quote className="h-4 w-4" />
+          </BubbleBtn>
           <Sep />
-          <Btn title="Highlight" active={s.highlight} on={() => editor.chain().focus().toggleHighlight().run()}><Highlighter className="h-4 w-4" /></Btn>
-          <Btn title="Inline code" active={s.code} on={() => editor.chain().focus().toggleCode().run()}><Code className="h-4 w-4" /></Btn>
-          <Btn
+          <BubbleBtn title="Highlight" active={s.highlight} on={() => editor.chain().focus().toggleHighlight().run()}>
+            <Highlighter className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn title="Inline code" active={s.code} on={() => editor.chain().focus().toggleCode().run()}>
+            <Code className="h-4 w-4" />
+          </BubbleBtn>
+          <BubbleBtn
             title={s.center ? 'Align left' : 'Center'}
             active={s.center}
             on={() => editor.chain().focus().setTextAlign(s.center ? 'left' : 'center').run()}
           >
             {s.center ? <AlignLeft className="h-4 w-4" /> : <AlignCenter className="h-4 w-4" />}
-          </Btn>
+          </BubbleBtn>
         </>
       )}
     </BubbleMenu>
   );
 }
+
 
 // ─── "+" inserter ────────────────────────────────────────────────────────────
 

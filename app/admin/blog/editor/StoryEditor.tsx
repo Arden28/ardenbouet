@@ -10,17 +10,17 @@ import StarterKit from '@tiptap/starter-kit';
 import { Placeholder, CharacterCount, Focus } from '@tiptap/extensions';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
-import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
+// import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import Typography from '@tiptap/extension-typography';
 import { Markdown } from 'tiptap-markdown';
-import { createLowlight, common } from 'lowlight';
+// import { createLowlight, common } from 'lowlight';
 import { ArrowLeft, Eye, Settings2, History, MoreHorizontal, Loader2, AlertCircle, Check, Keyboard } from 'lucide-react';
 import type { EditorPost } from '@/lib/blog/admin';
 import { firstImage, readingMinutes as calcReading, type PMNode } from '@/lib/blog/doc';
 import { resolveEmbed } from '@/lib/blog/embeds';
-import { Figure, Gallery, Embed, Callout, PullQuote, ContentCard, StoryButton } from './nodes';
+import { CustomCodeBlock, Figure, Gallery, Embed, Callout, PullQuote, ContentCard, StoryButton } from './nodes';
 import { SlashCommands, insertUploadedImages } from './commands';
 import { SelectionBubble, BlockInserter, TableMenu } from './EditorMenus';
 import { PublishDialog, SettingsDrawer, RevisionsDrawer } from './Panels';
@@ -29,9 +29,6 @@ import { loadEmbeddables, setEmbeddablesUrl } from './embeddables';
 import { ADMIN_ENV, EditorEnvContext, type EditorEnv } from './env';
 import { adminMedia, EditorMediaContext, MediaAdapter, type EditorMedia } from './media';
 import '@/app/blog/story.css';
-
-const lowlight = createLowlight(common);
-const LANGS = ['plaintext', 'typescript', 'javascript', 'tsx', 'jsx', 'python', 'php', 'go', 'rust', 'java', 'kotlin', 'swift', 'c', 'cpp', 'csharp', 'ruby', 'bash', 'shell', 'sql', 'json', 'yaml', 'html', 'xml', 'css', 'scss', 'markdown', 'dockerfile', 'graphql', 'diff'];
 
 // Fields only the server decides; everything else stays as the author typed it.
 const SERVER_FIELDS = ['updatedAt', 'status', 'publishedAt', 'scheduledAt', 'slug', 'wordCount', 'readingMinutes', 'newsletterSentAt', 'seriesId'] as const;
@@ -60,29 +57,6 @@ function AutoTextarea({ value, onChange, placeholder, className, onEnter, autoFo
   );
 }
 
-function CodeLanguageMenu({ editor }: { editor: Editor }) {
-  const lang = useEditorState({ editor, selector: ({ editor: e }) => (e.getAttributes('codeBlock').language as string | null) ?? '' });
-  return (
-    <BubbleMenu
-      editor={editor}
-      pluginKey="codeLang"
-      options={{ placement: 'top-end', offset: 6 }}
-      shouldShow={({ editor: e }) => e.isActive('codeBlock')}
-      className="z-50"
-    >
-      <select
-        value={lang}
-        onChange={e => editor.chain().focus().updateAttributes('codeBlock', { language: e.target.value || null }).run()}
-        className="rounded-md border border-[#e6e6e6] bg-white px-2 py-1 font-sans text-[12px] text-[#242424] shadow-sm outline-none"
-        aria-label="Code language"
-      >
-        <option value="">auto-detect</option>
-        {LANGS.map(l => <option key={l} value={l}>{l}</option>)}
-      </select>
-    </BubbleMenu>
-  );
-}
-
 function SaveIndicator({ state, error, onRetry }: { state: SaveState; error: string; onRetry: () => void }) {
   if (state === 'saving') return <span className="flex items-center gap-1.5 text-[13px] text-[#9b9b9b]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</span>;
   if (state === 'dirty') return <span className="text-[13px] text-[#9b9b9b]">Unsaved changes</span>;
@@ -105,10 +79,20 @@ const STATUS_CHIP: Record<string, string> = {
 };
 
 const SHORTCUTS: [string, string][] = [
-  ['/', 'Insert block menu'], ['⌘ B / I / U', 'Bold / italic / underline'], ['⌘ K', 'Add link (select text first)'],
-  ['⌘ ⌥ 1 / 2 / 3', 'Heading / subheading / small heading'], ['⌘ ⇧ 7 / 8', 'Numbered / bulleted list'],
-  ['⌘ ⇧ B', 'Quote'], ['⌘ ⌥ C', 'Code block'], ['⌘ S', 'Save now'], ['⌘ ⇧ P', 'Preview'],
-  ['**text** / _text_', 'Markdown shortcuts work as you type'], ['---', 'Separator'], ['```', 'Code block'],
+  ['/', 'Insert block menu'],
+  ['⌘ B  /  Ctrl B', 'Bold'],
+  ['⌘ I  /  Ctrl I', 'Italic'],
+  ['⌘ U  /  Ctrl U', 'Underline'],
+  ['⌘ K  /  Ctrl K', 'Add link (select text first)'],
+  ['⌘ ⌥ 1 / 2 / 3  ·  Ctrl Alt 1 / 2 / 3', 'Heading / subheading / small heading'],
+  ['⌘ ⇧ 7 / 8  ·  Ctrl Shift 7 / 8', 'Numbered / bulleted list'],
+  ['⌘ ⇧ B  ·  Ctrl Shift B', 'Quote'],
+  ['⌘ ⌥ C  ·  Ctrl Alt C', 'Code block'],
+  ['⌘ S  ·  Ctrl S', 'Save now'],
+  ['⌘ ⇧ P  ·  Ctrl Shift P', 'Preview'],
+  ['**text**  /  _text_', 'Markdown shortcuts work as you type'],
+  ['---', 'Separator'],
+  ['```', 'Code block'],
 ];
 
 export default function StoryEditor({ id, media = adminMedia, env = ADMIN_ENV }: { id: string; media?: EditorMedia; env?: EditorEnv }) {
@@ -180,7 +164,7 @@ export default function StoryEditor({ id, media = adminMedia, env = ADMIN_ENV }:
       TaskItem.configure({ nested: true }),
       Table.configure({ resizable: true }),
       TableRow, TableHeader, TableCell,
-      CodeBlockLowlight.configure({ lowlight, defaultLanguage: null }),
+      CustomCodeBlock,
       TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center'] }),
       Highlight,
       Typography,
@@ -358,7 +342,7 @@ export default function StoryEditor({ id, media = adminMedia, env = ADMIN_ENV }:
           <SelectionBubble editor={editor} />
           <BlockInserter editor={editor} />
           <TableMenu editor={editor} />
-          <CodeLanguageMenu editor={editor} />
+          {/* <CodeLanguageMenu editor={editor} /> */}
         </main>
       )}
 

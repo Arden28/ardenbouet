@@ -14,6 +14,14 @@
   --story-wide: 1000px;
   /* --font-serif comes from next/font on a wrapper element, so it must be resolved where used (not on :root). */
   --font-ui: 'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --bubble-bg: rgba(255, 255, 255, 0.92);
+  --bubble-border: #e5e5e5;
+  --bubble-fg: #3f3f3f;
+  --bubble-muted: #9b9b9b;
+  --bubble-hover: #f2f2f2;
+  --bubble-active-bg: #eef7ee;
+  --bubble-active-fg: #1a8917;
+  --bubble-sep: #e5e5e5;
 }
 
 .blog-ui { font-family: var(--font-ui); color: var(--story-ink); }
@@ -129,26 +137,107 @@
   padding-left: 0.6em;
 }
 
-/* Code blocks */
-.story .code-block, .story pre { position: relative; max-width: var(--story-measure); }
-.story pre {
-  font-family: 'JetBrains Mono', Menlo, Monaco, 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 22px;
-  background: #f9f9f9;
-  color: var(--story-ink);
+/* Code blocks — Notion / Grok style */
+.story .code-block {
+  position: relative;
+  max-width: var(--story-measure);
   border: 1px solid var(--story-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.story .code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #f3f3f3;
+  border-bottom: 1px solid var(--story-line);
+  font-family: var(--font-ui);
+}
+
+.story .code-lang {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b6b6b;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.story .code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
   border-radius: 6px;
-  padding: 20px 22px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b6b6b;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.story .code-copy:hover {
+  background: #fff;
+  border-color: #ddd;
+  color: #242424;
+}
+.story .code-copy.copied {
+  color: #1a8917;
+}
+
+.story .code-block pre {
+  margin: 0;
+  padding: 16px 18px;
+  font-family: 'JetBrains Mono', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 13.5px;
+  line-height: 21px;
+  background: transparent;
+  color: var(--story-ink);
+  border: 0;
+  border-radius: 0;
   overflow-x: auto;
   white-space: pre;
-  word-break: normal;
 }
-.story pre code { font: inherit; background: none; padding: 0; }
-.story .code-lang {
-  position: absolute; top: 8px; right: 12px; z-index: 1;
-  font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: 0.06em; color: #9b9b9b;
+.story .code-block pre code {
+  font: inherit;
+  background: none;
+  padding: 0;
 }
+
+/* Editor language select (matches public .code-lang style) */
+.story .code-lang-select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  font: 500 12px/1 var(--font-ui);
+  color: #6b6b6b;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+}
+.story .code-lang-select:hover,
+.story .code-lang-select:focus {
+  background: #eaeaea;
+  color: #242424;
+}
+
+/* Make sure the NodeView content looks right */
+.story-editor .code-block pre {
+  margin: 0;
+}
+.story-editor .code-block code {
+  display: block;
+  min-height: 1.5em;
+}
+
+/* keep the syntax colours you already have */
 /* light syntax palette */
 .story .hljs-keyword, .story .hljs-selector-tag, .story .hljs-built_in { color: #a626a4; }
 .story .hljs-string, .story .hljs-attr, .story .hljs-template-variable { color: #50a14f; }
@@ -305,6 +394,7 @@
 .story-editor .ProseMirror .gapcursor::after { border-top-color: #242424; }
 .story-editor .ProseMirror li[data-type='taskItem'] > label input { cursor: pointer; }
 
+
 /* ── Dark theme ──────────────────────────────────────────────────────────── */
 .dark {
   --story-ink: #e6e6e6;
@@ -312,6 +402,14 @@
   --story-faint: #262626;
   --story-line: #333333;
   --story-mark: #1e4422;
+  --bubble-bg: rgba(32, 32, 32, 0.94);
+  --bubble-border: #3a3a3a;
+  --bubble-fg: #e0e0e0;
+  --bubble-muted: #888;
+  --bubble-hover: #2a2a2a;
+  --bubble-active-bg: #1e3a22;
+  --bubble-active-fg: #7ed37a;
+  --bubble-sep: #404040;
 }
 .dark .blog-ui, .dark .story { color: var(--story-ink); }
 .dark .story pre { background: #1b1b1b; border-color: #2e2e2e; }
