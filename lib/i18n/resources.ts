@@ -171,6 +171,18 @@ export const resources = {
         itemSingular: '{{count}} item',
         itemPlural: '{{count}} items',
       },
+      footer: {
+        tagline: 'Building mobility, travel, and SaaS platforms.', // keep your existing tagline if different
+        site: 'Site',
+        elsewhere: 'Elsewhere',
+        legal: 'Legal',
+        newsletter: 'Newsletter',
+        rss: 'RSS',
+        resume: 'Résumé',
+        rights: 'All rights reserved.',
+        privacy: 'Privacy',
+        terms: 'Terms',
+      },
     },
   },
 
@@ -341,6 +353,18 @@ export const resources = {
         learnMore: 'En savoir plus →',
         itemSingular: '{{count}} article',
         itemPlural: '{{count}} articles',
+      },
+      footer: {
+        tagline: 'Je construis des plateformes mobilité, travel et SaaS.', // keep your existing if different
+        site: 'Site',
+        elsewhere: 'Ailleurs',
+        legal: 'Légal',
+        newsletter: 'Newsletter',
+        rss: 'RSS',
+        resume: 'CV',
+        rights: 'Tous droits réservés.',
+        privacy: 'Confidentialité',
+        terms: 'Conditions',
       },
     },
   },

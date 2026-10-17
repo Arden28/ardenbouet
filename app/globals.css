@@ -798,3 +798,14 @@ input:autofill, textarea:autofill, select:autofill { color: #242424; }
   .err-route { animation: none; stroke-dashoffset: 0; }
   .err-ping, .err-float, .err-shadow, .err-blink, .err-blink-fast, .err-shake, .err-smoke, .err-swing, .err-spin, .err-rise { animation: none; }
 }
+
+
+/* Legal pages */
+.prose-legal a {
+  color: #2467AC;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-legal strong {
+  font-weight: 600;
+}
