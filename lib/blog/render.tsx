@@ -5,6 +5,7 @@ import hljs from 'highlight.js';
 import { collectHeadings, nodeText, type PMMark, type PMNode } from './doc';
 import { displayHost, isSafeHref, resolveEmbed } from './embeds';
 import type { EmbedMap, EmbeddedItem } from './queries';
+import { CopyButton } from '@/components/ui/CopyButton';
 
 type Ctx = {
   embeds: EmbedMap;
@@ -115,8 +116,11 @@ export function renderNode(node: PMNode, ctx: Ctx, key = 'n'): ReactNode {
       const code = nodeText(node).replace(/\n$/, '');
       const lang = typeof a.language === 'string' && a.language ? a.language : undefined;
       return (
-        <div key={key} className="code-block" data-lang={lang}>
-          {lang && <span className="code-lang">{lang}</span>}
+        <div key={key} className="code-block" data-lang={lang ?? ''}>
+          <div className="code-header">
+            <span className="code-lang">{lang || 'plaintext'}</span>
+            <CopyButton code={code} />
+          </div>
           <pre className="hljs"><code dangerouslySetInnerHTML={{ __html: highlight(code, lang) }} /></pre>
         </div>
       );

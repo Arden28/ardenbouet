@@ -12,6 +12,106 @@ import type { ContentCardKind } from '@/lib/blog/doc';
 import { getMedia } from './media';
 import { useEmbeddables } from './embeddables';
 import { ContentPickerDialog } from './ContentPicker';
+import { NodeSelection, TextSelection } from '@tiptap/pm/state';
+
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
+import { createLowlight, common } from 'lowlight';
+
+const lowlight = createLowlight(common);
+
+const LANGS = [
+  'plaintext', 'typescript', 'javascript', 'tsx', 'jsx', 'python', 'php', 'go', 'rust',
+  'java', 'kotlin', 'swift', 'c', 'cpp', 'csharp', 'ruby', 'bash', 'shell', 'sql',
+  'json', 'yaml', 'html', 'xml', 'css', 'scss', 'markdown', 'dockerfile', 'graphql', 'diff',
+];
+
+function CodeBlockView({ node, updateAttributes, editor, getPos }: NodeViewProps) {
+  const language = (node.attrs.language as string) || '';
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(node.textContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <NodeViewWrapper className="code-block" data-lang={language || 'plaintext'}>
+      <div contentEditable={false} className="code-header">
+        <select
+          value={language}
+          onChange={e => updateAttributes({ language: e.target.value || null })}
+          className="code-lang-select"
+          aria-label="Code language"
+        >
+          <option value="">plaintext</option>
+          {LANGS.filter(l => l !== 'plaintext').map(l => (
+            <option key={l} value={l}>{l}</option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onMouseDown={e => e.preventDefault()}
+          onClick={copy}
+          className={`code-copy ${copied ? 'copied' : ''}`}
+        >
+          {copied ? (
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              Copied
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </span>
+          )}
+        </button>
+      </div>
+
+      <pre>
+        <NodeViewContent as="code" />
+      </pre>
+    </NodeViewWrapper>
+  );
+}
+
+export const CustomCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView);
+  },
+
+  // Select only the code block content when user presses ⌘A / Ctrl+A inside it
+  addKeyboardShortcuts() {
+    return {
+      'Mod-a': ({ editor }) => {
+        const { state } = editor;
+        const { $from } = state.selection;
+
+        // Walk up to find if we are inside a codeBlock
+        for (let d = $from.depth; d > 0; d--) {
+          const node = $from.node(d);
+          if (node.type.name === 'codeBlock') {
+            const pos = $from.before(d);
+            const from = pos + 1;
+            const to = pos + node.nodeSize - 1;
+            editor.view.dispatch(
+              state.tr.setSelection(TextSelection.create(state.doc, from, to))
+            );
+            return true; // prevent default "select all page"
+          }
+        }
+        return false;
+      },
+    };
+  },
+}).configure({
+  lowlight,
+  defaultLanguage: null,
+});
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
