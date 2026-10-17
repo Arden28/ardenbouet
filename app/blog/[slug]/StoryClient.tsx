@@ -420,7 +420,15 @@ export function HighlightLayer({ children }: { children: ReactNode }) {
 
 // ─── Table of contents (wide screens) ────────────────────────────────────────
 
-export function TocRail({ entries }: { entries: TocEntry[] }) {
+// ─── Table of contents (wide screens) ────────────────────────────────────────
+
+export function TocRail({
+  entries,
+  headerOffset = 96,
+}: {
+  entries: TocEntry[];
+  headerOffset?: number;
+}) {
   const { t } = useBlog();
   const [active, setActive] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -432,10 +440,11 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
     const article = document.querySelector('article.story') as HTMLElement | null;
 
     const update = () => {
-      // Active heading
+      // Active heading (triggers slightly below headerOffset so clicked headings activate immediately)
+      const spyThreshold = headerOffset + 32;
       let cur: string | null = null;
       for (const el of els) {
-        if (el.getBoundingClientRect().top < 140) cur = el.id;
+        if (el.getBoundingClientRect().top <= spyThreshold) cur = el.id;
       }
       setActive(cur);
 
@@ -450,10 +459,7 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
 
       if (navRef.current) {
         const navHeight = navRef.current.offsetHeight || 280;
-        // Bottom limit: align the bottom of the TOC with the bottom of article.story
         const maxTop = Math.max(r.top, r.bottom - navHeight);
-        // Stay aligned with the top of the story before reaching 160px,
-        // float at 160px while reading, and park at the bottom of the story block at the end
         const clampedTop = Math.min(Math.max(naturalTop, r.top), maxTop);
         navRef.current.style.top = `${clampedTop}px`;
       }
@@ -468,7 +474,6 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
 
-    // Re-check after layout/fonts/images settle
     const t1 = setTimeout(update, 300);
     const t2 = setTimeout(update, 1000);
 
@@ -478,7 +483,27 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [entries]);
+  }, [entries, headerOffset]);
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    // Allow modified clicks (Cmd/Ctrl/Shift/middle-click) to work normally
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    e.preventDefault();
+    setActive(id);
+
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: 'smooth',
+    });
+
+    // Update the URL hash without triggering an instant browser jump
+    window.history.pushState(null, '', `#${id}`);
+  };
 
   return (
     <>
@@ -506,6 +531,7 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
               <li key={e.id} style={{ paddingLeft: (e.level - 2) * 12 + 14 }}>
                 <a
                   href={`#${e.id}`}
+                  onClick={ev => handleLinkClick(ev, e.id)}
                   className={`-ml-px block border-l py-0.5 pl-3 text-[13px] leading-5 transition-colors line-clamp-2 ${
                     active === e.id
                       ? 'border-[#242424] text-[#242424]'
