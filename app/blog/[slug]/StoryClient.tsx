@@ -424,37 +424,92 @@ export function TocRail({ entries }: { entries: TocEntry[] }) {
   const { t } = useBlog();
   const [active, setActive] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [barVisible, setBarVisible] = useState(true);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const els = entries.map(e => document.getElementById(e.id)).filter(Boolean) as HTMLElement[];
-    const onScroll = () => {
+    const article = document.querySelector('article.story') as HTMLElement | null;
+
+    const update = () => {
+      // Active heading
       let cur: string | null = null;
-      for (const el of els) if (el.getBoundingClientRect().top < 140) cur = el.id;
-      setActive(cur);
-      const article = document.querySelector('article.story') as HTMLElement | null;
-      if (article) {
-        const r = article.getBoundingClientRect();
-        setProgress(Math.min(1, Math.max(0, (window.innerHeight - r.top) / (r.height + window.innerHeight * 0.4))));
+      for (const el of els) {
+        if (el.getBoundingClientRect().top < 140) cur = el.id;
       }
+      setActive(cur);
+
+      if (!article) {
+        setBarVisible(false);
+        setProgress(0);
+        return;
+      }
+
+      const r = article.getBoundingClientRect();
+      const naturalTop = 160; // matches top-40
+
+      if (navRef.current) {
+        const navHeight = navRef.current.offsetHeight || 280;
+        // Bottom limit: align the bottom of the TOC with the bottom of article.story
+        const maxTop = Math.max(r.top, r.bottom - navHeight);
+        // Stay aligned with the top of the story before reaching 160px,
+        // float at 160px while reading, and park at the bottom of the story block at the end
+        const clampedTop = Math.min(Math.max(naturalTop, r.top), maxTop);
+        navRef.current.style.top = `${clampedTop}px`;
+      }
+
+      setBarVisible(r.bottom > 60);
+      setProgress(
+        Math.min(1, Math.max(0, (window.innerHeight - r.top) / (r.height + window.innerHeight * 0.4)))
+      );
     };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+
+    // Re-check after layout/fonts/images settle
+    const t1 = setTimeout(update, 300);
+    const t2 = setTimeout(update, 1000);
+
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [entries]);
 
   return (
     <>
-      <div className="fixed left-0 top-0 z-[60] h-[2px] bg-[#242424] transition-[width] duration-150" style={{ width: `${progress * 100}%` }} aria-hidden />
+      {/* Top reading progress bar – fades once the story finishes */}
+      <div
+        className={`fixed left-0 top-0 z-[60] h-[2px] bg-[#242424] transition-all duration-300 ease-out ${
+          barVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ width: `${progress * 100}%` }}
+        aria-hidden
+      />
+
       {entries.length >= 3 && (
-        <nav aria-label={t('contents')} className="fixed left-6 top-40 hidden w-[200px] 2xl:block">
-          <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[#9b9b9b]">{t('contents')}</p>
+        <nav
+          ref={navRef}
+          aria-label={t('contents')}
+          className="fixed left-6 z-40 hidden w-[200px] 2xl:block"
+          style={{ top: '160px' }}
+        >
+          <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[#9b9b9b]">
+            {t('contents')}
+          </p>
           <ul className="space-y-2 border-l border-[#f2f2f2]">
             {entries.map(e => (
               <li key={e.id} style={{ paddingLeft: (e.level - 2) * 12 + 14 }}>
                 <a
                   href={`#${e.id}`}
                   className={`-ml-px block border-l py-0.5 pl-3 text-[13px] leading-5 transition-colors line-clamp-2 ${
-                    active === e.id ? 'border-[#242424] text-[#242424]' : 'border-transparent text-[#9b9b9b] hover:text-[#242424]'
+                    active === e.id
+                      ? 'border-[#242424] text-[#242424]'
+                      : 'border-transparent text-[#9b9b9b] hover:text-[#242424]'
                   }`}
                   style={{ marginLeft: -((e.level - 2) * 12 + 14) }}
                 >
